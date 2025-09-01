@@ -24,20 +24,29 @@ const MyReportsScreen: React.FC = () => {
   const [selectedPCR, setSelectedPCR] = useState<CompletedPCR | null>(null);
   const [showDetails, setShowDetails] = useState<boolean>(false);
   const [myPCRs, setMyPCRs] = useState<CompletedPCR[]>([]);
+  const [refreshKey, setRefreshKey] = useState<number>(0);
 
   // Load PCRs when screen is focused
   useFocusEffect(
     React.useCallback(() => {
       const loadMyPCRs = async () => {
+        console.log('=== MY REPORTS SCREEN FOCUSED ===');
+        console.log('Current session:', currentSession);
         console.log('Loading my submitted PCRs...');
+        
         await loadCompletedPCRs();
         const mySubmittedPCRs = getMySubmittedPCRs();
         setMyPCRs(mySubmittedPCRs);
+        
         console.log('My PCRs loaded:', mySubmittedPCRs.length);
+        console.log('=== END MY REPORTS SCREEN FOCUSED ===');
       };
       
       if (currentSession) {
         loadMyPCRs();
+      } else {
+        console.log('No current session in MyReports screen');
+        setMyPCRs([]);
       }
     }, [currentSession, loadCompletedPCRs, getMySubmittedPCRs])
   );

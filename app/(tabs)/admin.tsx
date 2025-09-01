@@ -61,9 +61,15 @@ const AdminScreen: React.FC = () => {
   useFocusEffect(
     React.useCallback(() => {
       if (isAdmin || currentSession?.isAdmin) {
-        console.log('Admin screen focused, loading data...');
+        console.log('=== ADMIN SCREEN FOCUSED ===');
+        console.log('Current session:', currentSession);
+        console.log('Is admin:', isAdmin);
+        console.log('Loading admin data...');
+        
         loadCompletedPCRs();
         loadStaffMembers();
+        
+        console.log('=== END ADMIN SCREEN FOCUSED ===');
       }
     }, [isAdmin, currentSession?.isAdmin, loadCompletedPCRs, loadStaffMembers])
   );

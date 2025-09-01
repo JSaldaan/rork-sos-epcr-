@@ -387,6 +387,7 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
     };
 
     console.log('=== SUBMITTING PCR ===');
+    console.log('Current session:', currentSession);
     console.log('New PCR:', {
       id: completedPCR.id,
       patient: `${completedPCR.patientInfo.firstName} ${completedPCR.patientInfo.lastName}`,
@@ -400,6 +401,7 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
       const stored = await AsyncStorage.getItem('completedPCRs');
       if (stored) {
         existingPCRs = JSON.parse(stored);
+        console.log('Existing PCRs loaded:', existingPCRs.length);
       }
     } catch (error) {
       console.error('Error loading existing PCRs:', error);
@@ -408,10 +410,22 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
     const updatedPCRs = [...existingPCRs, completedPCR];
     await AsyncStorage.setItem('completedPCRs', JSON.stringify(updatedPCRs));
     
+    // Update state immediately
     set({ completedPCRs: updatedPCRs });
+    
     console.log('PCR submitted and saved. Total PCRs now:', updatedPCRs.length);
-    console.log('All PCRs:', updatedPCRs.map(pcr => ({ id: pcr.id, patient: `${pcr.patientInfo.firstName} ${pcr.patientInfo.lastName}`, submittedBy: pcr.submittedBy.name })));
+    console.log('All PCRs:', updatedPCRs.map(pcr => ({ 
+      id: pcr.id, 
+      patient: `${pcr.patientInfo.firstName} ${pcr.patientInfo.lastName}`, 
+      submittedBy: pcr.submittedBy.name,
+      corporationId: pcr.submittedBy.corporationId
+    })));
     console.log('=== END SUBMITTING PCR ===');
+    
+    // Force a reload to ensure data consistency
+    setTimeout(() => {
+      get().loadCompletedPCRs();
+    }, 100);
   },
 
   loadCompletedPCRs: async () => {
@@ -730,13 +744,28 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
     const state = get();
     const currentSession = state.currentSession;
     
+    console.log('=== GET MY SUBMITTED PCRs ===');
+    console.log('Current session:', currentSession);
+    console.log('Total PCRs in state:', state.completedPCRs.length);
+    
     if (!currentSession) {
+      console.log('No current session, returning empty array');
       return [];
     }
     
-    return state.completedPCRs.filter(pcr => 
+    const myPCRs = state.completedPCRs.filter(pcr => 
       pcr.submittedBy && pcr.submittedBy.corporationId === currentSession.corporationId
     );
+    
+    console.log('My PCRs found:', myPCRs.length);
+    console.log('My PCRs details:', myPCRs.map(pcr => ({
+      id: pcr.id,
+      patient: `${pcr.patientInfo.firstName} ${pcr.patientInfo.lastName}`,
+      submittedBy: pcr.submittedBy.corporationId
+    })));
+    console.log('=== END GET MY SUBMITTED PCRs ===');
+    
+    return myPCRs;
   },
 
   addStaffMember: async (staff: Omit<StaffMember, 'lastLogin'>) => {
