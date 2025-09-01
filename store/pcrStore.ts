@@ -302,35 +302,60 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
     set((state) => ({
       callTimeInfo: { ...state.callTimeInfo, ...info },
     }));
+    // Auto-save draft when data changes
+    setTimeout(() => {
+      get().saveCurrentPCRDraft().catch(console.error);
+    }, 500);
   },
   
   updatePatientInfo: (info) => {
     set((state) => ({
       patientInfo: { ...state.patientInfo, ...info },
     }));
+    // Auto-save draft when data changes
+    setTimeout(() => {
+      get().saveCurrentPCRDraft().catch(console.error);
+    }, 500);
   },
   
   updateIncidentInfo: (info) => {
     set((state) => ({
       incidentInfo: { ...state.incidentInfo, ...info },
     }));
+    // Auto-save draft when data changes
+    setTimeout(() => {
+      get().saveCurrentPCRDraft().catch(console.error);
+    }, 500);
   },
   
-  addVitalSigns: (vital) =>
+  addVitalSigns: (vital) => {
     set((state) => ({
       vitals: [...state.vitals, vital],
-    })),
+    }));
+    // Auto-save draft when vitals are added
+    setTimeout(() => {
+      get().saveCurrentPCRDraft().catch(console.error);
+    }, 500);
+  },
   
   updateTransportInfo: (info) => {
     set((state) => ({
       transportInfo: { ...state.transportInfo, ...info },
     }));
+    // Auto-save draft when data changes
+    setTimeout(() => {
+      get().saveCurrentPCRDraft().catch(console.error);
+    }, 500);
   },
   
   updateSignatureInfo: (info) => {
     set((state) => ({
       signatureInfo: { ...state.signatureInfo, ...info },
     }));
+    // Auto-save draft when data changes
+    setTimeout(() => {
+      get().saveCurrentPCRDraft().catch(console.error);
+    }, 500);
   },
   
   updateRefusalInfo: (info) => {
@@ -665,7 +690,14 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
           signatureInfo: draft.signatureInfo || initialSignatureInfo,
           refusalInfo: draft.refusalInfo || initialRefusalInfo,
         });
-        console.log('PCR draft loaded successfully');
+        console.log('PCR draft loaded successfully from storage');
+        console.log('Draft contains:', {
+          patient: draft.patientInfo?.firstName ? `${draft.patientInfo.firstName} ${draft.patientInfo.lastName}` : 'No patient',
+          vitals: draft.vitals?.length || 0,
+          transport: draft.transportInfo?.destination || 'No destination'
+        });
+      } else {
+        console.log('No PCR draft found in storage');
       }
     } catch (error) {
       console.error('Error loading PCR draft:', error);

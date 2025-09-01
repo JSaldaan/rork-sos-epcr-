@@ -25,7 +25,8 @@ export default function TransportScreen() {
     
     try {
       await saveTransportData();
-      Alert.alert("Success", "Transport information saved");
+      console.log('Transport information saved to draft');
+      Alert.alert("Success", "Transport information saved successfully.");
     } catch (error) {
       console.error('Error saving transport data:', error);
       Alert.alert("Error", "Failed to save transport information");

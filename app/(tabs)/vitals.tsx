@@ -56,7 +56,8 @@ export default function VitalsScreen() {
     // Save the vitals data to storage
     try {
       await saveVitalsData();
-      Alert.alert("Success", "Vital signs recorded and saved");
+      console.log('Vital signs saved to draft');
+      Alert.alert("Success", "Vital signs recorded and saved successfully.");
     } catch (error) {
       console.error('Error saving vitals:', error);
       Alert.alert("Warning", "Vital signs recorded but failed to save to storage");

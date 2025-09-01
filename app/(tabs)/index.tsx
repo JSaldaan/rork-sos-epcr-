@@ -97,7 +97,8 @@ export default function NewPCRScreen() {
     
     try {
       await saveCurrentPCRDraft();
-      Alert.alert("Success", "Patient information saved as draft.");
+      console.log('Patient information saved to draft');
+      Alert.alert("Success", "Patient information saved successfully. Continue to other tabs to complete the PCR.");
     } catch (error) {
       console.error('Error saving patient data:', error);
       Alert.alert("Error", "Failed to save patient information. Please try again.");

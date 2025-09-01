@@ -58,6 +58,7 @@ export default function SummaryScreen() {
             try {
               console.log('Saving PCR data for preview...');
               await get().saveCurrentPCRDraft();
+              console.log('PCR data saved to draft successfully');
               Alert.alert("Success", "PCR data saved for preview! Go to Preview tab to review and submit.");
             } catch (error) {
               console.error('Error saving PCR data:', error);

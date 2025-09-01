@@ -100,8 +100,22 @@ export default function PreviewScreen() {
 
             try {
               // Submit to admin panel (save to local storage)
+              console.log('=== STARTING PCR SUBMISSION ===');
+              console.log('Submitting PCR with data:', {
+                patient: `${patientInfo.firstName} ${patientInfo.lastName}`,
+                vitals: vitals.length,
+                transport: transportInfo.destination,
+                signatures: {
+                  nurse: !!signatureInfo.nurseSignaturePaths,
+                  doctor: !!signatureInfo.doctorSignaturePaths,
+                  others: !!signatureInfo.othersSignaturePaths
+                }
+              });
+              
               await submitPCR();
-              console.log('PCR submitted to admin panel');
+              console.log('PCR submitted to admin panel successfully');
+              console.log('PCR should now be available in My Files and Admin Panel');
+              console.log('=== PCR SUBMISSION COMPLETE ===');
               
               // Clear the draft since we're submitting
               try {
