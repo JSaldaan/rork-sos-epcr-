@@ -8,11 +8,13 @@ import {
   StyleSheet,
   Share,
   Platform,
+  TextInput,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { router } from 'expo-router';
-import { usePCRStore, CompletedPCR } from '../../store/pcrStore';
-import { Trash2, Copy, LogOut, Eye, Clock } from 'lucide-react-native';
+import { usePCRStore, CompletedPCR, StaffMember } from '../../store/pcrStore';
+import { Trash2, Copy, LogOut, Eye, Clock, Users, Plus, UserCheck, UserX, Edit3 } from 'lucide-react-native';
 
 const AdminScreen: React.FC = () => {
   const {
@@ -23,35 +25,57 @@ const AdminScreen: React.FC = () => {
     isAdmin,
     staffLogout,
     currentSession,
+    staffMembers,
+    addStaffMember,
+    updateStaffMember,
+    deleteStaffMember,
+    loadStaffMembers,
   } = usePCRStore();
   
   const [selectedPCR, setSelectedPCR] = useState<CompletedPCR | null>(null);
   const [showDetails, setShowDetails] = useState<boolean>(false);
+  const [activeTab, setActiveTab] = useState<string>('reports');
+  const [showAddStaff, setShowAddStaff] = useState<boolean>(false);
+  const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null);
+  const [newStaff, setNewStaff] = useState<{
+    corporationId: string;
+    name: string;
+    role: 'paramedic' | 'nurse' | 'doctor' | 'admin' | 'supervisor';
+    department: string;
+  }>({
+    corporationId: '',
+    name: '',
+    role: 'paramedic',
+    department: '',
+  });
 
   useEffect(() => {
     if (isAdmin) {
-      console.log('Admin mode detected, loading PCRs...');
+      console.log('Admin mode detected, loading data...');
       loadCompletedPCRs();
+      loadStaffMembers();
     }
-  }, [isAdmin, loadCompletedPCRs]);
+  }, [isAdmin, loadCompletedPCRs, loadStaffMembers]);
 
   // Refresh data whenever the admin screen is focused
   useFocusEffect(
     React.useCallback(() => {
       if (isAdmin) {
-        console.log('Admin screen focused, loading PCRs...');
+        console.log('Admin screen focused, loading data...');
         loadCompletedPCRs();
+        loadStaffMembers();
       }
-    }, [isAdmin, loadCompletedPCRs])
+    }, [isAdmin, loadCompletedPCRs, loadStaffMembers])
   );
 
   // Also refresh when component mounts
   useEffect(() => {
     if (isAdmin) {
-      console.log('Admin component mounted, loading PCRs...');
+      console.log('Admin component mounted, loading data...');
       loadCompletedPCRs();
+      loadStaffMembers();
     }
-  }, [isAdmin, loadCompletedPCRs]);
+  }, [isAdmin, loadCompletedPCRs, loadStaffMembers]);
 
   const formatPCRForWord = (pcr: CompletedPCR): string => {
     return `PATIENT CARE REPORT\n` +
@@ -254,6 +278,90 @@ const AdminScreen: React.FC = () => {
         },
       ]
     );
+  };
+
+  const handleAddStaff = async () => {
+    if (!newStaff.corporationId.trim() || !newStaff.name.trim() || !newStaff.department.trim()) {
+      Alert.alert('Error', 'Please fill in all required fields');
+      return;
+    }
+
+    // Check if Corporation ID already exists
+    const existingStaff = staffMembers.find(staff => staff.corporationId === newStaff.corporationId.trim());
+    if (existingStaff) {
+      Alert.alert('Error', 'Corporation ID already exists');
+      return;
+    }
+
+    try {
+      await addStaffMember({
+        ...newStaff,
+        corporationId: newStaff.corporationId.trim().toUpperCase(),
+        name: newStaff.name.trim(),
+        department: newStaff.department.trim(),
+        isActive: true,
+      });
+      
+      setNewStaff({
+        corporationId: '',
+        name: '',
+        role: 'paramedic',
+        department: '',
+      });
+      setShowAddStaff(false);
+      Alert.alert('Success', 'Staff member added successfully');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to add staff member');
+    }
+  };
+
+  const handleUpdateStaff = async () => {
+    if (!editingStaff) return;
+
+    try {
+      await updateStaffMember(editingStaff.corporationId, editingStaff);
+      setEditingStaff(null);
+      Alert.alert('Success', 'Staff member updated successfully');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to update staff member');
+    }
+  };
+
+  const handleDeleteStaff = (corporationId: string, name: string) => {
+    Alert.alert(
+      'Delete Staff Member',
+      `Are you sure you want to delete ${name}? This action cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteStaffMember(corporationId);
+              Alert.alert('Success', 'Staff member deleted successfully');
+            } catch (error) {
+              Alert.alert('Error', 'Failed to delete staff member');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const toggleStaffStatus = async (staff: StaffMember) => {
+    try {
+      await updateStaffMember(staff.corporationId, {
+        ...staff,
+        isActive: !staff.isActive,
+      });
+      Alert.alert(
+        'Success', 
+        `${staff.name} has been ${!staff.isActive ? 'activated' : 'deactivated'}`
+      );
+    } catch (error) {
+      Alert.alert('Error', 'Failed to update staff status');
+    }
   };
 
   const PCRCard: React.FC<{ pcr: CompletedPCR }> = ({ pcr }) => (
@@ -470,7 +578,306 @@ const AdminScreen: React.FC = () => {
     </ScrollView>
   );
 
+  const AddStaffForm: React.FC = () => (
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={{ flex: 1 }}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
+    >
+      <ScrollView
+        style={styles.formContainer}
+        keyboardShouldPersistTaps="always"
+        keyboardDismissMode="on-drag"
+        contentContainerStyle={{ paddingBottom: 24 }}
+      >
+        <View style={styles.formHeader}>
+          <Text style={styles.formTitle}>Add New Staff Member</Text>
+          <Pressable
+            style={styles.closeButton}
+            onPress={() => {
+              setShowAddStaff(false);
+              setNewStaff({
+                corporationId: '',
+                name: '',
+                role: 'paramedic',
+                department: '',
+              });
+            }}
+          >
+            <Text style={styles.closeButtonText}>Cancel</Text>
+          </Pressable>
+        </View>
 
+        <View style={styles.formSection}>
+          <Text style={styles.fieldLabel}>Corporation ID *</Text>
+          <TextInput
+            style={styles.textInput}
+            value={newStaff.corporationId}
+            onChangeText={(text) => setNewStaff({ ...newStaff, corporationId: text })}
+            placeholder="e.g., PARA001, NURSE001, DOC001"
+            autoCapitalize="characters"
+            autoCorrect={false}
+            returnKeyType="next"
+            blurOnSubmit={false}
+          />
+        </View>
+
+        <View style={styles.formSection}>
+          <Text style={styles.fieldLabel}>Full Name *</Text>
+          <TextInput
+            style={styles.textInput}
+            value={newStaff.name}
+            onChangeText={(text) => setNewStaff({ ...newStaff, name: text })}
+            placeholder="Enter full name"
+            autoCapitalize="words"
+            autoCorrect={false}
+            returnKeyType="next"
+            blurOnSubmit={false}
+          />
+        </View>
+
+        <View style={styles.formSection}>
+          <Text style={styles.fieldLabel}>Role *</Text>
+          <View style={styles.roleSelector}>
+            {(['paramedic', 'nurse', 'doctor', 'admin', 'supervisor'] as const).map((role) => (
+              <Pressable
+                key={role}
+                style={[
+                  styles.roleOption,
+                  newStaff.role === role && styles.roleOptionSelected,
+                ]}
+                onPress={() => setNewStaff({ ...newStaff, role })}
+              >
+                <Text
+                  style={[
+                    styles.roleOptionText,
+                    newStaff.role === role && styles.roleOptionTextSelected,
+                  ]}
+                >
+                  {role.charAt(0).toUpperCase() + role.slice(1)}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.formSection}>
+          <Text style={styles.fieldLabel}>Department *</Text>
+          <TextInput
+            style={styles.textInput}
+            value={newStaff.department}
+            onChangeText={(text) => setNewStaff({ ...newStaff, department: text })}
+            placeholder="e.g., Emergency Services, Emergency Department"
+            autoCapitalize="words"
+            autoCorrect={false}
+            returnKeyType="done"
+            blurOnSubmit={false}
+          />
+        </View>
+
+        <View style={styles.formActions}>
+          <Pressable style={styles.addButton} onPress={handleAddStaff}>
+            <Plus size={20} color="#fff" />
+            <Text style={styles.addButtonText}>Add Staff Member</Text>
+          </Pressable>
+        </View>
+
+        <View style={styles.infoBox}>
+          <Text style={styles.infoTitle}>Authorization Info</Text>
+          <Text style={styles.infoText}>
+            • Staff will use their Corporation ID and Full Name to login
+          </Text>
+          <Text style={styles.infoText}>
+            • Admin and Supervisor roles have admin panel access
+          </Text>
+          <Text style={styles.infoText}>
+            • Only active staff members can login to the app
+          </Text>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
+
+  const EditStaffForm: React.FC<{ staff: StaffMember }> = ({ staff }) => (
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={{ flex: 1 }}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
+    >
+      <ScrollView
+        style={styles.formContainer}
+        keyboardShouldPersistTaps="always"
+        keyboardDismissMode="on-drag"
+        contentContainerStyle={{ paddingBottom: 24 }}
+      >
+        <View style={styles.formHeader}>
+          <Text style={styles.formTitle}>Edit Staff Member</Text>
+          <Pressable
+            style={styles.closeButton}
+            onPress={() => setEditingStaff(null)}
+          >
+            <Text style={styles.closeButtonText}>Cancel</Text>
+          </Pressable>
+        </View>
+
+        <View style={styles.formSection}>
+          <Text style={styles.fieldLabel}>Corporation ID</Text>
+          <TextInput
+            style={[styles.textInput, styles.disabledInput]}
+            value={staff.corporationId}
+            editable={false}
+          />
+          <Text style={styles.fieldHint}>Corporation ID cannot be changed</Text>
+        </View>
+
+        <View style={styles.formSection}>
+          <Text style={styles.fieldLabel}>Full Name *</Text>
+          <TextInput
+            style={styles.textInput}
+            value={staff.name}
+            onChangeText={(text) => setEditingStaff({ ...staff, name: text })}
+            placeholder="Enter full name"
+            autoCapitalize="words"
+            autoCorrect={false}
+            returnKeyType="next"
+            blurOnSubmit={false}
+          />
+        </View>
+
+        <View style={styles.formSection}>
+          <Text style={styles.fieldLabel}>Role *</Text>
+          <View style={styles.roleSelector}>
+            {(['paramedic', 'nurse', 'doctor', 'admin', 'supervisor'] as const).map((role) => (
+              <Pressable
+                key={role}
+                style={[
+                  styles.roleOption,
+                  staff.role === role && styles.roleOptionSelected,
+                ]}
+                onPress={() => setEditingStaff({ ...staff, role })}
+              >
+                <Text
+                  style={[
+                    styles.roleOptionText,
+                    staff.role === role && styles.roleOptionTextSelected,
+                  ]}
+                >
+                  {role.charAt(0).toUpperCase() + role.slice(1)}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.formSection}>
+          <Text style={styles.fieldLabel}>Department *</Text>
+          <TextInput
+            style={styles.textInput}
+            value={staff.department}
+            onChangeText={(text) => setEditingStaff({ ...staff, department: text })}
+            placeholder="e.g., Emergency Services, Emergency Department"
+            autoCapitalize="words"
+            autoCorrect={false}
+            returnKeyType="done"
+            blurOnSubmit={false}
+          />
+        </View>
+
+        <View style={styles.formActions}>
+          <Pressable style={styles.updateButton} onPress={handleUpdateStaff}>
+            <Edit3 size={20} color="#fff" />
+            <Text style={styles.updateButtonText}>Update Staff Member</Text>
+          </Pressable>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
+
+  const StaffManagement: React.FC = () => (
+    <View style={styles.container}>
+      <View style={styles.staffHeader}>
+        <View style={styles.staffHeaderLeft}>
+          <Text style={styles.staffTitle}>Staff Management</Text>
+          <Text style={styles.staffSubtitle}>{staffMembers.length} total members</Text>
+        </View>
+        <Pressable
+          style={styles.addStaffButton}
+          onPress={() => setShowAddStaff(true)}
+        >
+          <Plus size={20} color="#fff" />
+          <Text style={styles.addStaffButtonText}>Add Staff</Text>
+        </Pressable>
+      </View>
+
+      <ScrollView
+        style={styles.staffList}
+        keyboardShouldPersistTaps="always"
+        contentContainerStyle={{ paddingBottom: 24 }}
+      >
+        {staffMembers.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Users size={48} color="#6b7280" />
+            <Text style={styles.emptyText}>No staff members found</Text>
+            <Text style={styles.emptySubtext}>Add your first staff member to get started</Text>
+          </View>
+        ) : (
+          staffMembers.map((staff) => (
+            <View key={staff.corporationId} style={styles.staffCard}>
+              <View style={styles.staffCardHeader}>
+                <View style={styles.staffInfo}>
+                  <View style={styles.staffNameRow}>
+                    <Text style={styles.staffName}>{staff.name}</Text>
+                    <View style={[
+                      styles.statusBadge,
+                      staff.isActive ? styles.activeBadge : styles.inactiveBadge
+                    ]}>
+                      <Text style={[
+                        styles.statusText,
+                        staff.isActive ? styles.activeText : styles.inactiveText
+                      ]}>
+                        {staff.isActive ? 'Active' : 'Inactive'}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text style={styles.staffId}>ID: {staff.corporationId}</Text>
+                  <Text style={styles.staffRole}>{staff.role.toUpperCase()} • {staff.department}</Text>
+                  {staff.lastLogin && (
+                    <Text style={styles.lastLogin}>
+                      Last login: {new Date(staff.lastLogin).toLocaleString()}
+                    </Text>
+                  )}
+                </View>
+                <View style={styles.staffActions}>
+                  <Pressable
+                    style={styles.actionButton}
+                    onPress={() => setEditingStaff(staff)}
+                  >
+                    <Edit3 size={18} color="#0066CC" />
+                  </Pressable>
+                  <Pressable
+                    style={styles.actionButton}
+                    onPress={() => toggleStaffStatus(staff)}
+                  >
+                    {staff.isActive ? (
+                      <UserX size={18} color="#dc3545" />
+                    ) : (
+                      <UserCheck size={18} color="#28a745" />
+                    )}
+                  </Pressable>
+                  <Pressable
+                    style={styles.actionButton}
+                    onPress={() => handleDeleteStaff(staff.corporationId, staff.name)}
+                  >
+                    <Trash2 size={18} color="#dc3545" />
+                  </Pressable>
+                </View>
+              </View>
+            </View>
+          ))
+        )}
+      </ScrollView>
+    </View>
+  );
 
   // If not authenticated, this should not happen as login is handled at app level
   if (!isAdmin && !currentSession) {
@@ -486,6 +893,18 @@ const AdminScreen: React.FC = () => {
 
   if (showDetails && selectedPCR) {
     return <PCRDetails pcr={selectedPCR} />;
+  }
+
+  if (showAddStaff) {
+    return <AddStaffForm />;
+  }
+
+  if (editingStaff) {
+    return <EditStaffForm staff={editingStaff} />;
+  }
+
+  if (activeTab === 'staff') {
+    return <StaffManagement />;
   }
 
   return (
@@ -510,11 +929,52 @@ const AdminScreen: React.FC = () => {
         </View>
       </View>
 
+      <View style={styles.tabContainer}>
+        <Pressable
+          style={[
+            styles.tabButton,
+            activeTab === 'reports' && styles.activeTabButton,
+          ]}
+          onPress={() => setActiveTab('reports')}
+        >
+          <Eye size={20} color={activeTab === 'reports' ? '#0066CC' : '#6b7280'} />
+          <Text
+            style={[
+              styles.tabButtonText,
+              activeTab === 'reports' && styles.activeTabButtonText,
+            ]}
+          >
+            PCR Reports
+          </Text>
+        </Pressable>
+        <Pressable
+          style={[
+            styles.tabButton,
+            activeTab === 'staff' && styles.activeTabButton,
+          ]}
+          onPress={() => setActiveTab('staff')}
+        >
+          <Users size={20} color={activeTab === 'staff' ? '#0066CC' : '#6b7280'} />
+          <Text
+            style={[
+              styles.tabButtonText,
+              activeTab === 'staff' && styles.activeTabButtonText,
+            ]}
+          >
+            Staff Management
+          </Text>
+        </Pressable>
+      </View>
+
       <View style={styles.statsContainer}>
         <View style={styles.statsRow}>
           <View style={styles.statItem}>
             <Text style={styles.statsNumber}>{completedPCRs.length}</Text>
             <Text style={styles.statsLabel}>Total PCRs</Text>
+          </View>
+          <View style={styles.statItem}>
+            <Text style={styles.statsNumber}>{staffMembers.filter(s => s.isActive).length}</Text>
+            <Text style={styles.statsLabel}>Active Staff</Text>
           </View>
           {currentSession && (
             <View style={styles.statItem}>
@@ -899,6 +1359,278 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#374151',
     marginBottom: 2,
+  },
+
+  // Tab styles
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  tabButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 12,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  activeTabButton: {
+    borderBottomColor: '#0066CC',
+  },
+  tabButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6b7280',
+    marginLeft: 8,
+  },
+  activeTabButtonText: {
+    color: '#0066CC',
+  },
+
+  // Staff management styles
+  staffHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  staffHeaderLeft: {
+    flex: 1,
+  },
+  staffTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#374151',
+  },
+  staffSubtitle: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginTop: 2,
+  },
+  addStaffButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#0066CC',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  addStaffButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  staffList: {
+    flex: 1,
+    padding: 16,
+  },
+  staffCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
+  },
+  staffCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  staffInfo: {
+    flex: 1,
+  },
+  staffNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  staffName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#374151',
+    flex: 1,
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
+    marginLeft: 8,
+  },
+  activeBadge: {
+    backgroundColor: '#dcfce7',
+  },
+  inactiveBadge: {
+    backgroundColor: '#fee2e2',
+  },
+  statusText: {
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  activeText: {
+    color: '#16a34a',
+  },
+  inactiveText: {
+    color: '#dc2626',
+  },
+  staffId: {
+    fontSize: 12,
+    color: '#0066CC',
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  staffRole: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginBottom: 2,
+  },
+  lastLogin: {
+    fontSize: 10,
+    color: '#9ca3af',
+    fontStyle: 'italic',
+  },
+  staffActions: {
+    flexDirection: 'row',
+  },
+
+  // Form styles
+  formContainer: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  formHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: '#0066CC',
+  },
+  formTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  formSection: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  fieldLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 8,
+  },
+  fieldHint: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginTop: 4,
+    fontStyle: 'italic',
+  },
+  textInput: {
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    fontSize: 16,
+    backgroundColor: '#fff',
+    color: '#374151',
+  },
+  disabledInput: {
+    backgroundColor: '#f9fafb',
+    color: '#6b7280',
+  },
+  roleSelector: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  roleOption: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    backgroundColor: '#fff',
+  },
+  roleOptionSelected: {
+    backgroundColor: '#0066CC',
+    borderColor: '#0066CC',
+  },
+  roleOptionText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#6b7280',
+  },
+  roleOptionTextSelected: {
+    color: '#fff',
+  },
+  formActions: {
+    padding: 16,
+  },
+  addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#0066CC',
+    paddingVertical: 14,
+    borderRadius: 8,
+  },
+  addButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    marginLeft: 8,
+    fontSize: 16,
+  },
+  updateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#28a745',
+    paddingVertical: 14,
+    borderRadius: 8,
+  },
+  updateButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    marginLeft: 8,
+    fontSize: 16,
+  },
+  infoBox: {
+    backgroundColor: '#f0f9ff',
+    margin: 16,
+    padding: 16,
+    borderRadius: 8,
+    borderLeftWidth: 4,
+    borderLeftColor: '#0066CC',
+  },
+  infoTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#0066CC',
+    marginBottom: 8,
+  },
+  infoText: {
+    fontSize: 12,
+    color: '#374151',
+    marginBottom: 4,
+    lineHeight: 16,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: '#9ca3af',
+    textAlign: 'center',
+    marginTop: 8,
   },
 
 });

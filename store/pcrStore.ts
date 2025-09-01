@@ -154,6 +154,10 @@ interface PCRStore {
   staffLogout: () => Promise<void>;
   initializeStaffDatabase: () => Promise<void>;
   validateCorporationId: (corporationId: string) => Promise<StaffMember | null>;
+  addStaffMember: (staff: Omit<StaffMember, 'lastLogin'>) => Promise<void>;
+  updateStaffMember: (corporationId: string, updates: Partial<StaffMember>) => Promise<void>;
+  deleteStaffMember: (corporationId: string) => Promise<void>;
+  loadStaffMembers: () => Promise<void>;
   saveCurrentPCRDraft: () => Promise<void>;
   loadCurrentPCRDraft: () => Promise<void>;
   saveVitalsData: () => Promise<void>;
@@ -706,6 +710,55 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
     );
   },
 
+  addStaffMember: async (staff: Omit<StaffMember, 'lastLogin'>) => {
+    const state = get();
+    const newStaff: StaffMember = {
+      ...staff,
+      lastLogin: undefined,
+    };
+    
+    const updatedStaffMembers = [...state.staffMembers, newStaff];
+    await AsyncStorage.setItem('staffMembers', JSON.stringify(updatedStaffMembers));
+    set({ staffMembers: updatedStaffMembers });
+    console.log('Staff member added:', newStaff.name);
+  },
+
+  updateStaffMember: async (corporationId: string, updates: Partial<StaffMember>) => {
+    const state = get();
+    const updatedStaffMembers = state.staffMembers.map(staff => 
+      staff.corporationId === corporationId ? { ...staff, ...updates } : staff
+    );
+    
+    await AsyncStorage.setItem('staffMembers', JSON.stringify(updatedStaffMembers));
+    set({ staffMembers: updatedStaffMembers });
+    console.log('Staff member updated:', corporationId);
+  },
+
+  deleteStaffMember: async (corporationId: string) => {
+    const state = get();
+    const updatedStaffMembers = state.staffMembers.filter(staff => staff.corporationId !== corporationId);
+    
+    await AsyncStorage.setItem('staffMembers', JSON.stringify(updatedStaffMembers));
+    set({ staffMembers: updatedStaffMembers });
+    console.log('Staff member deleted:', corporationId);
+  },
+
+  loadStaffMembers: async () => {
+    try {
+      const stored = await AsyncStorage.getItem('staffMembers');
+      if (stored) {
+        const staffMembers = JSON.parse(stored);
+        set({ staffMembers });
+        console.log('Staff members loaded:', staffMembers.length, 'members');
+      } else {
+        // Initialize with default staff members if none exist
+        await get().initializeStaffDatabase();
+      }
+    } catch (error) {
+      console.error('Error loading staff members:', error);
+      set({ staffMembers: defaultStaffMembers });
+    }
+  },
 
 }));
 
