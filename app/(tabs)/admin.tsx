@@ -223,19 +223,33 @@ const AdminScreen: React.FC = () => {
         {
           text: 'Logout',
           onPress: async () => {
-            console.log('Logging out...');
-            // Reset local state
-            setSelectedPCR(null);
-            setShowDetails(false);
-            
-            if (currentSession) {
-              await staffLogout();
-            } else {
-              setAdminMode(false);
+            try {
+              console.log('Logout button pressed, starting logout process...');
+              
+              // Reset local state first
+              setSelectedPCR(null);
+              setShowDetails(false);
+              
+              // Clear session and admin state
+              if (currentSession) {
+                console.log('Staff session found, calling staffLogout...');
+                await staffLogout();
+              } else {
+                console.log('No staff session, calling setAdminMode(false)...');
+                setAdminMode(false);
+              }
+              
+              console.log('Logout complete, navigating to login...');
+              
+              // Use router.push instead of replace to ensure navigation works
+              router.push('/login');
+              
+              console.log('Navigation to login completed');
+            } catch (error) {
+              console.error('Error during logout:', error);
+              // Force navigation even if logout fails
+              router.push('/login');
             }
-            
-            console.log('Logout complete, redirecting to login');
-            router.replace('/login');
           },
         },
       ]
