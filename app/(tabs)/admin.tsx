@@ -14,7 +14,7 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import { router } from 'expo-router';
 import { usePCRStore, CompletedPCR, StaffMember } from '../../store/pcrStore';
-import { Trash2, Copy, LogOut, Eye, Clock, Users, Plus, UserCheck, UserX, Edit3 } from 'lucide-react-native';
+import { Trash2, Copy, LogOut, Eye, Clock, Users, Plus, UserCheck, UserX, Edit3, ArrowLeft } from 'lucide-react-native';
 
 const AdminScreen: React.FC = () => {
   const {
@@ -425,15 +425,6 @@ const AdminScreen: React.FC = () => {
       keyboardDismissMode="on-drag"
       contentContainerStyle={{ paddingBottom: 24 }}
     >
-      <View style={styles.detailsHeader}>
-        <Text style={styles.detailsTitle}>PCR Details #{pcr.id}</Text>
-        <Pressable
-          style={styles.closeButton}
-          onPress={() => setShowDetails(false)}
-        >
-          <Text style={styles.closeButtonText}>Close</Text>
-        </Pressable>
-      </View>
       
       <View style={styles.submissionInfo}>
         <Text style={styles.submissionTitle}>Submission Details</Text>
@@ -596,26 +587,9 @@ const AdminScreen: React.FC = () => {
         keyboardDismissMode="on-drag"
         contentContainerStyle={{ paddingBottom: 24 }}
       >
-        <View style={styles.formHeader}>
-          <Text style={styles.formTitle}>Add New Staff Member</Text>
-          <Pressable
-            style={styles.closeButton}
-            onPress={() => {
-              setShowAddStaff(false);
-              setNewStaff({
-                corporationId: '',
-                name: '',
-                role: 'paramedic',
-                department: '',
-              });
-            }}
-          >
-            <Text style={styles.closeButtonText}>Cancel</Text>
-          </Pressable>
-        </View>
-
-        <View style={styles.formSection}>
-          <Text style={styles.fieldLabel}>Corporation ID *</Text>
+        <View style={styles.formContent}>
+          <View style={styles.formSection}>
+            <Text style={styles.fieldLabel}>Corporation ID *</Text>
           <TextInput
             style={styles.textInput}
             value={newStaff.corporationId}
@@ -700,6 +674,7 @@ const AdminScreen: React.FC = () => {
             • Only active staff members can login to the app
           </Text>
         </View>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -716,18 +691,9 @@ const AdminScreen: React.FC = () => {
         keyboardDismissMode="on-drag"
         contentContainerStyle={{ paddingBottom: 24 }}
       >
-        <View style={styles.formHeader}>
-          <Text style={styles.formTitle}>Edit Staff Member</Text>
-          <Pressable
-            style={styles.closeButton}
-            onPress={() => setEditingStaff(null)}
-          >
-            <Text style={styles.closeButtonText}>Cancel</Text>
-          </Pressable>
-        </View>
-
-        <View style={styles.formSection}>
-          <Text style={styles.fieldLabel}>Corporation ID</Text>
+        <View style={styles.formContent}>
+          <View style={styles.formSection}>
+            <Text style={styles.fieldLabel}>Corporation ID</Text>
           <TextInput
             style={[styles.textInput, styles.disabledInput]}
             value={staff.corporationId}
@@ -795,12 +761,13 @@ const AdminScreen: React.FC = () => {
             <Text style={styles.updateButtonText}>Update Staff Member</Text>
           </Pressable>
         </View>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 
   const StaffManagement: React.FC = () => (
-    <View style={styles.container}>
+    <View style={styles.staffContainer}>
       <View style={styles.staffHeader}>
         <View style={styles.staffHeaderLeft}>
           <Text style={styles.staffTitle}>Staff Management</Text>
@@ -898,19 +865,98 @@ const AdminScreen: React.FC = () => {
   }
 
   if (showDetails && selectedPCR) {
-    return <PCRDetails pcr={selectedPCR} />;
+    return (
+      <View style={styles.container}>
+        <View style={styles.detailsHeader}>
+          <Pressable
+            style={styles.backButton}
+            onPress={() => setShowDetails(false)}
+          >
+            <ArrowLeft size={20} color="#fff" />
+            <Text style={styles.backButtonText}>Back</Text>
+          </Pressable>
+          <Text style={styles.detailsTitle}>PCR Details #{selectedPCR.id}</Text>
+          <View style={{ width: 80 }} />
+        </View>
+        <PCRDetails pcr={selectedPCR} />
+      </View>
+    );
   }
 
   if (showAddStaff) {
-    return <AddStaffForm />;
+    return (
+      <View style={styles.container}>
+        <View style={styles.formHeader}>
+          <Pressable
+            style={styles.backButton}
+            onPress={() => {
+              setShowAddStaff(false);
+              setNewStaff({
+                corporationId: '',
+                name: '',
+                role: 'paramedic',
+                department: '',
+              });
+            }}
+          >
+            <ArrowLeft size={20} color="#fff" />
+            <Text style={styles.backButtonText}>Back</Text>
+          </Pressable>
+          <Text style={styles.formTitle}>Add New Staff Member</Text>
+          <View style={{ width: 80 }} />
+        </View>
+        <AddStaffForm />
+      </View>
+    );
   }
 
   if (editingStaff) {
-    return <EditStaffForm staff={editingStaff} />;
+    return (
+      <View style={styles.container}>
+        <View style={styles.formHeader}>
+          <Pressable
+            style={styles.backButton}
+            onPress={() => setEditingStaff(null)}
+          >
+            <ArrowLeft size={20} color="#fff" />
+            <Text style={styles.backButtonText}>Back</Text>
+          </Pressable>
+          <Text style={styles.formTitle}>Edit Staff Member</Text>
+          <View style={{ width: 80 }} />
+        </View>
+        <EditStaffForm staff={editingStaff} />
+      </View>
+    );
   }
 
   if (activeTab === 'staff') {
-    return <StaffManagement />;
+    return (
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <View style={styles.headerLeft}>
+            <Text style={styles.title}>Staff Management</Text>
+            {currentSession && (
+              <View style={styles.sessionInfo}>
+                <Text style={styles.sessionText}>
+                  {currentSession.name} ({currentSession.corporationId})
+                </Text>
+                <Text style={styles.sessionRole}>{currentSession.role.toUpperCase()}</Text>
+              </View>
+            )}
+          </View>
+          <View style={styles.headerActions}>
+            <Pressable
+              style={styles.backButton}
+              onPress={() => setActiveTab('reports')}
+            >
+              <ArrowLeft size={20} color="#fff" />
+              <Text style={styles.backButtonText}>Back</Text>
+            </Pressable>
+          </View>
+        </View>
+        <StaffManagement />
+      </View>
+    );
   }
 
   return (
@@ -1318,6 +1364,29 @@ const styles = StyleSheet.create({
   // Header updates
   headerLeft: {
     flex: 1,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  backButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    marginLeft: 4,
+    fontSize: 14,
+  },
+  formContent: {
+    flex: 1,
+  },
+  staffContainer: {
+    flex: 1,
+    backgroundColor: '#f5f6f7',
   },
   sessionInfo: {
     marginTop: 4,
