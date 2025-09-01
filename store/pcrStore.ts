@@ -1,0 +1,710 @@
+import { create } from 'zustand';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+export interface PatientInfo {
+  firstName: string;
+  lastName: string;
+  age: string;
+  gender: string;
+  phone: string;
+  mrn: string;
+}
+
+export interface CallTimeInfo {
+  timeOfCall: string;
+  date: string;
+  arrivalOnScene: string;
+  atPatientSide: string;
+  toDestination: string;
+  atDestination: string;
+}
+
+export interface IncidentInfo {
+  location: string;
+  chiefComplaint: string;
+  history: string;
+  assessment: string;
+  treatmentGiven: string;
+  priority: string;
+  onArrivalInfo: string;
+  provisionalDiagnosis: string;
+}
+
+export interface VitalSigns {
+  bloodPressureSystolic: string;
+  bloodPressureDiastolic: string;
+  heartRate: string;
+  respiratoryRate: string;
+  oxygenSaturation: string;
+  temperature: string;
+  bloodGlucose: string;
+  painScale: string;
+  timestamp: string;
+  ecgCapture?: string;
+  ecgCaptureTimestamp?: string;
+}
+
+export interface TransportInfo {
+  destination: string;
+  mode: string;
+  unitNumber: string;
+  departureTime: string;
+  arrivalTime: string;
+  mileage: string;
+  primaryParamedic: string;
+  secondaryParamedic: string;
+  driver: string;
+  notes: string;
+}
+
+export interface SignatureInfo {
+  nurseSignature: string;
+  nurseCorporationId: string;
+  nurseSignaturePaths: string;
+  doctorSignature: string;
+  doctorCorporationId: string;
+  doctorSignaturePaths: string;
+  othersSignature: string;
+  othersRole: string;
+  othersSignaturePaths: string;
+}
+
+export interface RefusalInfo {
+  patientName: string;
+  dateOfRefusal: string;
+  timeOfRefusal: string;
+  reasonForRefusal: string;
+  risksExplained: boolean;
+  mentalCapacity: boolean;
+  patientSignature: string;
+  patientSignaturePaths: string;
+  witnessName: string;
+  witnessSignature: string;
+  witnessSignaturePaths: string;
+  paramedicName: string;
+  paramedicSignature: string;
+  paramedicSignaturePaths: string;
+  additionalNotes: string;
+}
+
+export interface CompletedPCR {
+  id: string;
+  submittedAt: string;
+  callTimeInfo: CallTimeInfo;
+  patientInfo: PatientInfo;
+  incidentInfo: IncidentInfo;
+  vitals: VitalSigns[];
+  transportInfo: TransportInfo;
+  signatureInfo: SignatureInfo;
+  refusalInfo: RefusalInfo;
+  status: 'submitted' | 'draft';
+}
+
+export interface StaffMember {
+  corporationId: string;
+  name: string;
+  role: 'paramedic' | 'nurse' | 'doctor' | 'admin' | 'supervisor' | 'superadmin';
+  department: string;
+  isActive: boolean;
+  lastLogin?: string;
+}
+
+export interface AuthSession {
+  staffId: string;
+  corporationId: string;
+  name: string;
+  role: 'paramedic' | 'nurse' | 'doctor' | 'admin' | 'supervisor' | 'superadmin';
+  loginTime: string;
+  isAdmin: boolean;
+}
+
+interface PCRStore {
+  callTimeInfo: CallTimeInfo;
+  patientInfo: PatientInfo;
+  incidentInfo: IncidentInfo;
+  vitals: VitalSigns[];
+  transportInfo: TransportInfo;
+  signatureInfo: SignatureInfo;
+  refusalInfo: RefusalInfo;
+  completedPCRs: CompletedPCR[];
+  isAdmin: boolean;
+  currentSession: AuthSession | null;
+  staffMembers: StaffMember[];
+  updateCallTimeInfo: (info: Partial<CallTimeInfo>) => void;
+  updatePatientInfo: (info: Partial<PatientInfo>) => void;
+  updateIncidentInfo: (info: Partial<IncidentInfo>) => void;
+  addVitalSigns: (vital: VitalSigns) => void;
+  updateTransportInfo: (info: Partial<TransportInfo>) => void;
+  updateSignatureInfo: (info: Partial<SignatureInfo>) => void;
+  updateRefusalInfo: (info: Partial<RefusalInfo>) => void;
+  resetPCR: () => Promise<void>;
+  submitPCR: () => Promise<void>;
+  loadCompletedPCRs: () => Promise<void>;
+  deletePCR: (id: string) => Promise<void>;
+  setAdminMode: (isAdmin: boolean) => void;
+  adminLogin: (password: string) => boolean;
+  staffLogin: (corporationId: string) => Promise<boolean>;
+  staffLogout: () => Promise<void>;
+  initializeStaffDatabase: () => Promise<void>;
+  addStaffMember: (staff: StaffMember) => Promise<void>;
+  updateStaffMember: (corporationId: string, updates: Partial<StaffMember>) => Promise<void>;
+  deactivateStaffMember: (corporationId: string) => Promise<void>;
+  reactivateStaffMember: (corporationId: string) => Promise<void>;
+  validateCorporationId: (corporationId: string) => Promise<StaffMember | null>;
+  isSuperAdmin: () => boolean;
+  saveCurrentPCRDraft: () => Promise<void>;
+  loadCurrentPCRDraft: () => Promise<void>;
+  saveVitalsData: () => Promise<void>;
+  saveTransportData: () => Promise<void>;
+  saveRefusalData: () => Promise<void>;
+  addECGCapture: (ecgData: string) => void;
+  updateVitalWithECG: (vitalIndex: number, ecgData: string) => void;
+}
+
+const initialPatientInfo: PatientInfo = {
+  firstName: '',
+  lastName: '',
+  age: '',
+  gender: '',
+  phone: '',
+  mrn: '',
+};
+
+const initialCallTimeInfo: CallTimeInfo = {
+  timeOfCall: '',
+  date: '',
+  arrivalOnScene: '',
+  atPatientSide: '',
+  toDestination: '',
+  atDestination: '',
+};
+
+const initialIncidentInfo: IncidentInfo = {
+  location: '',
+  chiefComplaint: '',
+  history: '',
+  assessment: '',
+  treatmentGiven: '',
+  priority: '',
+  onArrivalInfo: '',
+  provisionalDiagnosis: '',
+};
+
+const initialTransportInfo: TransportInfo = {
+  destination: '',
+  mode: '',
+  unitNumber: '',
+  departureTime: '',
+  arrivalTime: '',
+  mileage: '',
+  primaryParamedic: '',
+  secondaryParamedic: '',
+  driver: '',
+  notes: '',
+};
+
+const initialSignatureInfo: SignatureInfo = {
+  nurseSignature: '',
+  nurseCorporationId: '',
+  nurseSignaturePaths: '',
+  doctorSignature: '',
+  doctorCorporationId: '',
+  doctorSignaturePaths: '',
+  othersSignature: '',
+  othersRole: '',
+  othersSignaturePaths: '',
+};
+
+const initialRefusalInfo: RefusalInfo = {
+  patientName: '',
+  dateOfRefusal: '',
+  timeOfRefusal: '',
+  reasonForRefusal: '',
+  risksExplained: false,
+  mentalCapacity: false,
+  patientSignature: '',
+  patientSignaturePaths: '',
+  witnessName: '',
+  witnessSignature: '',
+  witnessSignaturePaths: '',
+  paramedicName: '',
+  paramedicSignature: '',
+  paramedicSignaturePaths: '',
+  additionalNotes: '',
+};
+
+// Default staff members for demonstration
+const defaultStaffMembers: StaffMember[] = [
+  {
+    corporationId: 'ADMIN001',
+    name: 'System Administrator',
+    role: 'admin',
+    department: 'IT',
+    isActive: true,
+  },
+  {
+    corporationId: 'PARA001',
+    name: 'John Smith',
+    role: 'paramedic',
+    department: 'Emergency Services',
+    isActive: true,
+  },
+  {
+    corporationId: 'PARA002',
+    name: 'Sarah Johnson',
+    role: 'paramedic',
+    department: 'Emergency Services',
+    isActive: true,
+  },
+  {
+    corporationId: 'NURSE001',
+    name: 'Emily Davis',
+    role: 'nurse',
+    department: 'Emergency Department',
+    isActive: true,
+  },
+  {
+    corporationId: 'DOC001',
+    name: 'Dr. Michael Brown',
+    role: 'doctor',
+    department: 'Emergency Medicine',
+    isActive: true,
+  },
+  {
+    corporationId: 'SUP001',
+    name: 'Lisa Wilson',
+    role: 'supervisor',
+    department: 'Operations',
+    isActive: true,
+  },
+];
+
+export const usePCRStore = create<PCRStore>((set, get) => ({
+  callTimeInfo: initialCallTimeInfo,
+  patientInfo: initialPatientInfo,
+  incidentInfo: initialIncidentInfo,
+  vitals: [],
+  transportInfo: initialTransportInfo,
+  signatureInfo: initialSignatureInfo,
+  refusalInfo: initialRefusalInfo,
+  completedPCRs: [],
+  isAdmin: false,
+  currentSession: null,
+  staffMembers: [],
+  
+  updateCallTimeInfo: (info) => {
+    set((state) => ({
+      callTimeInfo: { ...state.callTimeInfo, ...info },
+    }));
+  },
+  
+  updatePatientInfo: (info) => {
+    set((state) => ({
+      patientInfo: { ...state.patientInfo, ...info },
+    }));
+  },
+  
+  updateIncidentInfo: (info) => {
+    set((state) => ({
+      incidentInfo: { ...state.incidentInfo, ...info },
+    }));
+  },
+  
+  addVitalSigns: (vital) =>
+    set((state) => ({
+      vitals: [...state.vitals, vital],
+    })),
+  
+  updateTransportInfo: (info) => {
+    set((state) => ({
+      transportInfo: { ...state.transportInfo, ...info },
+    }));
+  },
+  
+  updateSignatureInfo: (info) => {
+    set((state) => ({
+      signatureInfo: { ...state.signatureInfo, ...info },
+    }));
+  },
+  
+  updateRefusalInfo: (info) => {
+    set((state) => ({
+      refusalInfo: { ...state.refusalInfo, ...info },
+    }));
+  },
+  
+  resetPCR: async () => {
+    set({
+      callTimeInfo: initialCallTimeInfo,
+      patientInfo: initialPatientInfo,
+      incidentInfo: initialIncidentInfo,
+      vitals: [],
+      transportInfo: initialTransportInfo,
+      signatureInfo: initialSignatureInfo,
+      refusalInfo: initialRefusalInfo,
+    });
+    
+    // Also clear the draft from storage
+    try {
+      await AsyncStorage.removeItem('currentPCRDraft');
+      console.log('PCR draft cleared on reset');
+    } catch (error) {
+      console.error('Error clearing draft on reset:', error);
+    }
+  },
+
+  submitPCR: async () => {
+    const state = get();
+    const completedPCR: CompletedPCR = {
+      id: Date.now().toString(),
+      submittedAt: new Date().toISOString(),
+      callTimeInfo: state.callTimeInfo,
+      patientInfo: state.patientInfo,
+      incidentInfo: state.incidentInfo,
+      vitals: state.vitals,
+      transportInfo: state.transportInfo,
+      signatureInfo: state.signatureInfo,
+      refusalInfo: state.refusalInfo,
+      status: 'submitted',
+    };
+
+    console.log('=== SUBMITTING PCR ===');
+    console.log('New PCR:', {
+      id: completedPCR.id,
+      patient: `${completedPCR.patientInfo.firstName} ${completedPCR.patientInfo.lastName}`,
+      submittedAt: completedPCR.submittedAt
+    });
+    
+    const updatedPCRs = [...state.completedPCRs, completedPCR];
+    await AsyncStorage.setItem('completedPCRs', JSON.stringify(updatedPCRs));
+    
+    set({ completedPCRs: updatedPCRs });
+    console.log('PCR submitted and saved. Total PCRs now:', updatedPCRs.length);
+    console.log('=== END SUBMITTING PCR ===');
+  },
+
+  loadCompletedPCRs: async () => {
+    try {
+      const stored = await AsyncStorage.getItem('completedPCRs');
+      console.log('=== LOADING PCRs ===');
+      console.log('Raw stored data:', stored);
+      if (stored) {
+        const pcrs = JSON.parse(stored);
+        set({ completedPCRs: pcrs });
+        console.log('Loaded', pcrs.length, 'completed PCRs:', pcrs.map((p: CompletedPCR) => ({ id: p.id, patient: `${p.patientInfo.firstName} ${p.patientInfo.lastName}`, submittedAt: p.submittedAt })));
+      } else {
+        console.log('No stored PCRs found');
+        set({ completedPCRs: [] });
+      }
+      console.log('=== END LOADING PCRs ===');
+    } catch (error) {
+      console.error('Error loading completed PCRs:', error);
+    }
+  },
+
+  deletePCR: async (id: string) => {
+    const state = get();
+    const updatedPCRs = state.completedPCRs.filter(pcr => pcr.id !== id);
+    await AsyncStorage.setItem('completedPCRs', JSON.stringify(updatedPCRs));
+    set({ completedPCRs: updatedPCRs });
+    console.log('PCR deleted:', id);
+  },
+
+  setAdminMode: (isAdmin: boolean) => {
+    console.log('=== ADMIN MODE CHANGE ===');
+    console.log('Admin mode:', isAdmin ? 'enabled' : 'disabled');
+    if (!isAdmin) {
+      // When logging out, clear everything from state
+      set({ 
+        isAdmin: false,
+        completedPCRs: [] 
+      });
+      console.log('Admin logged out, cleared state');
+    } else {
+      set({ isAdmin: true });
+      // Load PCRs when logging in
+      get().loadCompletedPCRs();
+    }
+    console.log('=== END ADMIN MODE CHANGE ===');
+  },
+
+  adminLogin: (password: string) => {
+    // Simple backdoor password - change this to your preferred password
+    const adminPassword = 'admin123';
+    const superAdminPassword = 'superadmin2024';
+    
+    if (password === adminPassword) {
+      set({ isAdmin: true });
+      console.log('Admin login successful, loading PCRs...');
+      // Load PCRs immediately after successful login
+      get().loadCompletedPCRs();
+      return true;
+    } else if (password === superAdminPassword) {
+      // Create super admin session
+      const superAdminSession: AuthSession = {
+        staffId: 'SUPERADMIN',
+        corporationId: 'SUPERADMIN',
+        name: 'Super Administrator',
+        role: 'superadmin',
+        loginTime: new Date().toISOString(),
+        isAdmin: true,
+      };
+      
+      set({ 
+        isAdmin: true,
+        currentSession: superAdminSession
+      });
+      console.log('Super Admin login successful, loading PCRs...');
+      get().loadCompletedPCRs();
+      return true;
+    }
+    return false;
+  },
+
+  initializeStaffDatabase: async () => {
+    try {
+      const stored = await AsyncStorage.getItem('staffMembers');
+      if (!stored) {
+        // Initialize with default staff members
+        await AsyncStorage.setItem('staffMembers', JSON.stringify(defaultStaffMembers));
+        set({ staffMembers: defaultStaffMembers });
+        console.log('Staff database initialized with default members');
+      } else {
+        const staffMembers = JSON.parse(stored);
+        set({ staffMembers });
+        console.log('Staff database loaded:', staffMembers.length, 'members');
+      }
+    } catch (error) {
+      console.error('Error initializing staff database:', error);
+      set({ staffMembers: defaultStaffMembers });
+    }
+  },
+
+  addStaffMember: async (staff: StaffMember) => {
+    const state = get();
+    const updatedStaff = [...state.staffMembers, staff];
+    await AsyncStorage.setItem('staffMembers', JSON.stringify(updatedStaff));
+    set({ staffMembers: updatedStaff });
+    console.log('Staff member added:', staff.corporationId);
+  },
+
+  validateCorporationId: async (corporationId: string): Promise<StaffMember | null> => {
+    const state = get();
+    const staff = state.staffMembers.find(
+      (member) => member.corporationId === corporationId && member.isActive
+    );
+    return staff || null;
+  },
+
+  staffLogin: async (corporationId: string): Promise<boolean> => {
+    console.log('=== STAFF LOGIN ATTEMPT ===');
+    console.log('Corporation ID:', corporationId);
+    
+    // Validate Corporation ID format (basic validation)
+    if (!corporationId || corporationId.length < 4) {
+      console.log('Invalid Corporation ID format');
+      return false;
+    }
+    
+    const staff = await get().validateCorporationId(corporationId);
+    
+    if (staff) {
+      const session: AuthSession = {
+        staffId: staff.corporationId,
+        corporationId: staff.corporationId,
+        name: staff.name,
+        role: staff.role,
+        loginTime: new Date().toISOString(),
+        isAdmin: staff.role === 'admin' || staff.role === 'supervisor',
+      };
+      
+      // Update last login time
+      const updatedStaff = get().staffMembers.map(member => 
+        member.corporationId === staff.corporationId 
+          ? { ...member, lastLogin: new Date().toISOString() }
+          : member
+      );
+      
+      await AsyncStorage.setItem('staffMembers', JSON.stringify(updatedStaff));
+      await AsyncStorage.setItem('currentSession', JSON.stringify(session));
+      
+      set({ 
+        currentSession: session,
+        isAdmin: session.isAdmin,
+        staffMembers: updatedStaff
+      });
+      
+      if (session.isAdmin) {
+        get().loadCompletedPCRs();
+      }
+      
+      console.log('Staff login successful:', {
+        name: staff.name,
+        role: staff.role,
+        isAdmin: session.isAdmin
+      });
+      console.log('=== END STAFF LOGIN ===');
+      return true;
+    } else {
+      console.log('Corporation ID not found or inactive');
+      console.log('=== END STAFF LOGIN ===');
+      return false;
+    }
+  },
+
+  staffLogout: async () => {
+    console.log('=== STAFF LOGOUT ===');
+    const state = get();
+    if (state.currentSession) {
+      console.log('Logging out:', state.currentSession.name);
+    }
+    
+    await AsyncStorage.removeItem('currentSession');
+    set({ 
+      currentSession: null,
+      isAdmin: false,
+      completedPCRs: []
+    });
+    
+    console.log('Staff logout complete');
+    console.log('=== END STAFF LOGOUT ===');
+  },
+
+  saveCurrentPCRDraft: async () => {
+    const state = get();
+    const draftPCR = {
+      callTimeInfo: state.callTimeInfo,
+      patientInfo: state.patientInfo,
+      incidentInfo: state.incidentInfo,
+      vitals: state.vitals,
+      transportInfo: state.transportInfo,
+      signatureInfo: state.signatureInfo,
+      refusalInfo: state.refusalInfo,
+      lastSaved: new Date().toISOString(),
+    };
+    
+    try {
+      await AsyncStorage.setItem('currentPCRDraft', JSON.stringify(draftPCR));
+      console.log('PCR draft saved successfully');
+    } catch (error) {
+      console.error('Error saving PCR draft:', error);
+    }
+  },
+
+  loadCurrentPCRDraft: async () => {
+    try {
+      const stored = await AsyncStorage.getItem('currentPCRDraft');
+      if (stored) {
+        const draft = JSON.parse(stored);
+        set({
+          callTimeInfo: draft.callTimeInfo || initialCallTimeInfo,
+          patientInfo: draft.patientInfo || initialPatientInfo,
+          incidentInfo: draft.incidentInfo || initialIncidentInfo,
+          vitals: draft.vitals || [],
+          transportInfo: draft.transportInfo || initialTransportInfo,
+          signatureInfo: draft.signatureInfo || initialSignatureInfo,
+          refusalInfo: draft.refusalInfo || initialRefusalInfo,
+        });
+        console.log('PCR draft loaded successfully');
+      }
+    } catch (error) {
+      console.error('Error loading PCR draft:', error);
+    }
+  },
+
+  saveVitalsData: async () => {
+    const state = get();
+    console.log('Saving vitals data:', state.vitals.length, 'vital signs');
+    try {
+      await get().saveCurrentPCRDraft();
+      console.log('Vitals data saved successfully');
+    } catch (error) {
+      console.error('Error saving vitals data:', error);
+      throw error;
+    }
+  },
+
+  saveTransportData: async () => {
+    const state = get();
+    console.log('Saving transport data:', state.transportInfo);
+    try {
+      await get().saveCurrentPCRDraft();
+      console.log('Transport data saved successfully');
+    } catch (error) {
+      console.error('Error saving transport data:', error);
+      throw error;
+    }
+  },
+
+  saveRefusalData: async () => {
+    const state = get();
+    console.log('Saving refusal data:', state.refusalInfo);
+    try {
+      await get().saveCurrentPCRDraft();
+      console.log('Refusal data saved successfully');
+    } catch (error) {
+      console.error('Error saving refusal data:', error);
+      throw error;
+    }
+  },
+
+  addECGCapture: (ecgData: string) => {
+    const state = get();
+    if (state.vitals.length > 0) {
+      // Add ECG to the most recent vital signs
+      const updatedVitals = [...state.vitals];
+      const lastVitalIndex = updatedVitals.length - 1;
+      updatedVitals[lastVitalIndex] = {
+        ...updatedVitals[lastVitalIndex],
+        ecgCapture: ecgData,
+        ecgCaptureTimestamp: new Date().toISOString(),
+      };
+      set({ vitals: updatedVitals });
+      console.log('ECG capture added to most recent vital signs');
+    } else {
+      console.log('No vital signs available to attach ECG capture');
+    }
+  },
+
+  updateVitalWithECG: (vitalIndex: number, ecgData: string) => {
+    const state = get();
+    if (vitalIndex >= 0 && vitalIndex < state.vitals.length) {
+      const updatedVitals = [...state.vitals];
+      updatedVitals[vitalIndex] = {
+        ...updatedVitals[vitalIndex],
+        ecgCapture: ecgData,
+        ecgCaptureTimestamp: new Date().toISOString(),
+      };
+      set({ vitals: updatedVitals });
+      console.log(`ECG capture added to vital signs at index ${vitalIndex}`);
+    }
+  },
+
+  updateStaffMember: async (corporationId: string, updates: Partial<StaffMember>) => {
+    const state = get();
+    const updatedStaff = state.staffMembers.map(member => 
+      member.corporationId === corporationId 
+        ? { ...member, ...updates }
+        : member
+    );
+    await AsyncStorage.setItem('staffMembers', JSON.stringify(updatedStaff));
+    set({ staffMembers: updatedStaff });
+    console.log('Staff member updated:', corporationId);
+  },
+
+  deactivateStaffMember: async (corporationId: string) => {
+    await get().updateStaffMember(corporationId, { isActive: false });
+    console.log('Staff member deactivated:', corporationId);
+  },
+
+  reactivateStaffMember: async (corporationId: string) => {
+    await get().updateStaffMember(corporationId, { isActive: true });
+    console.log('Staff member reactivated:', corporationId);
+  },
+
+  isSuperAdmin: () => {
+    const state = get();
+    return state.currentSession?.role === 'superadmin';
+  },
+}));
+
