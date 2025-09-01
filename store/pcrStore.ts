@@ -103,7 +103,7 @@ export interface CompletedPCR {
 export interface StaffMember {
   corporationId: string;
   name: string;
-  role: 'paramedic' | 'nurse' | 'doctor' | 'admin' | 'supervisor' | 'superadmin';
+  role: 'paramedic' | 'nurse' | 'doctor' | 'admin' | 'supervisor';
   department: string;
   isActive: boolean;
   lastLogin?: string;
@@ -113,7 +113,7 @@ export interface AuthSession {
   staffId: string;
   corporationId: string;
   name: string;
-  role: 'paramedic' | 'nurse' | 'doctor' | 'admin' | 'supervisor' | 'superadmin';
+  role: 'paramedic' | 'nurse' | 'doctor' | 'admin' | 'supervisor';
   loginTime: string;
   isAdmin: boolean;
 }
@@ -146,12 +146,7 @@ interface PCRStore {
   staffLogin: (corporationId: string) => Promise<boolean>;
   staffLogout: () => Promise<void>;
   initializeStaffDatabase: () => Promise<void>;
-  addStaffMember: (staff: StaffMember) => Promise<void>;
-  updateStaffMember: (corporationId: string, updates: Partial<StaffMember>) => Promise<void>;
-  deactivateStaffMember: (corporationId: string) => Promise<void>;
-  reactivateStaffMember: (corporationId: string) => Promise<void>;
   validateCorporationId: (corporationId: string) => Promise<StaffMember | null>;
-  isSuperAdmin: () => boolean;
   saveCurrentPCRDraft: () => Promise<void>;
   loadCurrentPCRDraft: () => Promise<void>;
   saveVitalsData: () => Promise<void>;
@@ -431,30 +426,11 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
   adminLogin: (password: string) => {
     // Simple backdoor password - change this to your preferred password
     const adminPassword = 'admin123';
-    const superAdminPassword = 'superadmin2024';
     
     if (password === adminPassword) {
       set({ isAdmin: true });
       console.log('Admin login successful, loading PCRs...');
       // Load PCRs immediately after successful login
-      get().loadCompletedPCRs();
-      return true;
-    } else if (password === superAdminPassword) {
-      // Create super admin session
-      const superAdminSession: AuthSession = {
-        staffId: 'SUPERADMIN',
-        corporationId: 'SUPERADMIN',
-        name: 'Super Administrator',
-        role: 'superadmin',
-        loginTime: new Date().toISOString(),
-        isAdmin: true,
-      };
-      
-      set({ 
-        isAdmin: true,
-        currentSession: superAdminSession
-      });
-      console.log('Super Admin login successful, loading PCRs...');
       get().loadCompletedPCRs();
       return true;
     }
@@ -480,13 +456,7 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
     }
   },
 
-  addStaffMember: async (staff: StaffMember) => {
-    const state = get();
-    const updatedStaff = [...state.staffMembers, staff];
-    await AsyncStorage.setItem('staffMembers', JSON.stringify(updatedStaff));
-    set({ staffMembers: updatedStaff });
-    console.log('Staff member added:', staff.corporationId);
-  },
+
 
   validateCorporationId: async (corporationId: string): Promise<StaffMember | null> => {
     const state = get();
@@ -680,31 +650,6 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
     }
   },
 
-  updateStaffMember: async (corporationId: string, updates: Partial<StaffMember>) => {
-    const state = get();
-    const updatedStaff = state.staffMembers.map(member => 
-      member.corporationId === corporationId 
-        ? { ...member, ...updates }
-        : member
-    );
-    await AsyncStorage.setItem('staffMembers', JSON.stringify(updatedStaff));
-    set({ staffMembers: updatedStaff });
-    console.log('Staff member updated:', corporationId);
-  },
 
-  deactivateStaffMember: async (corporationId: string) => {
-    await get().updateStaffMember(corporationId, { isActive: false });
-    console.log('Staff member deactivated:', corporationId);
-  },
-
-  reactivateStaffMember: async (corporationId: string) => {
-    await get().updateStaffMember(corporationId, { isActive: true });
-    console.log('Staff member reactivated:', corporationId);
-  },
-
-  isSuperAdmin: () => {
-    const state = get();
-    return state.currentSession?.role === 'superadmin';
-  },
 }));
 

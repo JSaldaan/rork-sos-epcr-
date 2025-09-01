@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { usePCRStore } from '@/store/pcrStore';
-import { Shield, Users, Settings } from 'lucide-react-native';
+import { Shield, Users } from 'lucide-react-native';
 
 const LoginScreen: React.FC = () => {
   const {
@@ -22,7 +22,7 @@ const LoginScreen: React.FC = () => {
   const [password, setPassword] = useState<string>('');
   const [corporationId, setCorporationId] = useState<string>('');
   const [loginError, setLoginError] = useState<string>('');
-  const [loginMode, setLoginMode] = useState<'staff' | 'admin' | 'superadmin'>('staff');
+  const [loginMode, setLoginMode] = useState<'staff' | 'admin'>('staff');
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   // Check if user is already logged in and redirect
@@ -119,20 +119,7 @@ const LoginScreen: React.FC = () => {
             </Text>
           </Pressable>
           
-          <Pressable
-            style={[styles.modeButton, loginMode === 'superadmin' && styles.modeButtonActive]}
-            onPress={() => {
-              setLoginMode('superadmin');
-              setLoginError('');
-              setPassword('');
-              setCorporationId('');
-            }}
-          >
-            <Settings size={20} color={loginMode === 'superadmin' ? '#fff' : '#dc3545'} />
-            <Text style={[styles.modeButtonText, loginMode === 'superadmin' && styles.modeButtonTextActive]}>
-              Super Admin
-            </Text>
-          </Pressable>
+
         </View>
         
         {loginMode === 'staff' ? (
@@ -159,7 +146,7 @@ const LoginScreen: React.FC = () => {
               Use your assigned Corporation ID to access the system
             </Text>
           </View>
-        ) : loginMode === 'admin' ? (
+        ) : (
           <View style={styles.inputContainer}>
             <Text style={styles.inputLabel}>Admin Password</Text>
             <TextInput
@@ -178,29 +165,6 @@ const LoginScreen: React.FC = () => {
               returnKeyType="go"
               selectTextOnFocus={true}
             />
-          </View>
-        ) : (
-          <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Super Admin Password</Text>
-            <TextInput
-              style={[styles.textInput, styles.superAdminInput]}
-              placeholder="Enter super admin password"
-              value={password}
-              onChangeText={(text) => {
-                setPassword(text);
-                setLoginError('');
-              }}
-              secureTextEntry
-              autoCapitalize="none"
-              onSubmitEditing={handleLogin}
-              editable={!isLoading}
-              clearButtonMode="while-editing"
-              returnKeyType="go"
-              selectTextOnFocus={true}
-            />
-            <Text style={styles.superAdminHint}>
-              Super Admin can manage staff Corporation IDs and system settings
-            </Text>
           </View>
         )}
         
@@ -238,13 +202,6 @@ const LoginScreen: React.FC = () => {
           <View style={styles.hintContainer}>
             <Text style={styles.hintText}>Demo Password: &quot;admin123&quot;</Text>
             <Text style={styles.hintSubtext}>Admin can view and manage PCR reports</Text>
-          </View>
-        )}
-        
-        {loginMode === 'superadmin' && (
-          <View style={[styles.hintContainer, styles.superAdminHintContainer]}>
-            <Text style={[styles.hintText, styles.superAdminHintText]}>Demo Password: &quot;superadmin2024&quot;</Text>
-            <Text style={[styles.hintSubtext, styles.superAdminHintSubtext]}>Super Admin has full system access including staff management</Text>
           </View>
         )}
       </View>
@@ -408,28 +365,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontStyle: 'italic',
   },
-  superAdminInput: {
-    borderColor: '#dc3545',
-    borderWidth: 2,
-  },
-  superAdminHint: {
-    fontSize: 12,
-    color: '#dc3545',
-    textAlign: 'center',
-    fontWeight: '500',
-  },
-  superAdminHintContainer: {
-    backgroundColor: '#fef2f2',
-    borderLeftColor: '#dc3545',
-  },
-  superAdminHintText: {
-    color: '#dc3545',
-    fontWeight: '600',
-  },
-  superAdminHintSubtext: {
-    color: '#dc3545',
-    fontWeight: '500',
-  },
+
 });
 
 export default LoginScreen;
