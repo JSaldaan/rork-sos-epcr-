@@ -87,6 +87,12 @@ function AppInitializer() {
             isAdmin: session.isAdmin
           });
           console.log('Restored session for:', session.name);
+          
+          // Load PCRs if admin
+          if (session.isAdmin) {
+            const { loadCompletedPCRs } = usePCRStore.getState();
+            await loadCompletedPCRs();
+          }
         }
         
         // Load any existing draft

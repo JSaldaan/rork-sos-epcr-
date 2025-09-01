@@ -50,32 +50,32 @@ const AdminScreen: React.FC = () => {
   });
 
   useEffect(() => {
-    if (isAdmin) {
+    if (isAdmin || currentSession?.isAdmin) {
       console.log('Admin mode detected, loading data...');
       loadCompletedPCRs();
       loadStaffMembers();
     }
-  }, [isAdmin, loadCompletedPCRs, loadStaffMembers]);
+  }, [isAdmin, currentSession?.isAdmin, loadCompletedPCRs, loadStaffMembers]);
 
   // Refresh data whenever the admin screen is focused
   useFocusEffect(
     React.useCallback(() => {
-      if (isAdmin) {
+      if (isAdmin || currentSession?.isAdmin) {
         console.log('Admin screen focused, loading data...');
         loadCompletedPCRs();
         loadStaffMembers();
       }
-    }, [isAdmin, loadCompletedPCRs, loadStaffMembers])
+    }, [isAdmin, currentSession?.isAdmin, loadCompletedPCRs, loadStaffMembers])
   );
 
   // Also refresh when component mounts
   useEffect(() => {
-    if (isAdmin) {
+    if (isAdmin || currentSession?.isAdmin) {
       console.log('Admin component mounted, loading data...');
       loadCompletedPCRs();
       loadStaffMembers();
     }
-  }, [isAdmin, loadCompletedPCRs, loadStaffMembers]);
+  }, [isAdmin, currentSession?.isAdmin, loadCompletedPCRs, loadStaffMembers]);
 
   const formatPCRForWord = (pcr: CompletedPCR): string => {
     return `PATIENT CARE REPORT\n` +
@@ -994,9 +994,14 @@ const AdminScreen: React.FC = () => {
         {completedPCRs.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyText}>No PCRs submitted yet</Text>
+            <Text style={styles.emptySubtext}>
+              PCR reports will appear here after staff submit them from the Preview tab.
+            </Text>
           </View>
         ) : (
-          completedPCRs.map((pcr) => <PCRCard key={pcr.id} pcr={pcr} />)
+          completedPCRs
+            .sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime())
+            .map((pcr) => <PCRCard key={pcr.id} pcr={pcr} />)
         )}
       </ScrollView>
     </View>

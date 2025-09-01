@@ -405,7 +405,7 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
     try {
       const stored = await AsyncStorage.getItem('completedPCRs');
       console.log('=== LOADING PCRs ===');
-      console.log('Raw stored data:', stored);
+      console.log('Raw stored data exists:', !!stored);
       if (stored) {
         const pcrs = JSON.parse(stored);
         
@@ -433,14 +433,15 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
         }
         
         set({ completedPCRs: migratedPCRs });
-        console.log('Loaded', migratedPCRs.length, 'completed PCRs:', migratedPCRs.map((p: CompletedPCR) => ({ id: p.id, patient: `${p.patientInfo.firstName} ${p.patientInfo.lastName}`, submittedAt: p.submittedAt, submittedBy: p.submittedBy.name })));
+        console.log('Loaded', migratedPCRs.length, 'completed PCRs');
       } else {
-        console.log('No stored PCRs found');
+        console.log('No stored PCRs found, initializing empty array');
         set({ completedPCRs: [] });
       }
       console.log('=== END LOADING PCRs ===');
     } catch (error) {
       console.error('Error loading completed PCRs:', error);
+      set({ completedPCRs: [] });
     }
   },
 
@@ -459,13 +460,16 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
       // When logging out, clear everything from state
       set({ 
         isAdmin: false,
-        completedPCRs: [] 
+        completedPCRs: [],
+        currentSession: null
       });
       console.log('Admin logged out, cleared state');
     } else {
       set({ isAdmin: true });
       // Load PCRs when logging in
-      get().loadCompletedPCRs();
+      setTimeout(() => {
+        get().loadCompletedPCRs();
+      }, 100);
     }
     console.log('=== END ADMIN MODE CHANGE ===');
   },
@@ -478,7 +482,9 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
       set({ isAdmin: true });
       console.log('Admin login successful, loading PCRs...');
       // Load PCRs immediately after successful login
-      get().loadCompletedPCRs();
+      setTimeout(() => {
+        get().loadCompletedPCRs();
+      }, 100);
       return true;
     }
     return false;

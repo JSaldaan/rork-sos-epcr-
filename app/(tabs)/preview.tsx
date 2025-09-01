@@ -120,7 +120,7 @@ export default function PreviewScreen() {
               if (teamsResult.success) {
                 Alert.alert(
                   "Success",
-                  `Report submitted successfully!\n\nSubmitted to Admin Panel and sent to Teams.\n\nLogic App Response: ${teamsResult.details?.status || 'OK'}`,
+                  `Report submitted successfully!\n\nSubmitted to Admin Panel and sent to Teams.\n\nLogic App Response: ${teamsResult.details?.status || 'OK'}\n\nYou can now view your submitted report in the "My Reports" tab.`,
                   [
                     {
                       text: "OK",
@@ -143,7 +143,7 @@ export default function PreviewScreen() {
                 
                 Alert.alert(
                   "Teams Submission Error",
-                  `PCR submitted to Admin Panel but failed to send to Teams.\n\n${teamsResult.error || 'Failed to send to Teams'}${errorDetails}\n\nThe report is saved in Admin Panel and can be accessed there.\n\nWould you like to continue?`,
+                  `PCR submitted to Admin Panel but failed to send to Teams.\n\n${teamsResult.error || 'Failed to send to Teams'}${errorDetails}\n\nThe report is saved in Admin Panel and can be accessed in the "My Reports" tab.\n\nWould you like to continue?`,
                   [
                     {
                       text: "Cancel",
