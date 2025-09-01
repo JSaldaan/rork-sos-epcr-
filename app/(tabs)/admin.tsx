@@ -536,7 +536,7 @@ const AdminScreen: React.FC = () => {
               } else {
                 await reactivateStaffMember(staff.corporationId);
               }
-              Alert.alert('Success', `${staff.name} has been ${staff.isActive ? 'deactivated' : 'reactivated'}`);
+              Alert.alert('Success', `${staff.name} has been ${staff.isActive ? 'deactivated' : 'reactivated'}.`);
             } catch (error) {
               console.error(`Error ${action}ing staff member:`, error);
               Alert.alert('Error', `Failed to ${action} staff member`);
