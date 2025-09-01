@@ -593,12 +593,17 @@ const AdminScreen: React.FC = () => {
           <TextInput
             style={styles.textInput}
             value={newStaff.corporationId}
-            onChangeText={(text) => setNewStaff({ ...newStaff, corporationId: text })}
-            placeholder="e.g., PARA001, NURSE001, DOC001"
-            autoCapitalize="characters"
+            onChangeText={(text) => {
+              // Only allow numbers
+              const numericText = text.replace(/[^0-9]/g, '');
+              setNewStaff({ ...newStaff, corporationId: numericText });
+            }}
+            placeholder="Enter corporation number (numbers only)"
+            keyboardType="numeric"
             autoCorrect={false}
             returnKeyType="next"
             blurOnSubmit={false}
+            maxLength={10}
           />
         </View>
 
@@ -647,7 +652,7 @@ const AdminScreen: React.FC = () => {
             style={styles.textInput}
             value={newStaff.department}
             onChangeText={(text) => setNewStaff({ ...newStaff, department: text })}
-            placeholder="e.g., Emergency Services, Emergency Department"
+            placeholder="e.g., Emergency Services, Emergency Department, Paramedic on duty"
             autoCapitalize="words"
             autoCorrect={false}
             returnKeyType="done"
