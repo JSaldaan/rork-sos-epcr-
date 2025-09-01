@@ -370,7 +370,7 @@ const AdminScreen: React.FC = () => {
             <Text style={styles.detailText}>Blood Glucose: {vital.bloodGlucose || 'N/A'} mmol/L, Pain: {vital.painScale || 'N/A'}/10</Text>
             {vital.ecgCapture && (
               <View style={styles.ecgCaptureInfo}>
-                <Text style={styles.ecgCaptureText}>📈 ECG Captured</Text>
+                <Text style={styles.ecgCaptureText}>ECG Captured</Text>
                 <Text style={styles.detailText}>ECG ID: {vital.ecgCapture}</Text>
                 <Text style={styles.detailText}>Captured: {vital.ecgCaptureTimestamp ? new Date(vital.ecgCaptureTimestamp).toLocaleString() : 'N/A'}</Text>
               </View>
