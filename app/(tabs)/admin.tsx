@@ -583,9 +583,10 @@ const AdminScreen: React.FC = () => {
     >
       <ScrollView
         style={styles.formContainer}
-        keyboardShouldPersistTaps="always"
-        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="none"
         contentContainerStyle={{ paddingBottom: 24 }}
+        showsVerticalScrollIndicator={false}
       >
         <View style={styles.formContent}>
           <View style={styles.formSection}>
@@ -604,6 +605,8 @@ const AdminScreen: React.FC = () => {
             returnKeyType="next"
             blurOnSubmit={false}
             maxLength={10}
+            selectTextOnFocus={true}
+            clearButtonMode="while-editing"
           />
         </View>
 
@@ -618,6 +621,8 @@ const AdminScreen: React.FC = () => {
             autoCorrect={false}
             returnKeyType="next"
             blurOnSubmit={false}
+            selectTextOnFocus={true}
+            clearButtonMode="while-editing"
           />
         </View>
 
@@ -657,6 +662,8 @@ const AdminScreen: React.FC = () => {
             autoCorrect={false}
             returnKeyType="done"
             blurOnSubmit={false}
+            selectTextOnFocus={true}
+            clearButtonMode="while-editing"
           />
         </View>
 
@@ -692,9 +699,10 @@ const AdminScreen: React.FC = () => {
     >
       <ScrollView
         style={styles.formContainer}
-        keyboardShouldPersistTaps="always"
-        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="none"
         contentContainerStyle={{ paddingBottom: 24 }}
+        showsVerticalScrollIndicator={false}
       >
         <View style={styles.formContent}>
           <View style={styles.formSection}>
@@ -718,6 +726,8 @@ const AdminScreen: React.FC = () => {
             autoCorrect={false}
             returnKeyType="next"
             blurOnSubmit={false}
+            selectTextOnFocus={true}
+            clearButtonMode="while-editing"
           />
         </View>
 
@@ -757,6 +767,8 @@ const AdminScreen: React.FC = () => {
             autoCorrect={false}
             returnKeyType="done"
             blurOnSubmit={false}
+            selectTextOnFocus={true}
+            clearButtonMode="while-editing"
           />
         </View>
 
