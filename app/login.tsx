@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -15,8 +15,6 @@ const LoginScreen: React.FC = () => {
   const {
     adminLogin,
     staffLogin,
-    currentSession,
-    isAdmin,
   } = usePCRStore();
   
   const [password, setPassword] = useState<string>('');
@@ -25,13 +23,9 @@ const LoginScreen: React.FC = () => {
   const [loginMode, setLoginMode] = useState<'staff' | 'admin'>('staff');
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  // Check if user is already logged in and redirect
-  useEffect(() => {
-    if (currentSession || isAdmin) {
-      console.log('User already logged in, redirecting to tabs');
-      router.replace('/(tabs)');
-    }
-  }, [currentSession, isAdmin]);
+  // Don't auto-redirect if user is already logged in
+  // Let them stay on login page and manually navigate to tabs if they want
+  // This ensures the app always starts from login page
 
   const handleStaffLogin = async () => {
     if (!corporationId.trim()) {

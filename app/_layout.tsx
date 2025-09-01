@@ -41,6 +41,7 @@ function RootLayoutNav() {
     
     const inAuthGroup = segments[0] === '(tabs)';
     const isAuthenticated = currentSession || isAdmin;
+    const isOnRootPath = (segments as string[]).length === 0;
     
     console.log('=== ROUTE PROTECTION ===');
     console.log('Current segments:', segments);
@@ -48,16 +49,20 @@ function RootLayoutNav() {
     console.log('Has session:', !!currentSession);
     console.log('Is admin:', isAdmin);
     console.log('Is authenticated:', isAuthenticated);
+    console.log('Is on root path:', isOnRootPath);
     
+    // Always redirect to login if not authenticated and trying to access protected routes
     if (!isAuthenticated && inAuthGroup) {
-      // User is not authenticated but trying to access protected routes
       console.log('Redirecting to login - no authentication');
       router.replace('/login');
-    } else if (isAuthenticated && !inAuthGroup && segments[0] !== 'login') {
-      // User is authenticated but not in protected routes (and not on login)
-      console.log('Redirecting to tabs - user authenticated');
-      router.replace('/(tabs)');
     }
+    // If user is on root path, always go to login (app startup)
+    else if (isOnRootPath) {
+      console.log('App starting, redirecting to login');
+      router.replace('/login');
+    }
+    // Don't auto-redirect authenticated users to tabs - let them stay on login
+    // They can navigate to tabs manually after login
     console.log('=== END ROUTE PROTECTION ===');
   }, [currentSession, isAdmin, segments, router, isInitialized]);
   
