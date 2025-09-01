@@ -118,8 +118,6 @@ const LoginScreen: React.FC = () => {
               Admin
             </Text>
           </Pressable>
-          
-
         </View>
         
         {loginMode === 'staff' ? (
