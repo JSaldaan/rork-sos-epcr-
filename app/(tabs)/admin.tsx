@@ -253,6 +253,9 @@ const AdminScreen: React.FC = () => {
           <Text style={styles.submittedDate}>
             {new Date(pcr.submittedAt).toLocaleString()}
           </Text>
+          <Text style={styles.submittedBy}>
+            Submitted by: {pcr.submittedBy.name} ({pcr.submittedBy.role})
+          </Text>
         </View>
         <View style={styles.actionButtons}>
           <Pressable
@@ -282,6 +285,7 @@ const AdminScreen: React.FC = () => {
         <Text style={styles.summaryText}>Location: {pcr.incidentInfo.location || 'N/A'}</Text>
         <Text style={styles.summaryText}>Complaint: {pcr.incidentInfo.chiefComplaint || 'N/A'}</Text>
         <Text style={styles.summaryText}>Destination: {pcr.transportInfo.destination || 'N/A'}</Text>
+        <Text style={styles.summaryText}>Corporation ID: {pcr.submittedBy.corporationId}</Text>
       </View>
     </View>
   );
@@ -301,6 +305,13 @@ const AdminScreen: React.FC = () => {
         >
           <Text style={styles.closeButtonText}>Close</Text>
         </Pressable>
+      </View>
+      
+      <View style={styles.submissionInfo}>
+        <Text style={styles.submissionTitle}>Submission Details</Text>
+        <Text style={styles.submissionText}>Submitted: {new Date(pcr.submittedAt).toLocaleString()}</Text>
+        <Text style={styles.submissionText}>By: {pcr.submittedBy.name} ({pcr.submittedBy.corporationId})</Text>
+        <Text style={styles.submissionText}>Role: {pcr.submittedBy.role.toUpperCase()}</Text>
       </View>
       
       <View style={styles.section}>
@@ -600,6 +611,12 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     marginTop: 2,
   },
+  submittedBy: {
+    fontSize: 11,
+    color: '#0066CC',
+    marginTop: 2,
+    fontStyle: 'italic',
+  },
   actionButtons: {
     flexDirection: 'row',
   },
@@ -849,6 +866,25 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     textAlign: 'center',
     marginTop: 2,
+  },
+  
+  // Submission info styles
+  submissionInfo: {
+    backgroundColor: '#f0f9ff',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  submissionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#0066CC',
+    marginBottom: 8,
+  },
+  submissionText: {
+    fontSize: 12,
+    color: '#374151',
+    marginBottom: 2,
   },
 
 });

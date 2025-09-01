@@ -90,6 +90,12 @@ export interface RefusalInfo {
 export interface CompletedPCR {
   id: string;
   submittedAt: string;
+  submittedBy: {
+    staffId: string;
+    corporationId: string;
+    name: string;
+    role: string;
+  };
   callTimeInfo: CallTimeInfo;
   patientInfo: PatientInfo;
   incidentInfo: IncidentInfo;
@@ -139,6 +145,7 @@ interface PCRStore {
   updateRefusalInfo: (info: Partial<RefusalInfo>) => void;
   resetPCR: () => Promise<void>;
   submitPCR: () => Promise<void>;
+  getMySubmittedPCRs: () => CompletedPCR[];
   loadCompletedPCRs: () => Promise<void>;
   deletePCR: (id: string) => Promise<void>;
   setAdminMode: (isAdmin: boolean) => void;
@@ -350,9 +357,21 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
 
   submitPCR: async () => {
     const state = get();
+    const currentSession = state.currentSession;
+    
+    if (!currentSession) {
+      throw new Error('No active session found. Please login first.');
+    }
+    
     const completedPCR: CompletedPCR = {
       id: Date.now().toString(),
       submittedAt: new Date().toISOString(),
+      submittedBy: {
+        staffId: currentSession.staffId,
+        corporationId: currentSession.corporationId,
+        name: currentSession.name,
+        role: currentSession.role,
+      },
       callTimeInfo: state.callTimeInfo,
       patientInfo: state.patientInfo,
       incidentInfo: state.incidentInfo,
@@ -385,8 +404,32 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
       console.log('Raw stored data:', stored);
       if (stored) {
         const pcrs = JSON.parse(stored);
-        set({ completedPCRs: pcrs });
-        console.log('Loaded', pcrs.length, 'completed PCRs:', pcrs.map((p: CompletedPCR) => ({ id: p.id, patient: `${p.patientInfo.firstName} ${p.patientInfo.lastName}`, submittedAt: p.submittedAt })));
+        
+        // Migrate old PCRs that don't have submittedBy field
+        const migratedPCRs = pcrs.map((pcr: any) => {
+          if (!pcr.submittedBy) {
+            return {
+              ...pcr,
+              submittedBy: {
+                staffId: 'LEGACY',
+                corporationId: 'LEGACY',
+                name: 'Legacy User',
+                role: 'unknown',
+              },
+            };
+          }
+          return pcr;
+        });
+        
+        // Save migrated data back to storage if any migration occurred
+        const needsMigration = pcrs.some((pcr: any) => !pcr.submittedBy);
+        if (needsMigration) {
+          await AsyncStorage.setItem('completedPCRs', JSON.stringify(migratedPCRs));
+          console.log('Migrated', pcrs.length, 'PCRs to include submittedBy field');
+        }
+        
+        set({ completedPCRs: migratedPCRs });
+        console.log('Loaded', migratedPCRs.length, 'completed PCRs:', migratedPCRs.map((p: CompletedPCR) => ({ id: p.id, patient: `${p.patientInfo.firstName} ${p.patientInfo.lastName}`, submittedAt: p.submittedAt, submittedBy: p.submittedBy.name })));
       } else {
         console.log('No stored PCRs found');
         set({ completedPCRs: [] });
@@ -648,6 +691,19 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
       set({ vitals: updatedVitals });
       console.log(`ECG capture added to vital signs at index ${vitalIndex}`);
     }
+  },
+
+  getMySubmittedPCRs: () => {
+    const state = get();
+    const currentSession = state.currentSession;
+    
+    if (!currentSession) {
+      return [];
+    }
+    
+    return state.completedPCRs.filter(pcr => 
+      pcr.submittedBy && pcr.submittedBy.corporationId === currentSession.corporationId
+    );
   },
 
 
