@@ -390,14 +390,27 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
     console.log('New PCR:', {
       id: completedPCR.id,
       patient: `${completedPCR.patientInfo.firstName} ${completedPCR.patientInfo.lastName}`,
-      submittedAt: completedPCR.submittedAt
+      submittedAt: completedPCR.submittedAt,
+      submittedBy: completedPCR.submittedBy
     });
     
-    const updatedPCRs = [...state.completedPCRs, completedPCR];
+    // Load existing PCRs first to ensure we don't overwrite
+    let existingPCRs: CompletedPCR[] = [];
+    try {
+      const stored = await AsyncStorage.getItem('completedPCRs');
+      if (stored) {
+        existingPCRs = JSON.parse(stored);
+      }
+    } catch (error) {
+      console.error('Error loading existing PCRs:', error);
+    }
+    
+    const updatedPCRs = [...existingPCRs, completedPCR];
     await AsyncStorage.setItem('completedPCRs', JSON.stringify(updatedPCRs));
     
     set({ completedPCRs: updatedPCRs });
     console.log('PCR submitted and saved. Total PCRs now:', updatedPCRs.length);
+    console.log('All PCRs:', updatedPCRs.map(pcr => ({ id: pcr.id, patient: `${pcr.patientInfo.firstName} ${pcr.patientInfo.lastName}`, submittedBy: pcr.submittedBy.name })));
     console.log('=== END SUBMITTING PCR ===');
   },
 
@@ -406,11 +419,14 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
       const stored = await AsyncStorage.getItem('completedPCRs');
       console.log('=== LOADING PCRs ===');
       console.log('Raw stored data exists:', !!stored);
+      console.log('Raw stored data length:', stored?.length || 0);
+      
       if (stored) {
         const pcrs = JSON.parse(stored);
+        console.log('Parsed PCRs count:', pcrs.length);
         
         // Migrate old PCRs that don't have submittedBy field
-        const migratedPCRs = pcrs.map((pcr: any) => {
+        const migratedPCRs = pcrs.map((pcr: CompletedPCR) => {
           if (!pcr.submittedBy) {
             return {
               ...pcr,
@@ -426,7 +442,7 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
         });
         
         // Save migrated data back to storage if any migration occurred
-        const needsMigration = pcrs.some((pcr: any) => !pcr.submittedBy);
+        const needsMigration = pcrs.some((pcr: CompletedPCR) => !pcr.submittedBy);
         if (needsMigration) {
           await AsyncStorage.setItem('completedPCRs', JSON.stringify(migratedPCRs));
           console.log('Migrated', pcrs.length, 'PCRs to include submittedBy field');
@@ -434,6 +450,12 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
         
         set({ completedPCRs: migratedPCRs });
         console.log('Loaded', migratedPCRs.length, 'completed PCRs');
+        console.log('PCR details:', migratedPCRs.map((pcr: CompletedPCR) => ({ 
+          id: pcr.id, 
+          patient: `${pcr.patientInfo.firstName} ${pcr.patientInfo.lastName}`, 
+          submittedBy: pcr.submittedBy.name,
+          submittedAt: pcr.submittedAt
+        })));
       } else {
         console.log('No stored PCRs found, initializing empty array');
         set({ completedPCRs: [] });
@@ -441,6 +463,7 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
       console.log('=== END LOADING PCRs ===');
     } catch (error) {
       console.error('Error loading completed PCRs:', error);
+      console.error('Error details:', error);
       set({ completedPCRs: [] });
     }
   },
@@ -557,9 +580,9 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
         staffMembers: updatedStaff
       });
       
-      if (session.isAdmin) {
-        get().loadCompletedPCRs();
-      }
+      // Always load completed PCRs after login to ensure data is available
+      console.log('Loading completed PCRs after login...');
+      await get().loadCompletedPCRs();
       
       console.log('Staff login successful:', {
         name: staff.name,

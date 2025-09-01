@@ -70,13 +70,21 @@ function RootLayoutNav() {
 }
 
 function AppInitializer() {
-  const { loadCurrentPCRDraft, initializeStaffDatabase } = usePCRStore();
+  const { loadCurrentPCRDraft, initializeStaffDatabase, loadCompletedPCRs } = usePCRStore();
   
   useEffect(() => {
     const initializeApp = async () => {
       try {
+        console.log('=== APP INITIALIZATION ===');
+        
         // Initialize staff database first
         await initializeStaffDatabase();
+        console.log('Staff database initialized');
+        
+        // Always load completed PCRs to ensure they're available
+        console.log('Loading completed PCRs on app start...');
+        await loadCompletedPCRs();
+        console.log('Completed PCRs loaded');
         
         // Check for existing session
         const storedSession = await AsyncStorage.getItem('currentSession');
@@ -88,16 +96,15 @@ function AppInitializer() {
           });
           console.log('Restored session for:', session.name);
           
-          // Load PCRs if admin
-          if (session.isAdmin) {
-            const { loadCompletedPCRs } = usePCRStore.getState();
-            await loadCompletedPCRs();
-          }
+          // Reload PCRs after session is restored to ensure proper filtering
+          console.log('Reloading PCRs after session restore...');
+          await loadCompletedPCRs();
         }
         
         // Load any existing draft
         await loadCurrentPCRDraft();
         console.log('App initialized, draft loaded if available');
+        console.log('=== END APP INITIALIZATION ===');
       } catch (error) {
         console.error('Error initializing app:', error);
       } finally {
@@ -107,7 +114,7 @@ function AppInitializer() {
     };
     
     initializeApp();
-  }, [loadCurrentPCRDraft, initializeStaffDatabase]);
+  }, [loadCurrentPCRDraft, initializeStaffDatabase, loadCompletedPCRs]);
   
   return <RootLayoutNav />;
 }
