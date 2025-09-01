@@ -519,13 +519,14 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
     console.log('=== ADMIN MODE CHANGE ===');
     console.log('Admin mode:', isAdmin ? 'enabled' : 'disabled');
     if (!isAdmin) {
-      // When logging out, clear everything from state
+      // When logging out, clear everything from state and storage
+      AsyncStorage.removeItem('currentSession').catch(console.error);
       set({ 
         isAdmin: false,
         completedPCRs: [],
         currentSession: null
       });
-      console.log('Admin logged out, cleared state');
+      console.log('Admin logged out, cleared state and session storage');
     } else {
       set({ isAdmin: true });
       // Load PCRs when logging in
@@ -644,14 +645,20 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
       console.log('Logging out:', state.currentSession.name);
     }
     
-    await AsyncStorage.removeItem('currentSession');
+    try {
+      await AsyncStorage.removeItem('currentSession');
+      console.log('Session removed from AsyncStorage');
+    } catch (error) {
+      console.error('Error removing session from storage:', error);
+    }
+    
     set({ 
       currentSession: null,
       isAdmin: false,
       completedPCRs: []
     });
     
-    console.log('Staff logout complete');
+    console.log('Staff logout complete - state cleared');
     console.log('=== END STAFF LOGOUT ===');
   },
 

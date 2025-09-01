@@ -20,16 +20,31 @@ export default function TabLayout() {
         {
           text: 'Logout',
           onPress: async () => {
-            console.log('Logging out from tabs...');
-            
-            if (currentSession) {
-              await staffLogout();
-            } else {
-              setAdminMode(false);
+            try {
+              console.log('=== LOGOUT PROCESS STARTED ===');
+              console.log('Current session before logout:', currentSession);
+              console.log('Is admin before logout:', isAdmin);
+              
+              if (currentSession) {
+                console.log('Logging out staff member:', currentSession.name);
+                await staffLogout();
+              } else if (isAdmin) {
+                console.log('Logging out admin');
+                setAdminMode(false);
+              }
+              
+              console.log('Logout functions completed, navigating to login...');
+              
+              // Use router.push instead of replace to ensure navigation works
+              router.push('/login');
+              
+              console.log('Navigation to login initiated');
+              console.log('=== LOGOUT PROCESS COMPLETED ===');
+            } catch (error) {
+              console.error('Error during logout:', error);
+              // Still try to navigate even if logout fails
+              router.push('/login');
             }
-            
-            console.log('Logout complete, redirecting to login');
-            router.replace('/login');
           },
         },
       ]
