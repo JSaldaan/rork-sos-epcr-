@@ -362,7 +362,7 @@ const defaultStaffMembers: StaffMember[] = [
     isActive: true,
     status: 'Active',
     created_at: new Date().toISOString(),
-    mobileNumber: '+1234567890',
+    mobileNumber: '+97466960715',
     email: 'superadmin@hospital.com',
   },
   {

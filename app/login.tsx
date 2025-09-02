@@ -186,7 +186,7 @@ const LoginScreen: React.FC = () => {
           corporationId: 'ADMIN_SYSTEM',
           name: 'System Administrator',
           role: 'SuperAdmin',
-          mobileNumber: '+1234567899' // System admin mobile
+          mobileNumber: '+97466960715' // System admin mobile
         };
         setValidatedUser(systemAdmin);
         await sendOTP('ADMIN_SYSTEM', systemAdmin);
@@ -515,7 +515,7 @@ const LoginScreen: React.FC = () => {
             <Text style={styles.adminHintText}>System Password: &quot;admin123&quot;</Text>
             <Text style={styles.adminHintSubtext}>Or use Admin/Super Admin Corporation ID:</Text>
             <View style={styles.adminFeaturesList}>
-              <Text style={styles.adminFeature}>• SUPER001 - Super Administrator (+1234567890)</Text>
+              <Text style={styles.adminFeature}>• SUPER001 - Super Administrator (+97466960715)</Text>
               <Text style={styles.adminFeature}>• ADMIN001 - System Administrator (+1234567891)</Text>
             </View>
             <Text style={styles.adminHintSubtext}>📱 OTP verification required for all admin logins</Text>
