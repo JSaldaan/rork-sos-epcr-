@@ -26,7 +26,7 @@ function RootLayoutNav() {
   const segments = useSegments();
   const router = useRouter();
   const [isInitialized, setIsInitialized] = React.useState(false);
-  const [lastAuthState, setLastAuthState] = React.useState<boolean | null>(null);
+  const [hasNavigatedToLogin, setHasNavigatedToLogin] = React.useState(false);
   
   useEffect(() => {
     // Wait for store initialization before handling navigation
@@ -40,10 +40,12 @@ function RootLayoutNav() {
   useEffect(() => {
     if (!isInitialized) return;
     
-    const inAuthGroup = segments[0] === '(tabs)';
-    const isAuthenticated = !!(currentSession || isAdmin);
-    const isOnRootPath = (segments as string[]).length === 0;
-    const isOnLoginPage = segments[0] === 'login';
+    const segmentsArray = segments as string[];
+    const inAuthGroup = segmentsArray[0] === '(tabs)';
+    const isAuthenticated = !!currentSession;
+    const isOnRootPath = segmentsArray.length === 0;
+    const isOnLoginPage = segmentsArray[0] === 'login';
+    const isOnAdminTab = segmentsArray.length > 1 && segmentsArray[1] === 'admin';
     
     console.log('=== ROUTE PROTECTION ===');
     console.log('Current segments:', segments);
@@ -53,48 +55,32 @@ function RootLayoutNav() {
     console.log('Is authenticated:', isAuthenticated);
     console.log('Is on root path:', isOnRootPath);
     console.log('Is on login page:', isOnLoginPage);
-    console.log('Last auth state:', lastAuthState);
+    console.log('Is on admin tab:', isOnAdminTab);
     
-    // Track auth state changes to detect logout
-    if (lastAuthState === true && isAuthenticated === false) {
-      // User just logged out - force to login immediately
-      console.log('Auth state changed: User logged out, forcing to login');
-      // Use setTimeout to ensure state updates are complete
-      setTimeout(() => {
-        router.replace('/login');
-      }, 0);
-      setLastAuthState(false);
+    // On app startup (root path), always go to login first
+    if (isOnRootPath && !hasNavigatedToLogin) {
+      console.log('App starting, redirecting to login');
+      setHasNavigatedToLogin(true);
+      router.replace('/login');
       return;
     }
     
-    // Update last auth state
-    if (lastAuthState !== isAuthenticated) {
-      setLastAuthState(isAuthenticated);
+    // If not authenticated and trying to access protected routes
+    if (!isAuthenticated && (inAuthGroup || (!isOnLoginPage && !isOnRootPath))) {
+      console.log('Not authenticated, redirecting to login');
+      router.replace('/login');
+      return;
     }
     
-    // Always redirect to login if not authenticated and trying to access protected routes
-    if (!isAuthenticated && inAuthGroup) {
-      console.log('Redirecting to login - no authentication');
-      setTimeout(() => {
-        router.replace('/login');
-      }, 0);
+    // Check admin access for admin tab
+    if (isOnAdminTab && isAuthenticated && !isAdmin) {
+      console.log('Non-admin trying to access admin tab, redirecting');
+      router.replace('/(tabs)');
+      return;
     }
-    // If user is on root path, always go to login (app startup)
-    else if (isOnRootPath) {
-      console.log('App starting, redirecting to login');
-      setTimeout(() => {
-        router.replace('/login');
-      }, 0);
-    }
-    // Prevent authenticated users from going back to protected routes after logout
-    else if (!isAuthenticated && !isOnLoginPage && !isOnRootPath) {
-      console.log('Not authenticated and not on login - redirecting');
-      setTimeout(() => {
-        router.replace('/login');
-      }, 0);
-    }
+    
     console.log('=== END ROUTE PROTECTION ===');
-  }, [currentSession, isAdmin, segments, router, isInitialized, lastAuthState]);
+  }, [currentSession, isAdmin, segments, router, isInitialized, hasNavigatedToLogin]);
   
   return (
     <Stack screenOptions={{ headerBackTitle: "Back" }}>
@@ -105,7 +91,7 @@ function RootLayoutNav() {
 }
 
 function AppInitializer() {
-  const { loadCurrentPCRDraft, initializeStaffDatabase, loadCompletedPCRs, isLoggingOut } = usePCRStore();
+  const { loadCurrentPCRDraft, initializeStaffDatabase, loadCompletedPCRs } = usePCRStore();
   const [hasInitialized, setHasInitialized] = React.useState(false);
   
   useEffect(() => {
@@ -113,32 +99,18 @@ function AppInitializer() {
       try {
         console.log('=== APP INITIALIZATION ===');
         
+        // Clear any existing session on app startup to force login
+        await AsyncStorage.removeItem('currentSession');
+        console.log('Cleared any existing session to force login');
+        
         // Initialize staff database first
         await initializeStaffDatabase();
         console.log('Staff database initialized');
         
-        // Always load completed PCRs to ensure they're available
+        // Load completed PCRs (will be empty without session)
         console.log('Loading completed PCRs on app start...');
         await loadCompletedPCRs();
         console.log('Completed PCRs loaded');
-        
-        // Only restore session on first app load, not after logout
-        if (!hasInitialized && !isLoggingOut) {
-          // Check for existing session
-          const storedSession = await AsyncStorage.getItem('currentSession');
-          if (storedSession) {
-            const session = JSON.parse(storedSession);
-            usePCRStore.setState({ 
-              currentSession: session,
-              isAdmin: session.isAdmin
-            });
-            console.log('Restored session for:', session.name);
-            
-            // Reload PCRs after session is restored to ensure proper filtering
-            console.log('Reloading PCRs after session restore...');
-            await loadCompletedPCRs();
-          }
-        }
         
         // Load any existing draft
         await loadCurrentPCRDraft();
@@ -156,7 +128,7 @@ function AppInitializer() {
     if (!hasInitialized) {
       initializeApp();
     }
-  }, [loadCurrentPCRDraft, initializeStaffDatabase, loadCompletedPCRs, hasInitialized, isLoggingOut]);
+  }, [loadCurrentPCRDraft, initializeStaffDatabase, loadCompletedPCRs, hasInitialized]);
   
   return <RootLayoutNav />;
 }
