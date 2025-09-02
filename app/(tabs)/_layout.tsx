@@ -1,5 +1,5 @@
 import { Tabs, router } from "expo-router";
-import { FileText, Activity, Truck, User, FileX, Eye, LogOut, FolderOpen } from "lucide-react-native";
+import { FileText, Activity, Truck, User, FileX, Eye, ArrowRight, FolderOpen } from "lucide-react-native";
 import React from "react";
 import { TouchableOpacity, Alert, Text, View, StyleSheet, Platform } from "react-native";
 import { usePCRStore } from "../../store/pcrStore";
@@ -56,7 +56,7 @@ export default function TabLayout() {
       accessibilityLabel="Logout"
       accessibilityRole="button"
     >
-      <LogOut size={20} color="#fff" />
+      <ArrowRight size={20} color="#fff" />
       <Text style={styles.logoutText}>Logout</Text>
     </TouchableOpacity>
   );
