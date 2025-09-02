@@ -273,14 +273,14 @@ const AdminScreen: React.FC = () => {
               
               console.log('Logout complete, navigating to login...');
               
-              // Use router.push instead of replace to ensure navigation works
-              router.push('/login');
+              // Navigate to login page using replace to ensure clean navigation
+              router.replace('/login');
               
               console.log('Navigation to login completed');
             } catch (error) {
               console.error('Error during logout:', error);
               // Force navigation even if logout fails
-              router.push('/login');
+              router.replace('/login');
             }
           },
         },
@@ -854,10 +854,10 @@ const AdminScreen: React.FC = () => {
                     )}
                   </Pressable>
                   <Pressable
-                    style={styles.actionButton}
+                    style={styles.deleteButton}
                     onPress={() => handleDeleteStaff(staff.corporationId, staff.name)}
                   >
-                    <Trash2 size={18} color="#dc3545" />
+                    <Text style={styles.deleteButtonText}>Delete</Text>
                   </Pressable>
                 </View>
               </View>
@@ -1727,6 +1727,18 @@ const styles = StyleSheet.create({
     color: '#9ca3af',
     textAlign: 'center',
     marginTop: 8,
+  },
+  deleteButton: {
+    backgroundColor: '#dc3545',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+    marginLeft: 4,
+  },
+  deleteButtonText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
   },
 
 });
