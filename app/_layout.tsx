@@ -53,31 +53,45 @@ function RootLayoutNav() {
     console.log('Is authenticated:', isAuthenticated);
     console.log('Is on root path:', isOnRootPath);
     console.log('Is on login page:', isOnLoginPage);
+    console.log('Last auth state:', lastAuthState);
     
     // Track auth state changes to detect logout
     if (lastAuthState === true && isAuthenticated === false) {
-      // User just logged out - force to login
+      // User just logged out - force to login immediately
       console.log('Auth state changed: User logged out, forcing to login');
-      router.replace('/login');
+      // Use setTimeout to ensure state updates are complete
+      setTimeout(() => {
+        router.replace('/login');
+      }, 0);
       setLastAuthState(false);
       return;
     }
-    setLastAuthState(isAuthenticated);
+    
+    // Update last auth state
+    if (lastAuthState !== isAuthenticated) {
+      setLastAuthState(isAuthenticated);
+    }
     
     // Always redirect to login if not authenticated and trying to access protected routes
     if (!isAuthenticated && inAuthGroup) {
       console.log('Redirecting to login - no authentication');
-      router.replace('/login');
+      setTimeout(() => {
+        router.replace('/login');
+      }, 0);
     }
     // If user is on root path, always go to login (app startup)
     else if (isOnRootPath) {
       console.log('App starting, redirecting to login');
-      router.replace('/login');
+      setTimeout(() => {
+        router.replace('/login');
+      }, 0);
     }
     // Prevent authenticated users from going back to protected routes after logout
     else if (!isAuthenticated && !isOnLoginPage && !isOnRootPath) {
       console.log('Not authenticated and not on login - redirecting');
-      router.replace('/login');
+      setTimeout(() => {
+        router.replace('/login');
+      }, 0);
     }
     console.log('=== END ROUTE PROTECTION ===');
   }, [currentSession, isAdmin, segments, router, isInitialized, lastAuthState]);
