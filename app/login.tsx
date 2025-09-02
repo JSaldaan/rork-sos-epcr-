@@ -38,6 +38,16 @@ const LoginScreen: React.FC = () => {
     setLoginError('');
     
     try {
+      // First validate the corporation ID to check role
+      await usePCRStore.getState().loadStaffMembers();
+      const staff = await usePCRStore.getState().validateCorporationId(corporationId.trim().toUpperCase());
+      
+      if (staff && (staff.role === 'SuperAdmin' || staff.role === 'Admin')) {
+        setLoginError('Admin and Super Admin accounts must use Admin Only login');
+        setIsLoading(false);
+        return;
+      }
+      
       const success = await staffLogin(corporationId.trim().toUpperCase());
       if (success) {
         setCorporationId('');
@@ -55,14 +65,50 @@ const LoginScreen: React.FC = () => {
     }
   };
   
-  const handleAdminLogin = () => {
-    if (adminLogin(password)) {
-      setPassword('');
-      setLoginError('');
-      console.log('Admin login successful, redirecting to tabs');
-      router.replace('/(tabs)');
-    } else {
-      setLoginError('Invalid admin password');
+  const handleAdminLogin = async () => {
+    if (!password.trim()) {
+      setLoginError('Please enter admin credentials');
+      return;
+    }
+    
+    setIsLoading(true);
+    setLoginError('');
+    
+    try {
+      // Check if it's the system admin password
+      if (password === 'admin123') {
+        if (adminLogin(password)) {
+          setPassword('');
+          setLoginError('');
+          console.log('System admin login successful, redirecting to tabs');
+          router.replace('/(tabs)');
+        } else {
+          setLoginError('System admin login failed');
+        }
+      } else {
+        // Check if it's a staff member with admin/super admin role using corporation ID as password
+        await usePCRStore.getState().loadStaffMembers();
+        const staff = await usePCRStore.getState().validateCorporationId(password.trim().toUpperCase());
+        
+        if (staff && (staff.role === 'SuperAdmin' || staff.role === 'Admin')) {
+          const success = await staffLogin(password.trim().toUpperCase());
+          if (success) {
+            setPassword('');
+            setLoginError('');
+            console.log('Admin staff login successful, redirecting to tabs');
+            router.replace('/(tabs)');
+          } else {
+            setLoginError('Admin login failed');
+          }
+        } else {
+          setLoginError('Invalid admin credentials. Use system password or admin Corporation ID');
+        }
+      }
+    } catch (error) {
+      console.error('Admin login error:', error);
+      setLoginError('Admin login failed. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
   
@@ -141,17 +187,17 @@ const LoginScreen: React.FC = () => {
           </View>
         ) : (
           <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Admin Password</Text>
+            <Text style={styles.inputLabel}>Admin Credentials</Text>
             <TextInput
               style={styles.textInput}
-              placeholder="Enter admin password"
+              placeholder="Enter system password or admin Corporation ID"
               value={password}
               onChangeText={(text) => {
                 setPassword(text);
                 setLoginError('');
               }}
               secureTextEntry
-              autoCapitalize="none"
+              autoCapitalize="characters"
               onSubmitEditing={handleLogin}
               editable={!isLoading}
               clearButtonMode="while-editing"
@@ -181,12 +227,12 @@ const LoginScreen: React.FC = () => {
           <View style={styles.demoContainer}>
             <Text style={styles.demoTitle}>Demo Corporation IDs:</Text>
             <View style={styles.demoIds}>
-              <Text style={styles.demoId}>ADMIN001 - System Admin</Text>
               <Text style={styles.demoId}>PARA001 - John Smith</Text>
               <Text style={styles.demoId}>PARA002 - Sarah Johnson</Text>
               <Text style={styles.demoId}>NURSE001 - Emily Davis</Text>
               <Text style={styles.demoId}>DOC001 - Dr. Michael Brown</Text>
               <Text style={styles.demoId}>SUP001 - Lisa Wilson</Text>
+              <Text style={styles.demoId}>Note: Admin accounts use Admin Only login</Text>
             </View>
           </View>
         )}
@@ -194,7 +240,12 @@ const LoginScreen: React.FC = () => {
         {loginMode === 'admin' && (
           <View style={styles.adminHintContainer}>
             <Text style={styles.adminHintTitle}>🔐 Administrator Access</Text>
-            <Text style={styles.adminHintText}>Demo Password: &quot;admin123&quot;</Text>
+            <Text style={styles.adminHintText}>System Password: &quot;admin123&quot;</Text>
+            <Text style={styles.adminHintSubtext}>Or use Admin/Super Admin Corporation ID:</Text>
+            <View style={styles.adminFeaturesList}>
+              <Text style={styles.adminFeature}>• SUPER001 - Super Administrator</Text>
+              <Text style={styles.adminFeature}>• ADMIN001 - System Administrator</Text>
+            </View>
             <Text style={styles.adminHintSubtext}>Full system access including:</Text>
             <View style={styles.adminFeaturesList}>
               <Text style={styles.adminFeature}>• View all patient reports</Text>
