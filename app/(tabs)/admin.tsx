@@ -691,97 +691,100 @@ const AdminScreen: React.FC = () => {
     </KeyboardAvoidingView>
   );
 
-  const EditStaffForm: React.FC<{ staff: StaffMember }> = ({ staff }) => (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={{ flex: 1 }}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
-    >
-      <ScrollView
-        style={styles.formContainer}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="none"
-        contentContainerStyle={{ paddingBottom: 24 }}
-        showsVerticalScrollIndicator={false}
+  const EditStaffForm: React.FC<{ staff: StaffMember }> = ({ staff }) => {
+    // Use editingStaff state directly which is already set when editing starts
+    return (
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
       >
-        <View style={styles.formContent}>
-          <View style={styles.formSection}>
-            <Text style={styles.fieldLabel}>Corporation ID</Text>
-          <TextInput
-            style={[styles.textInput, styles.disabledInput]}
-            value={staff.corporationId}
-            editable={false}
-          />
-          <Text style={styles.fieldHint}>Corporation ID cannot be changed</Text>
-        </View>
+        <ScrollView
+          style={styles.formContainer}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="none"
+          contentContainerStyle={{ paddingBottom: 24 }}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.formContent}>
+            <View style={styles.formSection}>
+              <Text style={styles.fieldLabel}>Corporation ID</Text>
+              <TextInput
+                style={[styles.textInput, styles.disabledInput]}
+                value={editingStaff?.corporationId || ''}
+                editable={false}
+              />
+              <Text style={styles.fieldHint}>Corporation ID cannot be changed</Text>
+            </View>
 
-        <View style={styles.formSection}>
-          <Text style={styles.fieldLabel}>Full Name *</Text>
-          <TextInput
-            style={styles.textInput}
-            value={staff.name}
-            onChangeText={(text) => setEditingStaff({ ...staff, name: text })}
-            placeholder="Enter full name"
-            autoCapitalize="words"
-            autoCorrect={false}
-            returnKeyType="next"
-            blurOnSubmit={false}
-            selectTextOnFocus={true}
-            clearButtonMode="while-editing"
-          />
-        </View>
+            <View style={styles.formSection}>
+              <Text style={styles.fieldLabel}>Full Name *</Text>
+              <TextInput
+                style={styles.textInput}
+                value={editingStaff?.name || ''}
+                onChangeText={(text) => setEditingStaff(editingStaff ? { ...editingStaff, name: text } : null)}
+                placeholder="Enter full name"
+                autoCapitalize="words"
+                autoCorrect={false}
+                returnKeyType="next"
+                blurOnSubmit={false}
+                selectTextOnFocus={true}
+                clearButtonMode="while-editing"
+              />
+            </View>
 
-        <View style={styles.formSection}>
-          <Text style={styles.fieldLabel}>Role *</Text>
-          <View style={styles.roleSelector}>
-            {(['paramedic', 'nurse', 'doctor', 'admin', 'supervisor'] as const).map((role) => (
-              <Pressable
-                key={role}
-                style={[
-                  styles.roleOption,
-                  staff.role === role && styles.roleOptionSelected,
-                ]}
-                onPress={() => setEditingStaff({ ...staff, role })}
-              >
-                <Text
-                  style={[
-                    styles.roleOptionText,
-                    staff.role === role && styles.roleOptionTextSelected,
-                  ]}
-                >
-                  {role.charAt(0).toUpperCase() + role.slice(1)}
-                </Text>
+            <View style={styles.formSection}>
+              <Text style={styles.fieldLabel}>Role *</Text>
+              <View style={styles.roleSelector}>
+                {(['paramedic', 'nurse', 'doctor', 'admin', 'supervisor'] as const).map((role) => (
+                  <Pressable
+                    key={role}
+                    style={[
+                      styles.roleOption,
+                      editingStaff?.role === role && styles.roleOptionSelected,
+                    ]}
+                    onPress={() => setEditingStaff(editingStaff ? { ...editingStaff, role } : null)}
+                  >
+                    <Text
+                      style={[
+                        styles.roleOptionText,
+                        editingStaff?.role === role && styles.roleOptionTextSelected,
+                      ]}
+                    >
+                      {role.charAt(0).toUpperCase() + role.slice(1)}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+
+            <View style={styles.formSection}>
+              <Text style={styles.fieldLabel}>Department *</Text>
+              <TextInput
+                style={styles.textInput}
+                value={editingStaff?.department || ''}
+                onChangeText={(text) => setEditingStaff(editingStaff ? { ...editingStaff, department: text } : null)}
+                placeholder="e.g., Emergency Services, Emergency Department"
+                autoCapitalize="words"
+                autoCorrect={false}
+                returnKeyType="done"
+                blurOnSubmit={false}
+                selectTextOnFocus={true}
+                clearButtonMode="while-editing"
+              />
+            </View>
+
+            <View style={styles.formActions}>
+              <Pressable style={styles.updateButton} onPress={handleUpdateStaff}>
+                <Edit3 size={20} color="#fff" />
+                <Text style={styles.updateButtonText}>Update Staff Member</Text>
               </Pressable>
-            ))}
+            </View>
           </View>
-        </View>
-
-        <View style={styles.formSection}>
-          <Text style={styles.fieldLabel}>Department *</Text>
-          <TextInput
-            style={styles.textInput}
-            value={staff.department}
-            onChangeText={(text) => setEditingStaff({ ...staff, department: text })}
-            placeholder="e.g., Emergency Services, Emergency Department"
-            autoCapitalize="words"
-            autoCorrect={false}
-            returnKeyType="done"
-            blurOnSubmit={false}
-            selectTextOnFocus={true}
-            clearButtonMode="while-editing"
-          />
-        </View>
-
-        <View style={styles.formActions}>
-          <Pressable style={styles.updateButton} onPress={handleUpdateStaff}>
-            <Edit3 size={20} color="#fff" />
-            <Text style={styles.updateButtonText}>Update Staff Member</Text>
-          </Pressable>
-        </View>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
-  );
+        </ScrollView>
+      </KeyboardAvoidingView>
+    );
+  };
 
   const StaffManagement: React.FC = () => (
     <View style={styles.staffContainer}>
