@@ -16,6 +16,7 @@ import {
   Pressable,
 } from 'react-native';
 import { usePCRStore, CompletedPCR, StaffMember, Patient, Encounter, Vitals, ECG, Signature, Attachment, AuditLog } from '../../store/pcrStore';
+import { router } from 'expo-router';
 import { 
   Shield, 
   Users, 
@@ -74,6 +75,19 @@ export default function AdminScreen() {
     generateComprehensiveReport,
     exportAllData,
   } = usePCRStore();
+  
+  // Route guard: Only admin users should access this screen
+  const isAdminUser = currentSession?.role === 'admin' || 
+                     currentSession?.role === 'Admin' || 
+                     currentSession?.role === 'SuperAdmin';
+  const isStaffUser = currentSession && !isAdminUser;
+  
+  useEffect(() => {
+    if (isStaffUser) {
+      console.log('Staff user trying to access admin screen, redirecting to staff tabs');
+      router.replace('/(tabs)');
+    }
+  }, [isStaffUser]);
 
   const [activeTab, setActiveTab] = useState<TabType>('vault');
   const [vaultSection, setVaultSection] = useState<VaultSection>('pcrs');

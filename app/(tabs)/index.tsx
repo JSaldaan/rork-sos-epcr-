@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState, useEffect } from "react";
 import {
   StyleSheet,
   Text,
@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { Clock, MapPin, User, ChevronDown, Shield } from "lucide-react-native";
 import { usePCRStore } from "@/store/pcrStore";
+import { router } from "expo-router";
 
 const priorityOptions = ["Emergency", "Urgent", "Non-Urgent"] as const;
 
@@ -79,6 +80,7 @@ export default function NewPCRScreen() {
     adminLogin,
     isAdmin,
     submitPCR,
+    currentSession,
   } = usePCRStore();
   const [showDiagnosisModal, setShowDiagnosisModal] = useState<boolean>(false);
   const [showCustomDiagnosisInput, setShowCustomDiagnosisInput] = useState<boolean>(false);
@@ -88,6 +90,18 @@ export default function NewPCRScreen() {
   const [adminPassword, setAdminPassword] = useState<string>('');
 
   const { saveCurrentPCRDraft } = usePCRStore();
+  
+  // Route guard: Admin users should not access this screen
+  const isAdminUser = currentSession?.role === 'admin' || 
+                     currentSession?.role === 'Admin' || 
+                     currentSession?.role === 'SuperAdmin';
+  
+  useEffect(() => {
+    if (isAdminUser) {
+      console.log('Admin user trying to access staff screen, redirecting to admin');
+      router.replace('/(tabs)/admin');
+    }
+  }, [isAdminUser]);
 
   const handleSavePatient = useCallback(async () => {
     if (!patientInfo.firstName || !patientInfo.lastName) {

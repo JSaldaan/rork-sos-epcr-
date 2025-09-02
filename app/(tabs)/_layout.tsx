@@ -9,6 +9,13 @@ export default function TabLayout() {
   const { currentSession, staffLogout, isLoggingOut } = usePCRStore();
   const queryClient = useQueryClient();
   
+  // Determine user access level
+  const isAdminUser = currentSession?.role === 'admin' || 
+                     currentSession?.role === 'Admin' || 
+                     currentSession?.role === 'SuperAdmin';
+  const isSupervisorOrAdmin = isAdminUser || currentSession?.role === 'supervisor';
+  const isStaffUser = !isAdminUser && !isSupervisorOrAdmin;
+  
   const handleLogout = useCallback(() => {
     // Prevent multiple logout attempts
     if (isLoggingOut) {
@@ -75,6 +82,81 @@ export default function TabLayout() {
     </Pressable>
   );
   
+  // Admin users only see admin tab
+  if (isAdminUser) {
+    return (
+      <Tabs
+        screenOptions={{
+          tabBarActiveTintColor: "#DC2626",
+          tabBarInactiveTintColor: "#666",
+          headerShown: true,
+          headerStyle: {
+            backgroundColor: "#DC2626",
+          },
+          headerTintColor: "#fff",
+          headerRight: () => <LogoutButton />,
+          tabBarStyle: {
+            backgroundColor: "#fff",
+            borderTopColor: "#E5E5E5",
+          },
+        }}
+      >
+        <Tabs.Screen
+          name="admin"
+          options={{
+            title: "Admin Dashboard",
+            tabBarIcon: ({ color }) => <Shield size={24} color={color} />,
+            headerTitle: "Administrator Dashboard",
+          }}
+        />
+        {/* Hide all other tabs for admin users */}
+        <Tabs.Screen
+          name="index"
+          options={{
+            href: null, // This hides the tab
+          }}
+        />
+        <Tabs.Screen
+          name="vitals"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="transport"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="summary"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="refusal"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="preview"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="myreports"
+          options={{
+            href: null,
+          }}
+        />
+      </Tabs>
+    );
+  }
+  
+  // Staff and supervisors see staff tabs (no admin tab)
   return (
     <Tabs
       screenOptions={{
@@ -148,17 +230,13 @@ export default function TabLayout() {
           headerTitle: "My Submitted Reports",
         }}
       />
-      {(currentSession?.isAdmin || currentSession?.role === 'admin' || currentSession?.role === 'supervisor') && (
-        <Tabs.Screen
-          name="admin"
-          options={{
-            title: "Admin",
-            tabBarIcon: ({ color }) => <Shield size={24} color={color} />,
-            headerTitle: "Admin Dashboard",
-          }}
-        />
-      )}
-
+      {/* Hide admin tab for staff users */}
+      <Tabs.Screen
+        name="admin"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }
