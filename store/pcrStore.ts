@@ -271,6 +271,9 @@ interface PCRStore {
   updateStaffRole: (corporationId: string, newRole: string) => Promise<void>;
   deactivateStaff: (corporationId: string) => Promise<void>;
   reactivateStaff: (corporationId: string) => Promise<void>;
+  storeComprehensiveAdminData: (pcr: CompletedPCR) => Promise<void>;
+  generateComprehensiveReport: (pcrId: string) => Promise<string>;
+  exportAllData: () => Promise<string>;
 }
 
 const initialPatientInfo: PatientInfo = {
@@ -536,6 +539,9 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
       refusalInfo: state.refusalInfo,
       status: 'submitted',
     };
+
+    // Store comprehensive admin data when PCR is submitted
+    await get().storeComprehensiveAdminData(completedPCR);
 
     console.log('=== SUBMITTING PCR ===');
     console.log('Current session:', currentSession);
@@ -1210,6 +1216,411 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
     await AsyncStorage.setItem('staffMembers', JSON.stringify(updatedStaffMembers));
     set({ staffMembers: updatedStaffMembers });
     await get().addAuditLog('REACTIVATE_STAFF', 'Staff', corporationId, `Reactivated staff member`);
+  },
+
+  storeComprehensiveAdminData: async (pcr: CompletedPCR) => {
+    const state = get();
+    const encounterId = `ENC_${pcr.id}`;
+    const patientId = `PAT_${pcr.id}`;
+    
+    // Create comprehensive patient record
+    const patient: Patient = {
+      patient_id: patientId,
+      full_name: `${pcr.patientInfo.firstName} ${pcr.patientInfo.lastName}`,
+      dob: pcr.patientInfo.age ? new Date(Date.now() - parseInt(pcr.patientInfo.age) * 365.25 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] : '',
+      sex: pcr.patientInfo.gender,
+      phone: pcr.patientInfo.phone,
+      address: pcr.incidentInfo.location,
+      mrn: pcr.patientInfo.mrn,
+      created_at: pcr.submittedAt,
+      updated_at: pcr.submittedAt,
+    };
+    
+    // Create comprehensive encounter record
+    const encounter: Encounter = {
+      encounter_id: encounterId,
+      patient_id: patientId,
+      date_time: pcr.callTimeInfo.date && pcr.callTimeInfo.timeOfCall ? 
+        `${pcr.callTimeInfo.date}T${pcr.callTimeInfo.timeOfCall}` : pcr.submittedAt,
+      location: pcr.incidentInfo.location,
+      chief_complaint: pcr.incidentInfo.chiefComplaint,
+      history_notes: pcr.incidentInfo.history,
+      assessment_notes: pcr.incidentInfo.assessment,
+      treatments: pcr.incidentInfo.treatmentGiven,
+      medications: '', // Could be extracted from treatment notes
+      attending_staff_ids: [pcr.submittedBy.staffId],
+      disposition: pcr.incidentInfo.provisionalDiagnosis,
+      created_at: pcr.submittedAt,
+      updated_at: pcr.submittedAt,
+      provisional_diagnosis: pcr.incidentInfo.provisionalDiagnosis,
+    };
+    
+    // Store all vital signs
+    const vitalRecords: Vitals[] = pcr.vitals.map((vital, index) => ({
+      vitals_id: `VIT_${pcr.id}_${index}`,
+      encounter_id: encounterId,
+      time_logged: vital.timestamp,
+      heart_rate: vital.heartRate,
+      bp_systolic: vital.bloodPressureSystolic,
+      bp_diastolic: vital.bloodPressureDiastolic,
+      resp_rate: vital.respiratoryRate,
+      spo2: vital.oxygenSaturation,
+      temperature: vital.temperature,
+      gcs: vital.bloodGlucose, // Using blood glucose field for GCS
+      notes: `Pain Scale: ${vital.painScale}`,
+    }));
+    
+    // Store ECG captures
+    const ecgRecords: ECG[] = pcr.vitals
+      .filter(vital => vital.ecgCapture)
+      .map((vital, index) => ({
+        ecg_id: `ECG_${pcr.id}_${index}`,
+        encounter_id: encounterId,
+        captured_at: vital.ecgCaptureTimestamp || vital.timestamp,
+        rhythm_label: 'Captured during vitals',
+        image_ecg: vital.ecgCapture || '',
+        notes: `Captured with vital signs at ${vital.timestamp}`,
+      }));
+    
+    // Store signatures
+    const signatureRecords: Signature[] = [];
+    if (pcr.signatureInfo.nurseSignaturePaths) {
+      signatureRecords.push({
+        signature_id: `SIG_${pcr.id}_NURSE`,
+        encounter_id: encounterId,
+        signer_role: 'Provider',
+        signer_name: pcr.signatureInfo.nurseSignature,
+        signed_at: pcr.submittedAt,
+        signature_image: pcr.signatureInfo.nurseSignaturePaths,
+      });
+    }
+    if (pcr.signatureInfo.doctorSignaturePaths) {
+      signatureRecords.push({
+        signature_id: `SIG_${pcr.id}_DOCTOR`,
+        encounter_id: encounterId,
+        signer_role: 'Provider',
+        signer_name: pcr.signatureInfo.doctorSignature,
+        signed_at: pcr.submittedAt,
+        signature_image: pcr.signatureInfo.doctorSignaturePaths,
+      });
+    }
+    if (pcr.signatureInfo.othersSignaturePaths) {
+      signatureRecords.push({
+        signature_id: `SIG_${pcr.id}_OTHER`,
+        encounter_id: encounterId,
+        signer_role: pcr.signatureInfo.othersRole === 'Family Member' ? 'Guardian' : 'Patient',
+        signer_name: pcr.signatureInfo.othersSignature,
+        signed_at: pcr.submittedAt,
+        signature_image: pcr.signatureInfo.othersSignaturePaths,
+      });
+    }
+    
+    // Store refusal information as attachment if present
+    const attachmentRecords: Attachment[] = [];
+    if (pcr.refusalInfo.patientName) {
+      attachmentRecords.push({
+        attachment_id: `ATT_${pcr.id}_REFUSAL`,
+        encounter_id: encounterId,
+        file: JSON.stringify(pcr.refusalInfo),
+        label: 'Treatment Refusal Documentation',
+        uploaded_at: pcr.submittedAt,
+      });
+    }
+    
+    // Store transport information as attachment
+    attachmentRecords.push({
+      attachment_id: `ATT_${pcr.id}_TRANSPORT`,
+      encounter_id: encounterId,
+      file: JSON.stringify(pcr.transportInfo),
+      label: 'Transport Information',
+      uploaded_at: pcr.submittedAt,
+    });
+    
+    // Store call time information as attachment
+    attachmentRecords.push({
+      attachment_id: `ATT_${pcr.id}_CALLTIME`,
+      encounter_id: encounterId,
+      file: JSON.stringify(pcr.callTimeInfo),
+      label: 'Call Time Information',
+      uploaded_at: pcr.submittedAt,
+    });
+    
+    // Save all data to admin collections
+    await get().savePatient(patient);
+    await get().saveEncounter(encounter);
+    
+    for (const vital of vitalRecords) {
+      await get().saveVitals(vital);
+    }
+    
+    for (const ecg of ecgRecords) {
+      await get().saveECG(ecg);
+    }
+    
+    for (const signature of signatureRecords) {
+      await get().saveSignature(signature);
+    }
+    
+    for (const attachment of attachmentRecords) {
+      await get().saveAttachment(attachment);
+    }
+    
+    // Log the comprehensive data storage
+    await get().addAuditLog('STORE_COMPREHENSIVE_DATA', 'PCR', pcr.id, 
+      `Stored comprehensive admin data: Patient, Encounter, ${vitalRecords.length} Vitals, ${ecgRecords.length} ECGs, ${signatureRecords.length} Signatures, ${attachmentRecords.length} Attachments`);
+  },
+
+  generateComprehensiveReport: async (pcrId: string): Promise<string> => {
+    const state = get();
+    const pcr = state.completedPCRs.find(p => p.id === pcrId);
+    if (!pcr) return '';
+    
+    const encounterId = `ENC_${pcrId}`;
+    const patientId = `PAT_${pcrId}`;
+    
+    // Get all related data
+    const patient = state.patients.find(p => p.patient_id === patientId);
+    const encounter = state.encounters.find(e => e.encounter_id === encounterId);
+    const vitals = state.allVitals.filter(v => v.encounter_id === encounterId);
+    const ecgs = state.ecgs.filter(e => e.encounter_id === encounterId);
+    const signatures = state.signatures.filter(s => s.encounter_id === encounterId);
+    const attachments = state.attachments.filter(a => a.encounter_id === encounterId);
+    
+    let report = `[COMPREHENSIVE CASE REPORT]\n`;
+    report += `Case ID: ${pcrId}\n`;
+    report += `Generated: ${new Date().toLocaleString()}\n`;
+    report += `Report Type: Complete Administrative Export\n\n`;
+    
+    // Patient Information
+    report += `[PATIENT INFORMATION]\n`;
+    if (patient) {
+      report += `Patient ID: ${patient.patient_id}\n`;
+      report += `Name: ${patient.full_name}\n`;
+      report += `DOB: ${patient.dob}\n`;
+      report += `Sex: ${patient.sex}\n`;
+      report += `Phone: ${patient.phone}\n`;
+      report += `Address: ${patient.address}\n`;
+      report += `MRN: ${patient.mrn}\n`;
+    } else {
+      report += `Name: ${pcr.patientInfo.firstName} ${pcr.patientInfo.lastName}\n`;
+      report += `Age: ${pcr.patientInfo.age}\n`;
+      report += `Gender: ${pcr.patientInfo.gender}\n`;
+      report += `Phone: ${pcr.patientInfo.phone}\n`;
+      report += `MRN: ${pcr.patientInfo.mrn}\n`;
+    }
+    report += `\n`;
+    
+    // Call Time Information
+    report += `[CALL TIME INFORMATION]\n`;
+    report += `Date: ${pcr.callTimeInfo.date}\n`;
+    report += `Time of Call: ${pcr.callTimeInfo.timeOfCall}\n`;
+    report += `Arrival on Scene: ${pcr.callTimeInfo.arrivalOnScene}\n`;
+    report += `At Patient Side: ${pcr.callTimeInfo.atPatientSide}\n`;
+    report += `To Destination: ${pcr.callTimeInfo.toDestination}\n`;
+    report += `At Destination: ${pcr.callTimeInfo.atDestination}\n\n`;
+    
+    // Encounter Information
+    report += `[ENCOUNTER INFORMATION]\n`;
+    if (encounter) {
+      report += `Encounter ID: ${encounter.encounter_id}\n`;
+      report += `Date/Time: ${encounter.date_time}\n`;
+      report += `Location: ${encounter.location}\n`;
+      report += `Chief Complaint: ${encounter.chief_complaint}\n`;
+      report += `History: ${encounter.history_notes}\n`;
+      report += `Assessment: ${encounter.assessment_notes}\n`;
+      report += `Treatments: ${encounter.treatments}\n`;
+      report += `Disposition: ${encounter.disposition}\n`;
+      report += `Provisional Diagnosis: ${encounter.provisional_diagnosis}\n`;
+    } else {
+      report += `Location: ${pcr.incidentInfo.location}\n`;
+      report += `Chief Complaint: ${pcr.incidentInfo.chiefComplaint}\n`;
+      report += `History: ${pcr.incidentInfo.history}\n`;
+      report += `Assessment: ${pcr.incidentInfo.assessment}\n`;
+      report += `Treatment Given: ${pcr.incidentInfo.treatmentGiven}\n`;
+      report += `Priority: ${pcr.incidentInfo.priority}\n`;
+      report += `On Arrival Info: ${pcr.incidentInfo.onArrivalInfo}\n`;
+      report += `Provisional Diagnosis: ${pcr.incidentInfo.provisionalDiagnosis}\n`;
+    }
+    report += `\n`;
+    
+    // Vital Signs
+    report += `[VITAL SIGNS TIMELINE]\n`;
+    if (vitals.length > 0) {
+      vitals.forEach((vital, index) => {
+        report += `${index + 1}. Time: ${vital.time_logged}\n`;
+        report += `   HR: ${vital.heart_rate} | BP: ${vital.bp_systolic}/${vital.bp_diastolic}\n`;
+        report += `   RR: ${vital.resp_rate} | SpO2: ${vital.spo2}%\n`;
+        report += `   Temp: ${vital.temperature}°C | GCS: ${vital.gcs}\n`;
+        report += `   Notes: ${vital.notes}\n`;
+      });
+    } else {
+      pcr.vitals.forEach((vital, index) => {
+        report += `${index + 1}. Time: ${vital.timestamp}\n`;
+        report += `   HR: ${vital.heartRate} | BP: ${vital.bloodPressureSystolic}/${vital.bloodPressureDiastolic}\n`;
+        report += `   RR: ${vital.respiratoryRate} | SpO2: ${vital.oxygenSaturation}%\n`;
+        report += `   Temp: ${vital.temperature}°C | Pain: ${vital.painScale}/10\n`;
+        if (vital.ecgCapture) {
+          report += `   ECG: Captured at ${vital.ecgCaptureTimestamp}\n`;
+        }
+      });
+    }
+    report += `\n`;
+    
+    // ECG Information
+    report += `[ECG RECORDINGS]\n`;
+    if (ecgs.length > 0) {
+      ecgs.forEach((ecg, index) => {
+        report += `${index + 1}. Captured: ${ecg.captured_at}\n`;
+        report += `   Rhythm: ${ecg.rhythm_label}\n`;
+        report += `   Notes: ${ecg.notes}\n`;
+        report += `   Image Reference: ${ecg.image_ecg}\n`;
+      });
+    } else {
+      const ecgVitals = pcr.vitals.filter(v => v.ecgCapture);
+      if (ecgVitals.length > 0) {
+        ecgVitals.forEach((vital, index) => {
+          report += `${index + 1}. Captured: ${vital.ecgCaptureTimestamp}\n`;
+          report += `   Associated with vitals at: ${vital.timestamp}\n`;
+          report += `   Reference: ${vital.ecgCapture}\n`;
+        });
+      } else {
+        report += `No ECG recordings captured\n`;
+      }
+    }
+    report += `\n`;
+    
+    // Transport Information
+    report += `[TRANSPORT INFORMATION]\n`;
+    report += `Destination: ${pcr.transportInfo.destination}\n`;
+    report += `Mode: ${pcr.transportInfo.mode}\n`;
+    report += `Unit Number: ${pcr.transportInfo.unitNumber}\n`;
+    report += `Departure Time: ${pcr.transportInfo.departureTime}\n`;
+    report += `Arrival Time: ${pcr.transportInfo.arrivalTime}\n`;
+    report += `Mileage: ${pcr.transportInfo.mileage}\n`;
+    report += `Primary Paramedic: ${pcr.transportInfo.primaryParamedic}\n`;
+    report += `Secondary Paramedic: ${pcr.transportInfo.secondaryParamedic}\n`;
+    report += `Driver: ${pcr.transportInfo.driver}\n`;
+    report += `Notes: ${pcr.transportInfo.notes}\n\n`;
+    
+    // Signatures
+    report += `[SIGNATURES]\n`;
+    if (signatures.length > 0) {
+      signatures.forEach((sig, index) => {
+        report += `${index + 1}. ${sig.signer_role}: ${sig.signer_name}\n`;
+        report += `   Signed at: ${sig.signed_at}\n`;
+        report += `   Signature Reference: ${sig.signature_image}\n`;
+      });
+    } else {
+      if (pcr.signatureInfo.nurseSignaturePaths) {
+        report += `• Nurse: ${pcr.signatureInfo.nurseSignature} (${pcr.signatureInfo.nurseCorporationId})\n`;
+        report += `  Signature Reference: ${pcr.signatureInfo.nurseSignaturePaths}\n`;
+      }
+      if (pcr.signatureInfo.doctorSignaturePaths) {
+        report += `• Doctor: ${pcr.signatureInfo.doctorSignature} (${pcr.signatureInfo.doctorCorporationId})\n`;
+        report += `  Signature Reference: ${pcr.signatureInfo.doctorSignaturePaths}\n`;
+      }
+      if (pcr.signatureInfo.othersSignaturePaths) {
+        report += `• ${pcr.signatureInfo.othersRole}: ${pcr.signatureInfo.othersSignature}\n`;
+        report += `  Signature Reference: ${pcr.signatureInfo.othersSignaturePaths}\n`;
+      }
+    }
+    report += `\n`;
+    
+    // Refusal Information (if applicable)
+    if (pcr.refusalInfo.patientName) {
+      report += `[REFUSAL INFORMATION]\n`;
+      report += `Patient Name: ${pcr.refusalInfo.patientName}\n`;
+      report += `Date of Refusal: ${pcr.refusalInfo.dateOfRefusal}\n`;
+      report += `Time of Refusal: ${pcr.refusalInfo.timeOfRefusal}\n`;
+      report += `Reason: ${pcr.refusalInfo.reasonForRefusal}\n`;
+      report += `Risks Explained: ${pcr.refusalInfo.risksExplained ? 'Yes' : 'No'}\n`;
+      report += `Mental Capacity: ${pcr.refusalInfo.mentalCapacity ? 'Yes' : 'No'}\n`;
+      report += `Witness: ${pcr.refusalInfo.witnessName}\n`;
+      report += `Paramedic: ${pcr.refusalInfo.paramedicName}\n`;
+      report += `Additional Notes: ${pcr.refusalInfo.additionalNotes}\n\n`;
+    }
+    
+    // Staff Information
+    report += `[STAFF INFORMATION]\n`;
+    report += `Submitted by: ${pcr.submittedBy.name}\n`;
+    report += `Corporation ID: ${pcr.submittedBy.corporationId}\n`;
+    report += `Role: ${pcr.submittedBy.role}\n`;
+    report += `Submission Time: ${pcr.submittedAt}\n\n`;
+    
+    // Attachments
+    report += `[ATTACHMENTS]\n`;
+    if (attachments.length > 0) {
+      attachments.forEach((att, index) => {
+        report += `${index + 1}. ${att.label}\n`;
+        report += `   Uploaded: ${att.uploaded_at}\n`;
+        report += `   File Reference: ${att.attachment_id}\n`;
+      });
+    } else {
+      report += `No additional attachments\n`;
+    }
+    report += `\n`;
+    
+    // System Footer
+    report += `[SYSTEM INFORMATION]\n`;
+    report += `Generated by: RORK Admin System\n`;
+    report += `Generation Time: ${new Date().toLocaleString()}\n`;
+    report += `Report ID: ${Date.now()}\n`;
+    report += `Data Integrity: All available data included\n`;
+    
+    return report;
+  },
+
+  exportAllData: async (): Promise<string> => {
+    const state = get();
+    
+    let exportData = `[COMPLETE SYSTEM DATA EXPORT]\n`;
+    exportData += `Export Date: ${new Date().toLocaleString()}\n`;
+    exportData += `System: RORK Patient Care Reporting\n\n`;
+    
+    // Summary Statistics
+    exportData += `[SUMMARY STATISTICS]\n`;
+    exportData += `Total PCRs: ${state.completedPCRs.length}\n`;
+    exportData += `Total Patients: ${state.patients.length}\n`;
+    exportData += `Total Encounters: ${state.encounters.length}\n`;
+    exportData += `Total Vital Records: ${state.allVitals.length}\n`;
+    exportData += `Total ECG Records: ${state.ecgs.length}\n`;
+    exportData += `Total Signatures: ${state.signatures.length}\n`;
+    exportData += `Total Attachments: ${state.attachments.length}\n`;
+    exportData += `Total Staff Members: ${state.staffMembers.length}\n`;
+    exportData += `Total Audit Logs: ${state.auditLogs.length}\n\n`;
+    
+    // All PCRs with comprehensive data
+    exportData += `[ALL PATIENT CARE REPORTS]\n`;
+    for (const pcr of state.completedPCRs) {
+      const comprehensiveReport = await get().generateComprehensiveReport(pcr.id);
+      exportData += comprehensiveReport + '\n' + '='.repeat(80) + '\n\n';
+    }
+    
+    // Staff Directory
+    exportData += `[STAFF DIRECTORY]\n`;
+    state.staffMembers.forEach((staff, index) => {
+      exportData += `${index + 1}. ${staff.name}\n`;
+      exportData += `   Corporation ID: ${staff.corporationId}\n`;
+      exportData += `   Role: ${staff.role}\n`;
+      exportData += `   Department: ${staff.department}\n`;
+      exportData += `   Status: ${staff.isActive ? 'Active' : 'Inactive'}\n`;
+      exportData += `   Last Login: ${staff.lastLogin || 'Never'}\n`;
+      exportData += `   Created: ${staff.created_at || 'Unknown'}\n\n`;
+    });
+    
+    // Audit Trail
+    exportData += `[AUDIT TRAIL]\n`;
+    state.auditLogs.forEach((log, index) => {
+      exportData += `${index + 1}. ${log.timestamp} - ${log.action}\n`;
+      exportData += `   Actor: ${log.actor_staff_id}\n`;
+      exportData += `   Target: ${log.target_type} (${log.target_id})\n`;
+      exportData += `   Details: ${log.details}\n\n`;
+    });
+    
+    exportData += `[END OF EXPORT]\n`;
+    exportData += `Export completed at: ${new Date().toLocaleString()}\n`;
+    
+    return exportData;
   },
 
 }));

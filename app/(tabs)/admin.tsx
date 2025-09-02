@@ -71,6 +71,8 @@ export default function AdminScreen() {
     reactivateStaff,
     updateStaffRole,
     addAuditLog,
+    generateComprehensiveReport,
+    exportAllData,
   } = usePCRStore();
 
   const [activeTab, setActiveTab] = useState<TabType>('vault');
@@ -257,13 +259,16 @@ export default function AdminScreen() {
     return report;
   };
 
-  const handleCopyReport = async (format: 'text' | 'csv') => {
+  const handleCopyReport = async (format: 'text' | 'csv' | 'comprehensive') => {
     if (!selectedPCR) return;
 
     try {
       let content = '';
       
-      if (format === 'text') {
+      if (format === 'comprehensive') {
+        // Generate comprehensive report with all data from all tabs
+        content = await generateComprehensiveReport(selectedPCR.id);
+      } else if (format === 'text') {
         content = generateReportText(selectedPCR, reportFormat);
       } else {
         // CSV format
@@ -451,6 +456,25 @@ export default function AdminScreen() {
     }
   };
 
+  const handleExportAllData = async () => {
+    try {
+      setIsLoading(true);
+      const allData = await exportAllData();
+      await Clipboard.setString(allData);
+      Alert.alert(
+        'Complete Export Ready',
+        'All system data has been copied to clipboard. This includes all PCRs, patient data, vitals, ECGs, signatures, transport info, staff records, and audit logs.',
+        [{ text: 'OK' }]
+      );
+      await addAuditLog('EXPORT_ALL_DATA', 'System', 'ALL', 'Exported complete system data');
+    } catch (error) {
+      console.error('Error exporting all data:', error);
+      Alert.alert('Error', 'Failed to export all data');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const renderVaultSection = () => {
     const data = getVaultData();
 
@@ -527,8 +551,19 @@ export default function AdminScreen() {
                         handleCopyReport('text');
                       }}
                     >
-                      <Copy size={16} color="#0066CC" />
+                      <Copy size={14} color="#0066CC" />
                       <Text style={styles.actionButtonText}>Copy</Text>
+                    </TouchableOpacity>
+                    
+                    <TouchableOpacity
+                      style={styles.actionButton}
+                      onPress={() => {
+                        setSelectedPCR(pcr);
+                        handleCopyReport('comprehensive');
+                      }}
+                    >
+                      <FileText size={14} color="#0066CC" />
+                      <Text style={styles.actionButtonText}>Full</Text>
                     </TouchableOpacity>
                     
                     <TouchableOpacity
@@ -538,7 +573,7 @@ export default function AdminScreen() {
                         handleExportPDF();
                       }}
                     >
-                      <Download size={16} color="#0066CC" />
+                      <Download size={14} color="#0066CC" />
                       <Text style={styles.actionButtonText}>PDF</Text>
                     </TouchableOpacity>
                   </View>
@@ -564,10 +599,16 @@ export default function AdminScreen() {
         {selectedItems.length > 0 && (
           <View style={styles.bulkActions}>
             <Text style={styles.bulkActionsText}>{selectedItems.length} selected</Text>
-            <TouchableOpacity style={styles.bulkActionButton} onPress={() => handleCopyReport('csv')}>
-              <Copy size={20} color="#fff" />
-              <Text style={styles.bulkActionButtonText}>Export CSV</Text>
-            </TouchableOpacity>
+            <View style={styles.bulkActionButtons}>
+              <TouchableOpacity style={styles.bulkActionButton} onPress={() => handleCopyReport('csv')}>
+                <Copy size={16} color="#fff" />
+                <Text style={styles.bulkActionButtonText}>CSV</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.bulkActionButton, styles.comprehensiveButton]} onPress={handleExportAllData}>
+                <Download size={16} color="#fff" />
+                <Text style={styles.bulkActionButtonText}>All Data</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         )}
       </View>
@@ -881,6 +922,11 @@ export default function AdminScreen() {
                 <Text style={styles.reportActionText}>Copy as CSV</Text>
               </TouchableOpacity>
 
+              <TouchableOpacity style={styles.reportActionButton} onPress={() => handleCopyReport('comprehensive')}>
+                <Database size={20} color="#0066CC" />
+                <Text style={styles.reportActionText}>Comprehensive Report</Text>
+              </TouchableOpacity>
+
               <TouchableOpacity style={styles.reportActionButton} onPress={handleExportPDF}>
                 <Download size={20} color="#0066CC" />
                 <Text style={styles.reportActionText}>Export PDF</Text>
@@ -1065,12 +1111,12 @@ const styles = StyleSheet.create({
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
+    paddingHorizontal: 8,
     paddingVertical: 6,
     borderRadius: 6,
     borderWidth: 1,
     borderColor: '#0066CC',
-    gap: 6,
+    gap: 4,
   },
   actionButtonText: {
     fontSize: 12,
@@ -1101,14 +1147,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
   },
+  bulkActionButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
   bulkActionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 15,
+    paddingHorizontal: 12,
     paddingVertical: 8,
     backgroundColor: '#0066CC',
     borderRadius: 6,
-    gap: 6,
+    gap: 4,
+  },
+  comprehensiveButton: {
+    backgroundColor: '#28A745',
   },
   bulkActionButtonText: {
     color: '#fff',
