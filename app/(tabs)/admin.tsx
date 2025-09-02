@@ -293,82 +293,588 @@ export default function AdminScreen() {
     }
   };
 
-  const handleExportPDF = async () => {
+  const generateProfessionalHTML = (pcr: CompletedPCR, isComprehensive: boolean = false) => {
+    const patientName = anonymizeReport ? 'CONFIDENTIAL PATIENT' : `${pcr.patientInfo.firstName} ${pcr.patientInfo.lastName}`;
+    const patientMRN = anonymizeReport ? 'XXXXX' : pcr.patientInfo.mrn;
+    const patientPhone = anonymizeReport ? 'XXX-XXX-XXXX' : pcr.patientInfo.phone;
+    
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Patient Care Report - ${pcr.id}</title>
+        <style>
+          @page {
+            size: A4;
+            margin: 0.75in;
+          }
+          
+          * {
+            box-sizing: border-box;
+          }
+          
+          body {
+            font-family: 'Times New Roman', serif;
+            font-size: 11pt;
+            line-height: 1.4;
+            color: #000;
+            margin: 0;
+            padding: 0;
+            background: white;
+          }
+          
+          .header {
+            text-align: center;
+            border-bottom: 2px solid #000;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+          }
+          
+          .header h1 {
+            font-size: 18pt;
+            font-weight: bold;
+            margin: 0 0 5px 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+          }
+          
+          .header .subtitle {
+            font-size: 12pt;
+            margin: 0;
+            color: #333;
+          }
+          
+          .report-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            font-size: 10pt;
+          }
+          
+          .section {
+            margin-bottom: 20px;
+            page-break-inside: avoid;
+          }
+          
+          .section-title {
+            font-size: 12pt;
+            font-weight: bold;
+            text-transform: uppercase;
+            border-bottom: 1px solid #000;
+            padding-bottom: 3px;
+            margin-bottom: 10px;
+            letter-spacing: 0.5px;
+          }
+          
+          .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+          }
+          
+          .info-item {
+            margin-bottom: 8px;
+          }
+          
+          .info-label {
+            font-weight: bold;
+            display: inline-block;
+            min-width: 120px;
+          }
+          
+          .info-value {
+            display: inline;
+          }
+          
+          .vitals-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+            font-size: 10pt;
+          }
+          
+          .vitals-table th {
+            background-color: #f0f0f0;
+            border: 1px solid #000;
+            padding: 8px 4px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 9pt;
+          }
+          
+          .vitals-table td {
+            border: 1px solid #000;
+            padding: 6px 4px;
+            text-align: center;
+            font-size: 9pt;
+          }
+          
+          .narrative-section {
+            margin: 15px 0;
+          }
+          
+          .narrative-text {
+            border: 1px solid #ccc;
+            padding: 10px;
+            background-color: #fafafa;
+            min-height: 60px;
+            font-size: 10pt;
+            line-height: 1.3;
+          }
+          
+          .signatures-section {
+            margin-top: 30px;
+            page-break-inside: avoid;
+          }
+          
+          .signature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+          }
+          
+          .signature-box {
+            border: 1px solid #000;
+            padding: 10px;
+            min-height: 80px;
+            text-align: center;
+          }
+          
+          .signature-label {
+            font-weight: bold;
+            font-size: 9pt;
+            margin-bottom: 5px;
+          }
+          
+          .signature-line {
+            border-bottom: 1px solid #000;
+            height: 40px;
+            margin: 10px 0;
+            position: relative;
+          }
+          
+          .signature-info {
+            font-size: 8pt;
+            margin-top: 5px;
+          }
+          
+          .footer {
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 1px solid #000;
+            font-size: 9pt;
+            text-align: center;
+          }
+          
+          .confidential {
+            color: #d32f2f;
+            font-weight: bold;
+            text-align: center;
+            margin: 10px 0;
+            font-size: 12pt;
+          }
+          
+          .page-break {
+            page-break-before: always;
+          }
+          
+          .transport-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+          }
+          
+          .ecg-section {
+            margin: 15px 0;
+            border: 1px solid #ccc;
+            padding: 10px;
+          }
+          
+          .no-data {
+            font-style: italic;
+            color: #666;
+            text-align: center;
+            padding: 20px;
+          }
+          
+          @media print {
+            body { print-color-adjust: exact; }
+            .page-break { page-break-before: always; }
+          }
+        </style>
+      </head>
+      <body>
+        ${anonymizeReport ? '<div class="confidential">⚠️ CONFIDENTIAL PATIENT INFORMATION ⚠️</div>' : ''}
+        
+        <div class="header">
+          <h1>Patient Care Report</h1>
+          <div class="subtitle">Electronic Medical Record System</div>
+        </div>
+        
+        <div class="report-info">
+          <div><strong>Report ID:</strong> ${pcr.id}</div>
+          <div><strong>Generated:</strong> ${new Date().toLocaleString()}</div>
+          <div><strong>Status:</strong> ${pcr.status.toUpperCase()}</div>
+        </div>
+        
+        <!-- Patient Information Section -->
+        <div class="section">
+          <div class="section-title">Patient Information</div>
+          <div class="info-grid">
+            <div>
+              <div class="info-item">
+                <span class="info-label">Full Name:</span>
+                <span class="info-value">${patientName}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Age:</span>
+                <span class="info-value">${pcr.patientInfo.age} years</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Gender:</span>
+                <span class="info-value">${pcr.patientInfo.gender}</span>
+              </div>
+            </div>
+            <div>
+              <div class="info-item">
+                <span class="info-label">MRN:</span>
+                <span class="info-value">${patientMRN}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Phone:</span>
+                <span class="info-value">${patientPhone}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Call Time Information -->
+        <div class="section">
+          <div class="section-title">Call Time Information</div>
+          <div class="info-grid">
+            <div>
+              <div class="info-item">
+                <span class="info-label">Date:</span>
+                <span class="info-value">${pcr.callTimeInfo.date || 'Not recorded'}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Time of Call:</span>
+                <span class="info-value">${pcr.callTimeInfo.timeOfCall || 'Not recorded'}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Arrival on Scene:</span>
+                <span class="info-value">${pcr.callTimeInfo.arrivalOnScene || 'Not recorded'}</span>
+              </div>
+            </div>
+            <div>
+              <div class="info-item">
+                <span class="info-label">At Patient Side:</span>
+                <span class="info-value">${pcr.callTimeInfo.atPatientSide || 'Not recorded'}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">To Destination:</span>
+                <span class="info-value">${pcr.callTimeInfo.toDestination || 'Not recorded'}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">At Destination:</span>
+                <span class="info-value">${pcr.callTimeInfo.atDestination || 'Not recorded'}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Incident Information -->
+        <div class="section">
+          <div class="section-title">Incident Information</div>
+          <div class="info-grid">
+            <div>
+              <div class="info-item">
+                <span class="info-label">Location:</span>
+                <span class="info-value">${pcr.incidentInfo.location || 'Not specified'}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Priority:</span>
+                <span class="info-value">${pcr.incidentInfo.priority || 'Not specified'}</span>
+              </div>
+            </div>
+            <div>
+              <div class="info-item">
+                <span class="info-label">Chief Complaint:</span>
+                <span class="info-value">${pcr.incidentInfo.chiefComplaint || 'Not recorded'}</span>
+              </div>
+            </div>
+          </div>
+          
+          ${pcr.incidentInfo.history ? `
+          <div class="narrative-section">
+            <div class="info-label">History of Present Illness:</div>
+            <div class="narrative-text">${pcr.incidentInfo.history}</div>
+          </div>
+          ` : ''}
+          
+          ${pcr.incidentInfo.assessment ? `
+          <div class="narrative-section">
+            <div class="info-label">Assessment:</div>
+            <div class="narrative-text">${pcr.incidentInfo.assessment}</div>
+          </div>
+          ` : ''}
+          
+          ${pcr.incidentInfo.treatmentGiven ? `
+          <div class="narrative-section">
+            <div class="info-label">Treatment Provided:</div>
+            <div class="narrative-text">${pcr.incidentInfo.treatmentGiven}</div>
+          </div>
+          ` : ''}
+          
+          ${pcr.incidentInfo.provisionalDiagnosis ? `
+          <div class="narrative-section">
+            <div class="info-label">Provisional Diagnosis:</div>
+            <div class="narrative-text">${pcr.incidentInfo.provisionalDiagnosis}</div>
+          </div>
+          ` : ''}
+        </div>
+        
+        <!-- Vital Signs -->
+        <div class="section">
+          <div class="section-title">Vital Signs</div>
+          ${pcr.vitals.length > 0 ? `
+          <table class="vitals-table">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>HR<br/>(bpm)</th>
+                <th>BP<br/>(mmHg)</th>
+                <th>RR<br/>(rpm)</th>
+                <th>SpO2<br/>(%)</th>
+                <th>Temp<br/>(°C)</th>
+                <th>Pain<br/>(0-10)</th>
+                <th>Blood Glucose<br/>(mg/dL)</th>
+                <th>ECG</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${pcr.vitals.map(vital => `
+                <tr>
+                  <td>${vital.timestamp || 'N/A'}</td>
+                  <td>${vital.heartRate || '-'}</td>
+                  <td>${vital.bloodPressureSystolic || '-'}/${vital.bloodPressureDiastolic || '-'}</td>
+                  <td>${vital.respiratoryRate || '-'}</td>
+                  <td>${vital.oxygenSaturation || '-'}</td>
+                  <td>${vital.temperature || '-'}</td>
+                  <td>${vital.painScale || '-'}</td>
+                  <td>${vital.bloodGlucose || '-'}</td>
+                  <td>${vital.ecgCapture ? '✓' : '-'}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          ` : '<div class="no-data">No vital signs recorded</div>'}
+        </div>
+        
+        ${pcr.vitals.some(v => v.ecgCapture) ? `
+        <div class="section">
+          <div class="section-title">ECG Recordings</div>
+          ${pcr.vitals.filter(v => v.ecgCapture).map((vital, index) => `
+            <div class="ecg-section">
+              <div><strong>ECG ${index + 1}:</strong> Captured at ${vital.ecgCaptureTimestamp || vital.timestamp}</div>
+              <div style="font-size: 9pt; color: #666; margin-top: 5px;">ECG data captured and stored in system</div>
+            </div>
+          `).join('')}
+        </div>
+        ` : ''}
+        
+        <!-- Transport Information -->
+        <div class="section">
+          <div class="section-title">Transport Information</div>
+          <div class="transport-grid">
+            <div>
+              <div class="info-item">
+                <span class="info-label">Destination:</span>
+                <span class="info-value">${pcr.transportInfo.destination || 'Not specified'}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Transport Mode:</span>
+                <span class="info-value">${pcr.transportInfo.mode || 'Not specified'}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Unit Number:</span>
+                <span class="info-value">${pcr.transportInfo.unitNumber || 'Not specified'}</span>
+              </div>
+            </div>
+            <div>
+              <div class="info-item">
+                <span class="info-label">Departure Time:</span>
+                <span class="info-value">${pcr.transportInfo.departureTime || 'Not recorded'}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Arrival Time:</span>
+                <span class="info-value">${pcr.transportInfo.arrivalTime || 'Not recorded'}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Mileage:</span>
+                <span class="info-value">${pcr.transportInfo.mileage || 'Not recorded'}</span>
+              </div>
+            </div>
+            <div>
+              <div class="info-item">
+                <span class="info-label">Primary Paramedic:</span>
+                <span class="info-value">${pcr.transportInfo.primaryParamedic || 'Not specified'}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Secondary Paramedic:</span>
+                <span class="info-value">${pcr.transportInfo.secondaryParamedic || 'Not specified'}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Driver:</span>
+                <span class="info-value">${pcr.transportInfo.driver || 'Not specified'}</span>
+              </div>
+            </div>
+          </div>
+          ${pcr.transportInfo.notes ? `
+          <div class="narrative-section">
+            <div class="info-label">Transport Notes:</div>
+            <div class="narrative-text">${pcr.transportInfo.notes}</div>
+          </div>
+          ` : ''}
+        </div>
+        
+        ${pcr.refusalInfo.patientName ? `
+        <div class="section page-break">
+          <div class="section-title">Treatment Refusal Documentation</div>
+          <div class="info-grid">
+            <div>
+              <div class="info-item">
+                <span class="info-label">Patient Name:</span>
+                <span class="info-value">${anonymizeReport ? 'CONFIDENTIAL' : pcr.refusalInfo.patientName}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Date of Refusal:</span>
+                <span class="info-value">${pcr.refusalInfo.dateOfRefusal}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Time of Refusal:</span>
+                <span class="info-value">${pcr.refusalInfo.timeOfRefusal}</span>
+              </div>
+            </div>
+            <div>
+              <div class="info-item">
+                <span class="info-label">Risks Explained:</span>
+                <span class="info-value">${pcr.refusalInfo.risksExplained ? 'Yes' : 'No'}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Mental Capacity:</span>
+                <span class="info-value">${pcr.refusalInfo.mentalCapacity ? 'Adequate' : 'Questionable'}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Witness:</span>
+                <span class="info-value">${pcr.refusalInfo.witnessName || 'None'}</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="narrative-section">
+            <div class="info-label">Reason for Refusal:</div>
+            <div class="narrative-text">${pcr.refusalInfo.reasonForRefusal}</div>
+          </div>
+          
+          ${pcr.refusalInfo.additionalNotes ? `
+          <div class="narrative-section">
+            <div class="info-label">Additional Notes:</div>
+            <div class="narrative-text">${pcr.refusalInfo.additionalNotes}</div>
+          </div>
+          ` : ''}
+        </div>
+        ` : ''}
+        
+        <!-- Signatures Section -->
+        <div class="signatures-section">
+          <div class="section-title">Signatures and Authorization</div>
+          <div class="signature-grid">
+            <div class="signature-box">
+              <div class="signature-label">NURSE/PROVIDER</div>
+              <div class="signature-line"></div>
+              <div class="signature-info">
+                Name: ${pcr.signatureInfo.nurseSignature || 'Not signed'}<br/>
+                ID: ${pcr.signatureInfo.nurseCorporationId || 'N/A'}<br/>
+                Date: ${pcr.submittedAt ? new Date(pcr.submittedAt).toLocaleDateString() : 'N/A'}
+              </div>
+            </div>
+            
+            <div class="signature-box">
+              <div class="signature-label">PHYSICIAN</div>
+              <div class="signature-line"></div>
+              <div class="signature-info">
+                Name: ${pcr.signatureInfo.doctorSignature || 'Not signed'}<br/>
+                ID: ${pcr.signatureInfo.doctorCorporationId || 'N/A'}<br/>
+                Date: ${pcr.submittedAt ? new Date(pcr.submittedAt).toLocaleDateString() : 'N/A'}
+              </div>
+            </div>
+            
+            <div class="signature-box">
+              <div class="signature-label">${pcr.signatureInfo.othersRole || 'PATIENT/GUARDIAN'}</div>
+              <div class="signature-line"></div>
+              <div class="signature-info">
+                Name: ${pcr.signatureInfo.othersSignature || 'Not signed'}<br/>
+                Role: ${pcr.signatureInfo.othersRole || 'N/A'}<br/>
+                Date: ${pcr.submittedAt ? new Date(pcr.submittedAt).toLocaleDateString() : 'N/A'}
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="footer">
+          <div><strong>Report Generated By:</strong> RORK Electronic Patient Care Record System</div>
+          <div><strong>Submitted By:</strong> ${pcr.submittedBy.name} (${pcr.submittedBy.corporationId}) - ${pcr.submittedBy.role}</div>
+          <div><strong>Submission Date:</strong> ${new Date(pcr.submittedAt).toLocaleString()}</div>
+          <div><strong>Report Generated:</strong> ${new Date().toLocaleString()}</div>
+          <div style="margin-top: 10px; font-size: 8pt; color: #666;">
+            This document contains confidential patient information protected by HIPAA.<br/>
+            Unauthorized disclosure is prohibited by law.
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+  };
+
+  const handleExportPDF = async (isComprehensive: boolean = false) => {
     if (!selectedPCR) return;
 
     try {
-      const html = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <style>
-            body { font-family: Arial, sans-serif; padding: 20px; }
-            h1 { color: #0066CC; }
-            h2 { color: #333; margin-top: 20px; }
-            .info-row { margin: 5px 0; }
-            .vitals-table { width: 100%; border-collapse: collapse; margin: 10px 0; }
-            .vitals-table th, .vitals-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-            .vitals-table th { background-color: #f2f2f2; }
-            .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #666; }
-          </style>
-        </head>
-        <body>
-          <h1>Patient Care Report</h1>
-          <div class="info-row"><strong>Case ID:</strong> ${selectedPCR.id}</div>
-          <div class="info-row"><strong>Date:</strong> ${new Date(selectedPCR.submittedAt).toLocaleString()}</div>
-          
-          <h2>Patient Information</h2>
-          <div class="info-row"><strong>Name:</strong> ${anonymizeReport ? 'XXXXX' : `${selectedPCR.patientInfo.firstName} ${selectedPCR.patientInfo.lastName}`}</div>
-          <div class="info-row"><strong>MRN:</strong> ${anonymizeReport ? 'XXXXX' : selectedPCR.patientInfo.mrn}</div>
-          <div class="info-row"><strong>Age:</strong> ${selectedPCR.patientInfo.age} | <strong>Gender:</strong> ${selectedPCR.patientInfo.gender}</div>
-          
-          <h2>Incident Information</h2>
-          <div class="info-row"><strong>Location:</strong> ${selectedPCR.incidentInfo.location}</div>
-          <div class="info-row"><strong>Chief Complaint:</strong> ${selectedPCR.incidentInfo.chiefComplaint}</div>
-          <div class="info-row"><strong>Assessment:</strong> ${selectedPCR.incidentInfo.assessment}</div>
-          
-          <h2>Vital Signs</h2>
-          <table class="vitals-table">
-            <tr>
-              <th>Time</th>
-              <th>HR</th>
-              <th>BP</th>
-              <th>RR</th>
-              <th>SpO2</th>
-              <th>Temp</th>
-            </tr>
-            ${selectedPCR.vitals.map(v => `
-              <tr>
-                <td>${v.timestamp}</td>
-                <td>${v.heartRate}</td>
-                <td>${v.bloodPressureSystolic}/${v.bloodPressureDiastolic}</td>
-                <td>${v.respiratoryRate}</td>
-                <td>${v.oxygenSaturation}%</td>
-                <td>${v.temperature}°C</td>
-              </tr>
-            `).join('')}
-          </table>
-          
-          <div class="footer">
-            <p>Generated by RORK Admin System</p>
-            <p>Date: ${new Date().toLocaleString()}</p>
-            <p>Submitted by: ${selectedPCR.submittedBy.name} (${selectedPCR.submittedBy.corporationId})</p>
-          </div>
-        </body>
-        </html>
-      `;
-
-      const { uri } = await Print.printToFileAsync({ html });
+      const html = generateProfessionalHTML(selectedPCR, isComprehensive);
+      const fileName = `PCR_${selectedPCR.id}_${new Date().toISOString().split('T')[0]}.pdf`;
+      
+      const { uri } = await Print.printToFileAsync({ 
+        html,
+        base64: false,
+        width: 612, // 8.5 inches at 72 DPI
+        height: 792, // 11 inches at 72 DPI
+        margins: {
+          left: 54, // 0.75 inches
+          top: 54,
+          right: 54,
+          bottom: 54,
+        },
+      });
       
       if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(uri);
+        await Sharing.shareAsync(uri, {
+          mimeType: 'application/pdf',
+          dialogTitle: `Share ${fileName}`,
+          UTI: 'com.adobe.pdf',
+        });
       } else {
-        Alert.alert('Success', 'PDF generated successfully');
+        Alert.alert('Success', 'Professional PDF report generated successfully');
       }
       
-      await addAuditLog('EXPORT_PDF', 'PCR', selectedPCR.id, 'Exported report as PDF');
+      await addAuditLog('EXPORT_PDF', 'PCR', selectedPCR.id, `Exported ${isComprehensive ? 'comprehensive' : 'standard'} PDF report`);
     } catch (error) {
-      Alert.alert('Error', 'Failed to generate PDF');
+      console.error('PDF generation error:', error);
+      Alert.alert('Error', 'Failed to generate PDF report');
     }
   };
 
@@ -518,7 +1024,7 @@ export default function AdminScreen() {
           data={data}
           keyExtractor={(item: any, index: number) => {
             const baseId = item.id || item.patient_id || item.encounter_id || item.vitals_id || item.ecg_id || item.signature_id || item.attachment_id || `item_${index}`;
-            return `${vaultSection}_${baseId}_${index}_${Date.now()}`;
+            return `${vaultSection}_${baseId}_${index}`;
           }}
           renderItem={({ item, index }) => {
             const itemId = item.id || item.patient_id || item.encounter_id || item.vitals_id || item.ecg_id || item.signature_id || item.attachment_id;
@@ -573,11 +1079,22 @@ export default function AdminScreen() {
                       style={styles.actionButton}
                       onPress={() => {
                         setSelectedPCR(pcr);
-                        handleExportPDF();
+                        handleExportPDF(false);
                       }}
                     >
                       <Download size={14} color="#0066CC" />
                       <Text style={styles.actionButtonText}>PDF</Text>
+                    </TouchableOpacity>
+                    
+                    <TouchableOpacity
+                      style={[styles.actionButton, { borderColor: '#28A745' }]}
+                      onPress={() => {
+                        setSelectedPCR(pcr);
+                        handleExportPDF(true);
+                      }}
+                    >
+                      <FileText size={14} color="#28A745" />
+                      <Text style={[styles.actionButtonText, { color: '#28A745' }]}>Complete</Text>
                     </TouchableOpacity>
                   </View>
                 </TouchableOpacity>
@@ -930,9 +1447,14 @@ export default function AdminScreen() {
                 <Text style={styles.reportActionText}>Comprehensive Report</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.reportActionButton} onPress={handleExportPDF}>
+              <TouchableOpacity style={styles.reportActionButton} onPress={() => handleExportPDF(false)}>
                 <Download size={20} color="#0066CC" />
-                <Text style={styles.reportActionText}>Export PDF</Text>
+                <Text style={styles.reportActionText}>Export Standard PDF</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity style={[styles.reportActionButton, { borderColor: '#28A745' }]} onPress={() => handleExportPDF(true)}>
+                <FileText size={20} color="#28A745" />
+                <Text style={[styles.reportActionText, { color: '#28A745' }]}>Export Complete PDF</Text>
               </TouchableOpacity>
             </View>
 
