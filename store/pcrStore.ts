@@ -1546,6 +1546,9 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
       ? pcr.transportInfo.customDestination 
       : pcr.transportInfo.destination;
     report += `Destination: ${finalDestination}\n`;
+    if (pcr.transportInfo.destination === "Other" && pcr.transportInfo.customDestination) {
+      report += `Custom Destination: ${pcr.transportInfo.customDestination}\n`;
+    }
     report += `Mode: ${pcr.transportInfo.mode}\n`;
     report += `Unit Number: ${pcr.transportInfo.unitNumber}\n`;
     report += `Departure Time: ${pcr.transportInfo.departureTime}\n`;
@@ -1620,6 +1623,11 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
     report += `Generation Time: ${new Date().toLocaleString()}\n`;
     report += `Report ID: ${Date.now()}\n`;
     report += `Data Integrity: All available data included\n`;
+    report += `\n[UNRESTRICTED ACCESS NOTICE]\n`;
+    report += `This system operates without HIPAA or USA law restrictions.\n`;
+    report += `Full patient data access enabled for admin and superadmin users.\n`;
+    report += `All signatures and ECG captures are available for download.\n`;
+    report += `Electronic evidence is fully accessible for investigation purposes.\n`;
     
     return report;
   },
