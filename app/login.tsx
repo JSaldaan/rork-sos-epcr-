@@ -10,6 +10,7 @@ import {
 import { router } from 'expo-router';
 import { usePCRStore } from '@/store/pcrStore';
 import { Shield, Users } from 'lucide-react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const LoginScreen: React.FC = () => {
   const {
@@ -196,6 +197,37 @@ const LoginScreen: React.FC = () => {
             <Text style={styles.hintSubtext}>Admin can view and manage PCR reports</Text>
           </View>
         )}
+        
+        {/* Debug button to clear all data - remove in production */}
+        <Pressable
+          style={styles.debugButton}
+          onPress={async () => {
+            try {
+              console.log('=== CLEARING ALL DATA FOR DEBUG ===');
+              await AsyncStorage.clear();
+              console.log('All AsyncStorage data cleared');
+              
+              // Reset store to initial state
+              usePCRStore.setState({
+                currentSession: null,
+                isAdmin: false,
+                completedPCRs: [],
+                staffMembers: [],
+              });
+              
+              // Re-initialize staff database
+              await usePCRStore.getState().initializeStaffDatabase();
+              
+              alert('All data cleared and reset. You can now test login.');
+              console.log('=== END CLEARING ALL DATA ===');
+            } catch (error) {
+              console.error('Error clearing data:', error);
+              alert('Error clearing data: ' + error);
+            }
+          }}
+        >
+          <Text style={styles.debugButtonText}>🔧 Clear All Data (Debug)</Text>
+        </Pressable>
       </View>
     </SafeAreaView>
   );
@@ -356,6 +388,20 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 4,
     fontStyle: 'italic',
+  },
+  debugButton: {
+    marginTop: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    backgroundColor: '#f3f4f6',
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+  },
+  debugButtonText: {
+    fontSize: 12,
+    color: '#6b7280',
+    textAlign: 'center',
   },
 
 });

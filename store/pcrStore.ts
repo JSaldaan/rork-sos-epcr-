@@ -690,19 +690,26 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
 
   initializeStaffDatabase: async () => {
     try {
+      console.log('=== INITIALIZING STAFF DATABASE ===');
       const stored = await AsyncStorage.getItem('staffMembers');
+      console.log('Stored staff data exists:', !!stored);
+      
       if (!stored) {
         // Initialize with default staff members
+        console.log('No stored staff data, creating default members:', defaultStaffMembers.length);
         await AsyncStorage.setItem('staffMembers', JSON.stringify(defaultStaffMembers));
         set({ staffMembers: defaultStaffMembers });
-        console.log('Staff database initialized with default members');
+        console.log('Staff database initialized with default members:', defaultStaffMembers.map(s => ({ id: s.corporationId, name: s.name })));
       } else {
         const staffMembers = JSON.parse(stored);
         set({ staffMembers });
         console.log('Staff database loaded:', staffMembers.length, 'members');
+        console.log('Loaded staff members:', staffMembers.map((s: StaffMember) => ({ id: s.corporationId, name: s.name, active: s.isActive })));
       }
+      console.log('=== END INITIALIZING STAFF DATABASE ===');
     } catch (error) {
       console.error('Error initializing staff database:', error);
+      console.log('Falling back to default staff members');
       set({ staffMembers: defaultStaffMembers });
     }
   },
@@ -727,7 +734,13 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
       return false;
     }
     
+    // Ensure staff database is loaded
+    await get().loadStaffMembers();
+    const currentStaffMembers = get().staffMembers;
+    console.log('Available staff members:', currentStaffMembers.map(s => ({ id: s.corporationId, name: s.name, active: s.isActive })));
+    
     const staff = await get().validateCorporationId(corporationId);
+    console.log('Staff validation result:', staff ? { name: staff.name, role: staff.role, active: staff.isActive } : 'Not found');
     
     if (staff) {
       const session: AuthSession = {
@@ -769,6 +782,7 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
       return true;
     } else {
       console.log('Corporation ID not found or inactive');
+      console.log('Available Corporation IDs:', currentStaffMembers.map(s => s.corporationId));
       console.log('=== END STAFF LOGIN ===');
       return false;
     }
