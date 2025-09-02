@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "SOS ePCR ",
-    "slug": "hamad-medical-corporation-epcr-app",
+    "slug": "special-operations-epcr-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
