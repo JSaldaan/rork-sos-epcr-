@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,10 +6,11 @@ import {
   Pressable,
   StyleSheet,
   SafeAreaView,
+  Alert,
 } from 'react-native';
 import { router } from 'expo-router';
 import { usePCRStore } from '@/store/pcrStore';
-import { Shield, Users } from 'lucide-react-native';
+import { Shield, Users, Lock, Clock } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const LoginScreen: React.FC = () => {
@@ -23,6 +24,70 @@ const LoginScreen: React.FC = () => {
   const [loginError, setLoginError] = useState<string>('');
   const [loginMode, setLoginMode] = useState<'staff' | 'admin'>('staff');
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  
+  // OTP States
+  const [showOTP, setShowOTP] = useState<boolean>(false);
+  const [otpCode, setOtpCode] = useState<string>('');
+  const [generatedOTP, setGeneratedOTP] = useState<string>('');
+  const [otpTimer, setOtpTimer] = useState<number>(0);
+  const [canResendOTP, setCanResendOTP] = useState<boolean>(true);
+  const [validatedUser, setValidatedUser] = useState<any>(null);
+
+  // OTP Timer Effect
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (otpTimer > 0) {
+      interval = setInterval(() => {
+        setOtpTimer((prev) => {
+          if (prev <= 1) {
+            setCanResendOTP(true);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [otpTimer]);
+
+  // Generate OTP
+  const generateOTP = (): string => {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  };
+
+  // Send OTP (simulate sending via SMS/Email)
+  const sendOTP = async (corporationId: string, userInfo: any) => {
+    const otp = generateOTP();
+    setGeneratedOTP(otp);
+    setOtpTimer(300); // 5 minutes
+    setCanResendOTP(false);
+    
+    // In a real app, you would send this OTP via SMS or email
+    // For demo purposes, we'll show it in an alert
+    Alert.alert(
+      'OTP Sent',
+      `Your OTP code is: ${otp}\n\nThis code will expire in 5 minutes.\n\nIn production, this would be sent to your registered phone/email.`,
+      [{ text: 'OK' }]
+    );
+    
+    console.log(`OTP sent to ${corporationId}: ${otp}`);
+  };
+
+  // Verify OTP
+  const verifyOTP = (): boolean => {
+    if (otpCode === generatedOTP) {
+      return true;
+    }
+    return false;
+  };
+
+  // Resend OTP
+  const resendOTP = async () => {
+    if (!canResendOTP || !validatedUser) return;
+    
+    await sendOTP(validatedUser.corporationId, validatedUser);
+    Alert.alert('OTP Resent', 'A new OTP code has been sent.');
+  };
 
   // Don't auto-redirect if user is already logged in
   // Let them stay on login page and manually navigate to tabs if they want
@@ -42,21 +107,23 @@ const LoginScreen: React.FC = () => {
       await usePCRStore.getState().loadStaffMembers();
       const staff = await usePCRStore.getState().validateCorporationId(corporationId.trim().toUpperCase());
       
+      if (!staff) {
+        setLoginError('Invalid Corporation ID or account inactive');
+        setIsLoading(false);
+        return;
+      }
+      
       if (staff && (staff.role === 'SuperAdmin' || staff.role === 'Admin')) {
         setLoginError('Admin and Super Admin accounts must use Admin Only login');
         setIsLoading(false);
         return;
       }
       
-      const success = await staffLogin(corporationId.trim().toUpperCase());
-      if (success) {
-        setCorporationId('');
-        setLoginError('');
-        console.log('Staff login successful, redirecting to tabs');
-        router.replace('/(tabs)');
-      } else {
-        setLoginError('Invalid Corporation ID or account inactive');
-      }
+      // Store validated user and show OTP screen
+      setValidatedUser(staff);
+      await sendOTP(staff.corporationId, staff);
+      setShowOTP(true);
+      
     } catch (error) {
       console.error('Staff login error:', error);
       setLoginError('Login failed. Please try again.');
@@ -77,29 +144,25 @@ const LoginScreen: React.FC = () => {
     try {
       // Check if it's the system admin password
       if (password === 'admin123') {
-        if (adminLogin(password)) {
-          setPassword('');
-          setLoginError('');
-          console.log('System admin login successful, redirecting to tabs');
-          router.replace('/(tabs)');
-        } else {
-          setLoginError('System admin login failed');
-        }
+        // System admin gets OTP too for security
+        const systemAdmin = {
+          corporationId: 'ADMIN_SYSTEM',
+          name: 'System Administrator',
+          role: 'SuperAdmin'
+        };
+        setValidatedUser(systemAdmin);
+        await sendOTP('ADMIN_SYSTEM', systemAdmin);
+        setShowOTP(true);
       } else {
         // Check if it's a staff member with admin/super admin role using corporation ID as password
         await usePCRStore.getState().loadStaffMembers();
         const staff = await usePCRStore.getState().validateCorporationId(password.trim().toUpperCase());
         
         if (staff && (staff.role === 'SuperAdmin' || staff.role === 'Admin')) {
-          const success = await staffLogin(password.trim().toUpperCase());
-          if (success) {
-            setPassword('');
-            setLoginError('');
-            console.log('Admin staff login successful, redirecting to tabs');
-            router.replace('/(tabs)');
-          } else {
-            setLoginError('Admin login failed');
-          }
+          // Store validated admin user and show OTP screen
+          setValidatedUser(staff);
+          await sendOTP(staff.corporationId, staff);
+          setShowOTP(true);
         } else {
           setLoginError('Invalid admin credentials. Use system password or admin Corporation ID');
         }
@@ -118,6 +181,78 @@ const LoginScreen: React.FC = () => {
     } else {
       handleAdminLogin();
     }
+  };
+
+  // Handle OTP verification and final login
+  const handleOTPVerification = async () => {
+    if (!otpCode.trim()) {
+      setLoginError('Please enter the OTP code');
+      return;
+    }
+    
+    if (otpTimer <= 0) {
+      setLoginError('OTP has expired. Please request a new one.');
+      return;
+    }
+    
+    if (!verifyOTP()) {
+      setLoginError('Invalid OTP code. Please try again.');
+      return;
+    }
+    
+    setIsLoading(true);
+    setLoginError('');
+    
+    try {
+      if (!validatedUser) {
+        throw new Error('No validated user found');
+      }
+      
+      // Complete the login process
+      if (validatedUser.corporationId === 'ADMIN_SYSTEM') {
+        // System admin login
+        if (adminLogin('admin123')) {
+          console.log('System admin OTP verification successful, redirecting to tabs');
+          resetOTPState();
+          router.replace('/(tabs)');
+        } else {
+          setLoginError('System admin login failed');
+        }
+      } else {
+        // Staff/Admin login
+        const success = await staffLogin(validatedUser.corporationId);
+        if (success) {
+          console.log('Staff OTP verification successful, redirecting to tabs');
+          resetOTPState();
+          router.replace('/(tabs)');
+        } else {
+          setLoginError('Login failed after OTP verification');
+        }
+      }
+    } catch (error) {
+      console.error('OTP verification error:', error);
+      setLoginError('OTP verification failed. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Reset OTP state
+  const resetOTPState = () => {
+    setShowOTP(false);
+    setOtpCode('');
+    setGeneratedOTP('');
+    setOtpTimer(0);
+    setCanResendOTP(true);
+    setValidatedUser(null);
+    setCorporationId('');
+    setPassword('');
+  };
+
+  // Go back from OTP screen
+  const handleBackFromOTP = () => {
+    resetOTPState();
+    setLoginError('');
   };
 
   return (
@@ -161,49 +296,129 @@ const LoginScreen: React.FC = () => {
           </Pressable>
         </View>
         
-        {loginMode === 'staff' ? (
-          <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Corporation ID</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="Enter your Corporation ID (e.g., PARA001)"
-              value={corporationId}
-              onChangeText={(text) => {
-                setCorporationId(text);
-                setLoginError('');
-              }}
-              autoCapitalize="characters"
-              autoCorrect={false}
-              onSubmitEditing={handleLogin}
-              editable={!isLoading}
-              clearButtonMode="while-editing"
-              returnKeyType="go"
-              maxLength={20}
-              selectTextOnFocus={true}
-            />
-            <Text style={styles.inputHint}>
-              Use your assigned Corporation ID to access the system
-            </Text>
-          </View>
+        {!showOTP ? (
+          loginMode === 'staff' ? (
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Corporation ID</Text>
+              <TextInput
+                style={styles.textInput}
+                placeholder="Enter your Corporation ID (e.g., PARA001)"
+                value={corporationId}
+                onChangeText={(text) => {
+                  setCorporationId(text);
+                  setLoginError('');
+                }}
+                autoCapitalize="characters"
+                autoCorrect={false}
+                onSubmitEditing={handleLogin}
+                editable={!isLoading}
+                clearButtonMode="while-editing"
+                returnKeyType="go"
+                maxLength={20}
+                selectTextOnFocus={true}
+              />
+              <Text style={styles.inputHint}>
+                Use your assigned Corporation ID to access the system
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Admin Credentials</Text>
+              <TextInput
+                style={styles.textInput}
+                placeholder="Enter system password or admin Corporation ID"
+                value={password}
+                onChangeText={(text) => {
+                  setPassword(text);
+                  setLoginError('');
+                }}
+                secureTextEntry
+                autoCapitalize="characters"
+                onSubmitEditing={handleLogin}
+                editable={!isLoading}
+                clearButtonMode="while-editing"
+                returnKeyType="go"
+                selectTextOnFocus={true}
+              />
+            </View>
+          )
         ) : (
-          <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Admin Credentials</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="Enter system password or admin Corporation ID"
-              value={password}
-              onChangeText={(text) => {
-                setPassword(text);
-                setLoginError('');
-              }}
-              secureTextEntry
-              autoCapitalize="characters"
-              onSubmitEditing={handleLogin}
-              editable={!isLoading}
-              clearButtonMode="while-editing"
-              returnKeyType="go"
-              selectTextOnFocus={true}
-            />
+          <View style={styles.otpContainer}>
+            <View style={styles.otpHeader}>
+              <Lock size={32} color="#0066CC" />
+              <Text style={styles.otpTitle}>Enter OTP Code</Text>
+              <Text style={styles.otpSubtitle}>
+                We&apos;ve sent a 6-digit code to verify your identity
+              </Text>
+              {validatedUser && (
+                <Text style={styles.otpUserInfo}>
+                  Logging in as: {validatedUser.name}
+                </Text>
+              )}
+            </View>
+            
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>OTP Code</Text>
+              <TextInput
+                style={[styles.textInput, styles.otpInput]}
+                placeholder="Enter 6-digit OTP code"
+                value={otpCode}
+                onChangeText={(text) => {
+                  // Only allow numbers and limit to 6 digits
+                  const numericText = text.replace(/[^0-9]/g, '').slice(0, 6);
+                  setOtpCode(numericText);
+                  setLoginError('');
+                }}
+                keyboardType="numeric"
+                maxLength={6}
+                onSubmitEditing={handleOTPVerification}
+                editable={!isLoading}
+                autoFocus={true}
+                selectTextOnFocus={true}
+              />
+              
+              <View style={styles.otpTimerContainer}>
+                {otpTimer > 0 ? (
+                  <View style={styles.timerRow}>
+                    <Clock size={16} color="#6b7280" />
+                    <Text style={styles.timerText}>
+                      Code expires in {Math.floor(otpTimer / 60)}:{(otpTimer % 60).toString().padStart(2, '0')}
+                    </Text>
+                  </View>
+                ) : (
+                  <Text style={styles.expiredText}>OTP code has expired</Text>
+                )}
+              </View>
+            </View>
+            
+            <View style={styles.otpActions}>
+              <Pressable
+                style={[styles.otpButton, styles.verifyButton, isLoading && styles.loginButtonDisabled]}
+                onPress={handleOTPVerification}
+                disabled={isLoading || otpCode.length !== 6}
+              >
+                <Text style={styles.verifyButtonText}>
+                  {isLoading ? 'Verifying...' : 'Verify & Login'}
+                </Text>
+              </Pressable>
+              
+              <Pressable
+                style={[styles.otpButton, styles.resendButton, !canResendOTP && styles.resendButtonDisabled]}
+                onPress={resendOTP}
+                disabled={!canResendOTP}
+              >
+                <Text style={[styles.resendButtonText, !canResendOTP && styles.resendButtonTextDisabled]}>
+                  {canResendOTP ? 'Resend OTP' : `Resend in ${otpTimer}s`}
+                </Text>
+              </Pressable>
+              
+              <Pressable
+                style={[styles.otpButton, styles.backButton]}
+                onPress={handleBackFromOTP}
+              >
+                <Text style={styles.backButtonText}>Back to Login</Text>
+              </Pressable>
+            </View>
           </View>
         )}
         
@@ -213,17 +428,19 @@ const LoginScreen: React.FC = () => {
           </View>
         ) : null}
         
-        <Pressable
-          style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
-          onPress={handleLogin}
-          disabled={isLoading}
-        >
-          <Text style={styles.loginButtonText}>
-            {isLoading ? 'Authenticating...' : 'Login'}
-          </Text>
-        </Pressable>
+        {!showOTP && (
+          <Pressable
+            style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
+            onPress={handleLogin}
+            disabled={isLoading}
+          >
+            <Text style={styles.loginButtonText}>
+              {isLoading ? 'Authenticating...' : 'Continue'}
+            </Text>
+          </Pressable>
+        )}
         
-        {loginMode === 'staff' && (
+        {!showOTP && loginMode === 'staff' && (
           <View style={styles.demoContainer}>
             <Text style={styles.demoTitle}>Demo Corporation IDs:</Text>
             <View style={styles.demoIds}>
@@ -237,7 +454,7 @@ const LoginScreen: React.FC = () => {
           </View>
         )}
         
-        {loginMode === 'admin' && (
+        {!showOTP && loginMode === 'admin' && (
           <View style={styles.adminHintContainer}>
             <Text style={styles.adminHintTitle}>🔐 Administrator Access</Text>
             <Text style={styles.adminHintText}>System Password: &quot;admin123&quot;</Text>
@@ -256,36 +473,52 @@ const LoginScreen: React.FC = () => {
           </View>
         )}
         
-        {/* Debug button to clear all data - remove in production */}
-        <Pressable
-          style={styles.debugButton}
-          onPress={async () => {
-            try {
-              console.log('=== CLEARING ALL DATA FOR DEBUG ===');
-              await AsyncStorage.clear();
-              console.log('All AsyncStorage data cleared');
-              
-              // Reset store to initial state
-              usePCRStore.setState({
-                currentSession: null,
-                isAdmin: false,
-                completedPCRs: [],
-                staffMembers: [],
-              });
-              
-              // Re-initialize staff database
-              await usePCRStore.getState().initializeStaffDatabase();
-              
-              alert('All data cleared and reset. You can now test login.');
-              console.log('=== END CLEARING ALL DATA ===');
-            } catch (error) {
-              console.error('Error clearing data:', error);
-              alert('Error clearing data: ' + error);
-            }
-          }}
-        >
-          <Text style={styles.debugButtonText}>🔧 Clear All Data (Debug)</Text>
-        </Pressable>
+        {showOTP && (
+          <View style={styles.otpInfoContainer}>
+            <Text style={styles.otpInfoTitle}>🔒 Enhanced Security</Text>
+            <Text style={styles.otpInfoText}>
+              For added security, all logins require OTP verification.
+            </Text>
+            <Text style={styles.otpInfoSubtext}>
+              In production, OTP codes would be sent via SMS or email.
+            </Text>
+          </View>
+        )}
+        
+        {!showOTP && (
+          <Pressable
+            style={styles.debugButton}
+            onPress={async () => {
+              try {
+                console.log('=== CLEARING ALL DATA FOR DEBUG ===');
+                await AsyncStorage.clear();
+                console.log('All AsyncStorage data cleared');
+                
+                // Reset store to initial state
+                usePCRStore.setState({
+                  currentSession: null,
+                  isAdmin: false,
+                  completedPCRs: [],
+                  staffMembers: [],
+                });
+                
+                // Re-initialize staff database
+                await usePCRStore.getState().initializeStaffDatabase();
+                
+                // Reset OTP state
+                resetOTPState();
+                
+                alert('All data cleared and reset. You can now test login.');
+                console.log('=== END CLEARING ALL DATA ===');
+              } catch (error) {
+                console.error('Error clearing data:', error);
+                alert('Error clearing data: ' + error);
+              }
+            }}
+          >
+            <Text style={styles.debugButtonText}>🔧 Clear All Data (Debug)</Text>
+          </Pressable>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -502,6 +735,138 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#6b7280',
     textAlign: 'center',
+  },
+  
+  // OTP Styles
+  otpContainer: {
+    width: '100%',
+    maxWidth: 400,
+    alignItems: 'center',
+  },
+  otpHeader: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  otpTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#0066CC',
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  otpSubtitle: {
+    fontSize: 14,
+    color: '#6b7280',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  otpUserInfo: {
+    fontSize: 12,
+    color: '#374151',
+    fontWeight: '600',
+    textAlign: 'center',
+    backgroundColor: '#f3f4f6',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  otpInput: {
+    textAlign: 'center',
+    fontSize: 24,
+    fontWeight: 'bold',
+    letterSpacing: 8,
+    fontFamily: 'monospace',
+  },
+  otpTimerContainer: {
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  timerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  timerText: {
+    fontSize: 12,
+    color: '#6b7280',
+    fontWeight: '500',
+  },
+  expiredText: {
+    fontSize: 12,
+    color: '#dc3545',
+    fontWeight: '600',
+  },
+  otpActions: {
+    width: '100%',
+    gap: 12,
+    marginTop: 16,
+  },
+  otpButton: {
+    width: '100%',
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  verifyButton: {
+    backgroundColor: '#0066CC',
+  },
+  verifyButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  resendButton: {
+    backgroundColor: '#f3f4f6',
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+  },
+  resendButtonDisabled: {
+    backgroundColor: '#f9fafb',
+    borderColor: '#e5e7eb',
+  },
+  resendButtonText: {
+    color: '#0066CC',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  resendButtonTextDisabled: {
+    color: '#9ca3af',
+  },
+  backButton: {
+    backgroundColor: 'transparent',
+  },
+  backButtonText: {
+    color: '#6b7280',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  otpInfoContainer: {
+    backgroundColor: '#f0f9ff',
+    padding: 16,
+    borderRadius: 8,
+    borderLeftWidth: 4,
+    borderLeftColor: '#0066CC',
+    width: '100%',
+    maxWidth: 400,
+  },
+  otpInfoTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#0066CC',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  otpInfoText: {
+    fontSize: 12,
+    color: '#0066CC',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  otpInfoSubtext: {
+    fontSize: 10,
+    color: '#6b7280',
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
 
 });
