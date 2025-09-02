@@ -1,5 +1,5 @@
 import { Tabs, router } from "expo-router";
-import { FileText, Activity, Truck, User, FileX, Eye, LogOut, FolderOpen } from "lucide-react-native";
+import { FileText, Activity, Truck, User, FileX, Eye, LogOut, FolderOpen, Shield } from "lucide-react-native";
 import React, { useCallback } from "react";
 import { Pressable, Alert, StyleSheet } from "react-native";
 import { usePCRStore } from "../../store/pcrStore";
@@ -148,6 +148,16 @@ export default function TabLayout() {
           headerTitle: "My Submitted Reports",
         }}
       />
+      {(currentSession?.isAdmin || currentSession?.role === 'admin' || currentSession?.role === 'supervisor') && (
+        <Tabs.Screen
+          name="admin"
+          options={{
+            title: "Admin",
+            tabBarIcon: ({ color }) => <Shield size={24} color={color} />,
+            headerTitle: "Admin Dashboard",
+          }}
+        />
+      )}
 
     </Tabs>
   );

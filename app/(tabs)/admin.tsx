@@ -1,302 +1,376 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
   ScrollView,
-  Pressable,
-  Alert,
   StyleSheet,
-  Share,
-  Platform,
+  TouchableOpacity,
   TextInput,
-  KeyboardAvoidingView,
-  Keyboard,
-  TouchableWithoutFeedback,
+  Alert,
+  Modal,
+  FlatList,
+  Platform,
+  Clipboard,
+  ActivityIndicator,
+  Switch,
+  Pressable,
 } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
-import { router } from 'expo-router';
-import { usePCRStore, CompletedPCR, StaffMember } from '../../store/pcrStore';
-import { Trash2, Copy, LogOut, Eye, Clock, Users, Plus, UserCheck, UserX, Edit3, ArrowLeft } from 'lucide-react-native';
+import { usePCRStore, CompletedPCR, StaffMember, Patient, Encounter, Vitals, ECG, Signature, Attachment, AuditLog } from '../../store/pcrStore';
+import { 
+  Shield, 
+  Users, 
+  FileText, 
+  Activity, 
+  Heart, 
+  Camera, 
+  Edit3, 
+  Database,
+  Search,
+  Filter,
+  Download,
+  Copy,
+  Trash2,
+  Plus,
+  X,
+  Check,
+  AlertCircle,
+  ChevronDown,
+  ChevronUp,
+  Clock,
+  User,
+  Lock,
+  Unlock,
+  RefreshCw,
+  Eye,
+  EyeOff,
+} from 'lucide-react-native';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
 
-const AdminScreen: React.FC = () => {
-  const {
+type TabType = 'vault' | 'staff' | 'audit' | 'reports';
+type VaultSection = 'patients' | 'encounters' | 'vitals' | 'ecgs' | 'signatures' | 'attachments' | 'pcrs';
+
+export default function AdminScreen() {
+  const { 
+    currentSession, 
     completedPCRs,
-    loadCompletedPCRs,
-    deletePCR,
-    setAdminMode,
-    isAdmin,
-    staffLogout,
-    currentSession,
     staffMembers,
+    patients,
+    encounters,
+    allVitals,
+    ecgs,
+    signatures,
+    attachments,
+    auditLogs,
+    loadCompletedPCRs,
+    loadStaffMembers,
+    loadAdminData,
     addStaffMember,
     updateStaffMember,
-    deleteStaffMember,
-    loadStaffMembers,
+    deactivateStaff,
+    reactivateStaff,
+    updateStaffRole,
+    addAuditLog,
   } = usePCRStore();
-  
+
+  const [activeTab, setActiveTab] = useState<TabType>('vault');
+  const [vaultSection, setVaultSection] = useState<VaultSection>('pcrs');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedItems, setSelectedItems] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showAddStaffModal, setShowAddStaffModal] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
   const [selectedPCR, setSelectedPCR] = useState<CompletedPCR | null>(null);
-  const [showDetails, setShowDetails] = useState<boolean>(false);
-  const [activeTab, setActiveTab] = useState<string>('reports');
-  const [showAddStaff, setShowAddStaff] = useState<boolean>(false);
-  const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null);
-  const [newStaff, setNewStaff] = useState<{
-    corporationId: string;
-    name: string;
-    role: 'paramedic' | 'nurse' | 'doctor' | 'admin' | 'supervisor';
-    department: string;
-  }>({
-    corporationId: '',
+  const [anonymizeReport, setAnonymizeReport] = useState(false);
+  const [reportFormat, setReportFormat] = useState<'full' | 'summary'>('full');
+  
+  // Staff form state
+  const [newStaff, setNewStaff] = useState({
     name: '',
-    role: 'paramedic',
+    corporationId: '',
+    role: 'Staff' as StaffMember['role'],
     department: '',
   });
 
+  // Date range filter
+  const [dateRange, setDateRange] = useState({
+    start: '',
+    end: '',
+  });
+
   useEffect(() => {
-    if (isAdmin || currentSession?.isAdmin) {
-      console.log('Admin mode detected, loading data...');
-      loadCompletedPCRs();
-      loadStaffMembers();
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    setIsLoading(true);
+    try {
+      await Promise.all([
+        loadCompletedPCRs(),
+        loadStaffMembers(),
+        loadAdminData(),
+      ]);
+    } catch (error) {
+      console.error('Error loading admin data:', error);
+    } finally {
+      setIsLoading(false);
     }
-  }, [isAdmin, currentSession?.isAdmin, loadCompletedPCRs, loadStaffMembers]);
-
-  // Refresh data whenever the admin screen is focused
-  useFocusEffect(
-    React.useCallback(() => {
-      if (isAdmin || currentSession?.isAdmin) {
-        console.log('=== ADMIN SCREEN FOCUSED ===');
-        console.log('Current session:', currentSession);
-        console.log('Is admin:', isAdmin);
-        console.log('Loading admin data...');
-        
-        loadCompletedPCRs();
-        loadStaffMembers();
-        
-        console.log('=== END ADMIN SCREEN FOCUSED ===');
-      }
-    }, [isAdmin, currentSession?.isAdmin, loadCompletedPCRs, loadStaffMembers])
-  );
-
-  // Also refresh when component mounts
-  useEffect(() => {
-    if (isAdmin || currentSession?.isAdmin) {
-      console.log('Admin component mounted, loading data...');
-      loadCompletedPCRs();
-      loadStaffMembers();
-    }
-  }, [isAdmin, currentSession?.isAdmin, loadCompletedPCRs, loadStaffMembers]);
-
-  const formatPCRForWord = (pcr: CompletedPCR): string => {
-    return `PATIENT CARE REPORT\n` +
-      `Report ID: ${pcr.id}\n` +
-      `Submitted: ${new Date(pcr.submittedAt).toLocaleString()}\n\n` +
-      
-      `PATIENT INFORMATION\n` +
-      `Name: ${pcr.patientInfo.firstName || 'N/A'} ${pcr.patientInfo.lastName || 'N/A'}\n` +
-      `Age: ${pcr.patientInfo.age || 'N/A'}\n` +
-      `Gender: ${pcr.patientInfo.gender || 'N/A'}\n` +
-      `Phone: ${pcr.patientInfo.phone || 'N/A'}\n` +
-      `MRN: ${pcr.patientInfo.mrn || 'N/A'}\n\n` +
-      
-      `CALL TIME INFORMATION\n` +
-      `Date: ${pcr.callTimeInfo.date || 'N/A'}\n` +
-      `Time of Call: ${pcr.callTimeInfo.timeOfCall || 'N/A'}\n` +
-      `Arrival on Scene: ${pcr.callTimeInfo.arrivalOnScene || 'N/A'}\n` +
-      `At Patient Side: ${pcr.callTimeInfo.atPatientSide || 'N/A'}\n` +
-      `To Destination: ${pcr.callTimeInfo.toDestination || 'N/A'}\n` +
-      `At Destination: ${pcr.callTimeInfo.atDestination || 'N/A'}\n\n` +
-      
-      `INCIDENT INFORMATION\n` +
-      `Location: ${pcr.incidentInfo.location || 'N/A'}\n` +
-      `Chief Complaint: ${pcr.incidentInfo.chiefComplaint || 'N/A'}\n` +
-      `History: ${pcr.incidentInfo.history || 'N/A'}\n` +
-      `Assessment: ${pcr.incidentInfo.assessment || 'N/A'}\n` +
-      `Treatment Given: ${pcr.incidentInfo.treatmentGiven || 'N/A'}\n` +
-      `Priority: ${pcr.incidentInfo.priority || 'N/A'}\n` +
-      `On Arrival Info: ${pcr.incidentInfo.onArrivalInfo || 'N/A'}\n` +
-      `Provisional Diagnosis: ${pcr.incidentInfo.provisionalDiagnosis || 'N/A'}\n\n` +
-      
-      `VITAL SIGNS\n` +
-      (pcr.vitals && pcr.vitals.length > 0 ? 
-        pcr.vitals.map((vital, index) => 
-          `Reading ${index + 1} (${vital.timestamp ? new Date(vital.timestamp).toLocaleString() : 'N/A'}):\n` +
-          `  BP: ${vital.bloodPressureSystolic || 'N/A'}/${vital.bloodPressureDiastolic || 'N/A'}\n` +
-          `  HR: ${vital.heartRate || 'N/A'} bpm\n` +
-          `  RR: ${vital.respiratoryRate || 'N/A'} /min\n` +
-          `  O2 Sat: ${vital.oxygenSaturation || 'N/A'}%\n` +
-          `  Temp: ${vital.temperature || 'N/A'}°C\n` +
-          `  Blood Glucose: ${vital.bloodGlucose || 'N/A'} mmol/L\n` +
-          `  Pain Scale: ${vital.painScale || 'N/A'}/10\n` +
-          (vital.ecgCapture ? 
-            `  ECG Capture: Available (ID: ${vital.ecgCapture})\n` +
-            `  ECG Timestamp: ${vital.ecgCaptureTimestamp ? new Date(vital.ecgCaptureTimestamp).toLocaleString() : 'N/A'}\n`
-            : ''
-          )
-        ).join('\n') : 'No vital signs recorded\n'
-      ) + '\n' +
-      
-      `TRANSPORT INFORMATION\n` +
-      `Destination: ${pcr.transportInfo.destination || 'N/A'}\n` +
-      `Mode: ${pcr.transportInfo.mode || 'N/A'}\n` +
-      `Unit Number: ${pcr.transportInfo.unitNumber || 'N/A'}\n` +
-      `Departure Time: ${pcr.transportInfo.departureTime || 'N/A'}\n` +
-      `Arrival Time: ${pcr.transportInfo.arrivalTime || 'N/A'}\n` +
-      `Mileage: ${pcr.transportInfo.mileage || 'N/A'}\n` +
-      `Primary Paramedic: ${pcr.transportInfo.primaryParamedic || 'N/A'}\n` +
-      `Secondary Paramedic: ${pcr.transportInfo.secondaryParamedic || 'N/A'}\n` +
-      `Driver: ${pcr.transportInfo.driver || 'N/A'}\n` +
-      `Notes: ${pcr.transportInfo.notes || 'N/A'}\n\n` +
-      
-      `RECEIVING STAFF SIGNATURES\n` +
-      `Nurse: ${pcr.signatureInfo.nurseSignature || 'N/A'} (ID: ${pcr.signatureInfo.nurseCorporationId || 'N/A'})\n` +
-      `Nurse Signature: ${pcr.signatureInfo.nurseSignaturePaths ? 'Signed' : 'Not Signed'}\n` +
-      (pcr.signatureInfo.nurseSignaturePaths ? 
-        `Nurse Signature Data: ${pcr.signatureInfo.nurseSignaturePaths.substring(0, 50)}...\n` : ''
-      ) +
-      `Doctor: ${pcr.signatureInfo.doctorSignature || 'N/A'} (ID: ${pcr.signatureInfo.doctorCorporationId || 'N/A'})\n` +
-      `Doctor Signature: ${pcr.signatureInfo.doctorSignaturePaths ? 'Signed' : 'Not Signed'}\n` +
-      (pcr.signatureInfo.doctorSignaturePaths ? 
-        `Doctor Signature Data: ${pcr.signatureInfo.doctorSignaturePaths.substring(0, 50)}...\n` : ''
-      ) +
-      `Other: ${pcr.signatureInfo.othersSignature || 'N/A'} (Role: ${pcr.signatureInfo.othersRole || 'N/A'})\n` +
-      `Other Signature: ${pcr.signatureInfo.othersSignaturePaths ? 'Signed' : 'Not Signed'}\n` +
-      (pcr.signatureInfo.othersSignaturePaths ? 
-        `Other Signature Data: ${pcr.signatureInfo.othersSignaturePaths.substring(0, 50)}...\n` : ''
-      ) + '\n' +
-      
-      `REFUSAL INFORMATION\n` +
-      `Patient Name: ${pcr.refusalInfo.patientName || 'N/A'}\n` +
-      `Date of Refusal: ${pcr.refusalInfo.dateOfRefusal || 'N/A'}\n` +
-      `Time of Refusal: ${pcr.refusalInfo.timeOfRefusal || 'N/A'}\n` +
-      `Reason: ${pcr.refusalInfo.reasonForRefusal || 'N/A'}\n` +
-      `Risks Explained: ${pcr.refusalInfo.risksExplained ? 'Yes' : 'No'}\n` +
-      `Mental Capacity: ${pcr.refusalInfo.mentalCapacity ? 'Yes' : 'No'}\n` +
-      `Patient Signature: ${pcr.refusalInfo.patientSignaturePaths ? 'Signed' : 'Not Signed'}\n` +
-      (pcr.refusalInfo.patientSignaturePaths ? 
-        `Patient Signature Data: ${pcr.refusalInfo.patientSignaturePaths.substring(0, 50)}...\n` : ''
-      ) +
-      `Witness: ${pcr.refusalInfo.witnessName || 'N/A'}\n` +
-      `Witness Signature: ${pcr.refusalInfo.witnessSignaturePaths ? 'Signed' : 'Not Signed'}\n` +
-      (pcr.refusalInfo.witnessSignaturePaths ? 
-        `Witness Signature Data: ${pcr.refusalInfo.witnessSignaturePaths.substring(0, 50)}...\n` : ''
-      ) +
-      `Paramedic: ${pcr.refusalInfo.paramedicName || 'N/A'}\n` +
-      `Paramedic Signature: ${pcr.refusalInfo.paramedicSignaturePaths ? 'Signed' : 'Not Signed'}\n` +
-      (pcr.refusalInfo.paramedicSignaturePaths ? 
-        `Paramedic Signature Data: ${pcr.refusalInfo.paramedicSignaturePaths.substring(0, 50)}...\n` : ''
-      ) +
-      `Additional Notes: ${pcr.refusalInfo.additionalNotes || 'N/A'}\n\n` +
-      
-      `ATTACHMENTS AND CAPTURES\n` +
-      `ECG Captures: ${pcr.vitals.filter(v => v.ecgCapture).length} available\n` +
-      (pcr.vitals.filter(v => v.ecgCapture).length > 0 ? 
-        pcr.vitals.filter(v => v.ecgCapture).map((vital, index) => 
-          `  ECG ${index + 1}: ${vital.ecgCapture} (${vital.ecgCaptureTimestamp ? new Date(vital.ecgCaptureTimestamp).toLocaleString() : 'N/A'})\n`
-        ).join('') : ''
-      ) +
-      `Total Signatures: ${[
-        pcr.signatureInfo.nurseSignaturePaths,
-        pcr.signatureInfo.doctorSignaturePaths,
-        pcr.signatureInfo.othersSignaturePaths,
-        pcr.refusalInfo.patientSignaturePaths,
-        pcr.refusalInfo.witnessSignaturePaths,
-        pcr.refusalInfo.paramedicSignaturePaths
-      ].filter(Boolean).length} captured\n`;
   };
 
-  const copyToClipboard = async (pcr: CompletedPCR) => {
-    const formattedText = formatPCRForWord(pcr);
-    
-    if (Platform.OS === 'web') {
-      try {
-        await navigator.clipboard.writeText(formattedText);
-        Alert.alert('Success', 'PCR data copied to clipboard! You can now paste it into Word.');
-      } catch (error) {
-        console.error('Copy failed:', error);
-        Alert.alert('Error', 'Failed to copy to clipboard');
-      }
-    } else {
-      try {
-        await Share.share({
-          message: formattedText,
-          title: `PCR Report ${pcr.id}`,
+  // Check if user is admin
+  const isAdmin = currentSession?.isAdmin || currentSession?.role === 'admin' || currentSession?.role === 'Admin';
+  const isSuperAdmin = currentSession?.role === 'SuperAdmin' || currentSession?.isSuperAdmin;
+
+  if (!isAdmin) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.accessDenied}>
+          <AlertCircle size={64} color="#FF3B30" />
+          <Text style={styles.accessDeniedTitle}>Access Denied</Text>
+          <Text style={styles.accessDeniedText}>
+            You do not have permission to access this area.
+          </Text>
+          <Text style={styles.accessDeniedSubtext}>
+            Admin or SuperAdmin privileges required.
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
+  // Filter data based on search and date range
+  const filterData = (data: any[], fields: string[]) => {
+    return data.filter(item => {
+      // Search filter
+      const matchesSearch = searchQuery === '' || 
+        fields.some(field => {
+          const value = field.split('.').reduce((obj, key) => obj?.[key], item);
+          return value?.toString().toLowerCase().includes(searchQuery.toLowerCase());
         });
-      } catch (error) {
-        console.error('Share failed:', error);
-        Alert.alert('Error', 'Failed to share PCR data');
+
+      // Date filter
+      let matchesDate = true;
+      if (dateRange.start || dateRange.end) {
+        const itemDate = new Date(item.created_at || item.submittedAt || item.timestamp);
+        if (dateRange.start) {
+          matchesDate = matchesDate && itemDate >= new Date(dateRange.start);
+        }
+        if (dateRange.end) {
+          matchesDate = matchesDate && itemDate <= new Date(dateRange.end);
+        }
       }
+
+      return matchesSearch && matchesDate;
+    });
+  };
+
+  const getVaultData = () => {
+    switch (vaultSection) {
+      case 'patients':
+        return filterData(patients, ['full_name', 'mrn', 'phone']);
+      case 'encounters':
+        return filterData(encounters, ['encounter_id', 'chief_complaint', 'location']);
+      case 'vitals':
+        return filterData(allVitals, ['encounter_id', 'heart_rate', 'bp_systolic']);
+      case 'ecgs':
+        return filterData(ecgs, ['encounter_id', 'rhythm_label']);
+      case 'signatures':
+        return filterData(signatures, ['signer_name', 'signer_role']);
+      case 'attachments':
+        return filterData(attachments, ['label', 'encounter_id']);
+      case 'pcrs':
+      default:
+        return filterData(completedPCRs, ['patientInfo.firstName', 'patientInfo.lastName', 'patientInfo.mrn']);
     }
   };
 
-  const handleDeletePCR = (id: string) => {
-    Alert.alert(
-      'Delete PCR',
-      'Are you sure you want to delete this PCR? This action cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => deletePCR(id),
-        },
-      ]
-    );
+  const filteredStaff = filterData(staffMembers, ['name', 'corporationId', 'department']);
+  const filteredAuditLogs = filterData(auditLogs, ['action', 'details', 'actor_staff_id']);
+
+  const handleSelectAll = () => {
+    const data = getVaultData();
+    if (selectedItems.length === data.length) {
+      setSelectedItems([]);
+    } else {
+      setSelectedItems(data.map((item: any) => item.id || item.patient_id || item.encounter_id || item.vitals_id || item.ecg_id || item.signature_id || item.attachment_id));
+    }
   };
 
-  const handleLogout = () => {
-    const logoutMessage = currentSession 
-      ? `Are you sure you want to logout ${currentSession.name}?`
-      : 'Are you sure you want to logout?';
-    
-    Alert.alert(
-      'Logout',
-      logoutMessage,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Logout',
-          onPress: async () => {
-            try {
-              console.log('Logout button pressed, starting logout process...');
-              
-              // Reset local state first
-              setSelectedPCR(null);
-              setShowDetails(false);
-              
-              // Clear session and admin state
-              if (currentSession) {
-                console.log('Staff session found, calling staffLogout...');
-                await staffLogout();
-              } else {
-                console.log('No staff session, calling setAdminMode(false)...');
-                setAdminMode(false);
-              }
-              
-              console.log('Logout complete, navigating to login...');
-              
-              // Navigate to login page using replace to ensure clean navigation
-              router.replace('/login');
-              
-              console.log('Navigation to login completed');
-            } catch (error) {
-              console.error('Error during logout:', error);
-              // Force navigation even if logout fails
-              router.replace('/login');
-            }
-          },
-        },
-      ]
-    );
+  const generateReportText = (pcr: CompletedPCR, format: 'full' | 'summary') => {
+    const patient = anonymizeReport ? 
+      { firstName: 'XXXXX', lastName: 'XXXXX', mrn: 'XXXXX', age: 'XX', gender: 'X' } : 
+      pcr.patientInfo;
+
+    let report = `[CASE REPORT]\n`;
+    report += `Case ID: ${pcr.id}\n`;
+    report += `Date/Time: ${new Date(pcr.submittedAt).toLocaleString()}\n`;
+    report += `Location: ${pcr.incidentInfo.location}\n\n`;
+
+    report += `[Patient]\n`;
+    report += `Name: ${patient.firstName} ${patient.lastName}\n`;
+    report += `Age: ${patient.age}   Sex: ${patient.gender}   MRN: ${patient.mrn}\n\n`;
+
+    report += `[Chief Complaint]\n${pcr.incidentInfo.chiefComplaint}\n\n`;
+
+    if (format === 'full') {
+      report += `[History / Assessment]\n`;
+      report += `${pcr.incidentInfo.history}\n`;
+      report += `${pcr.incidentInfo.assessment}\n\n`;
+
+      report += `[Vitals Timeline]\n`;
+      pcr.vitals.forEach((vital, index) => {
+        report += `${index + 1}. Time: ${vital.timestamp}\n`;
+        report += `   HR: ${vital.heartRate} | BP: ${vital.bloodPressureSystolic}/${vital.bloodPressureDiastolic}\n`;
+        report += `   RR: ${vital.respiratoryRate} | SpO2: ${vital.oxygenSaturation}%\n`;
+        report += `   Temp: ${vital.temperature}°C | GCS: ${vital.bloodGlucose}\n`;
+        if (vital.ecgCapture) {
+          report += `   ECG: Captured at ${vital.ecgCaptureTimestamp}\n`;
+        }
+      });
+      report += '\n';
+
+      report += `[Treatments & Medications]\n`;
+      report += `Treatments: ${pcr.incidentInfo.treatmentGiven}\n`;
+      report += `Priority: ${pcr.incidentInfo.priority}\n\n`;
+    }
+
+    report += `[Transport]\n`;
+    report += `Destination: ${pcr.transportInfo.destination}\n`;
+    report += `Mode: ${pcr.transportInfo.mode}\n`;
+    report += `Unit: ${pcr.transportInfo.unitNumber}\n\n`;
+
+    report += `[Staff]\n`;
+    report += `Submitted by: ${pcr.submittedBy.name} (${pcr.submittedBy.corporationId})\n`;
+    report += `Role: ${pcr.submittedBy.role}\n\n`;
+
+    report += `[Disposition]\n`;
+    report += `${pcr.incidentInfo.provisionalDiagnosis}\n\n`;
+
+    report += `[System Footer]\n`;
+    report += `Generated by RORK Admin at ${new Date().toLocaleString()}\n`;
+    report += `Audit ID: ${Date.now()}\n`;
+
+    return report;
+  };
+
+  const handleCopyReport = async (format: 'text' | 'csv') => {
+    if (!selectedPCR) return;
+
+    try {
+      let content = '';
+      
+      if (format === 'text') {
+        content = generateReportText(selectedPCR, reportFormat);
+      } else {
+        // CSV format
+        const headers = ['Case ID', 'Date', 'Patient Name', 'MRN', 'Chief Complaint', 'Location', 'Disposition'];
+        const row = [
+          selectedPCR.id,
+          new Date(selectedPCR.submittedAt).toLocaleString(),
+          anonymizeReport ? 'XXXXX' : `${selectedPCR.patientInfo.firstName} ${selectedPCR.patientInfo.lastName}`,
+          anonymizeReport ? 'XXXXX' : selectedPCR.patientInfo.mrn,
+          selectedPCR.incidentInfo.chiefComplaint,
+          selectedPCR.incidentInfo.location,
+          selectedPCR.incidentInfo.provisionalDiagnosis,
+        ];
+        content = headers.join(',') + '\n' + row.map(v => `"${v}"`).join(',');
+      }
+
+      await Clipboard.setString(content);
+      Alert.alert('Success', `Report copied to clipboard as ${format.toUpperCase()}`);
+      await addAuditLog('COPY_REPORT', 'PCR', selectedPCR.id, `Copied report as ${format}`);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to copy report');
+    }
+  };
+
+  const handleExportPDF = async () => {
+    if (!selectedPCR) return;
+
+    try {
+      const html = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 20px; }
+            h1 { color: #0066CC; }
+            h2 { color: #333; margin-top: 20px; }
+            .info-row { margin: 5px 0; }
+            .vitals-table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+            .vitals-table th, .vitals-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            .vitals-table th { background-color: #f2f2f2; }
+            .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #666; }
+          </style>
+        </head>
+        <body>
+          <h1>Patient Care Report</h1>
+          <div class="info-row"><strong>Case ID:</strong> ${selectedPCR.id}</div>
+          <div class="info-row"><strong>Date:</strong> ${new Date(selectedPCR.submittedAt).toLocaleString()}</div>
+          
+          <h2>Patient Information</h2>
+          <div class="info-row"><strong>Name:</strong> ${anonymizeReport ? 'XXXXX' : `${selectedPCR.patientInfo.firstName} ${selectedPCR.patientInfo.lastName}`}</div>
+          <div class="info-row"><strong>MRN:</strong> ${anonymizeReport ? 'XXXXX' : selectedPCR.patientInfo.mrn}</div>
+          <div class="info-row"><strong>Age:</strong> ${selectedPCR.patientInfo.age} | <strong>Gender:</strong> ${selectedPCR.patientInfo.gender}</div>
+          
+          <h2>Incident Information</h2>
+          <div class="info-row"><strong>Location:</strong> ${selectedPCR.incidentInfo.location}</div>
+          <div class="info-row"><strong>Chief Complaint:</strong> ${selectedPCR.incidentInfo.chiefComplaint}</div>
+          <div class="info-row"><strong>Assessment:</strong> ${selectedPCR.incidentInfo.assessment}</div>
+          
+          <h2>Vital Signs</h2>
+          <table class="vitals-table">
+            <tr>
+              <th>Time</th>
+              <th>HR</th>
+              <th>BP</th>
+              <th>RR</th>
+              <th>SpO2</th>
+              <th>Temp</th>
+            </tr>
+            ${selectedPCR.vitals.map(v => `
+              <tr>
+                <td>${v.timestamp}</td>
+                <td>${v.heartRate}</td>
+                <td>${v.bloodPressureSystolic}/${v.bloodPressureDiastolic}</td>
+                <td>${v.respiratoryRate}</td>
+                <td>${v.oxygenSaturation}%</td>
+                <td>${v.temperature}°C</td>
+              </tr>
+            `).join('')}
+          </table>
+          
+          <div class="footer">
+            <p>Generated by RORK Admin System</p>
+            <p>Date: ${new Date().toLocaleString()}</p>
+            <p>Submitted by: ${selectedPCR.submittedBy.name} (${selectedPCR.submittedBy.corporationId})</p>
+          </div>
+        </body>
+        </html>
+      `;
+
+      const { uri } = await Print.printToFileAsync({ html });
+      
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri);
+      } else {
+        Alert.alert('Success', 'PDF generated successfully');
+      }
+      
+      await addAuditLog('EXPORT_PDF', 'PCR', selectedPCR.id, 'Exported report as PDF');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to generate PDF');
+    }
   };
 
   const handleAddStaff = async () => {
-    if (!newStaff.corporationId.trim() || !newStaff.name.trim() || !newStaff.department.trim()) {
+    if (!newStaff.name || !newStaff.corporationId) {
       Alert.alert('Error', 'Please fill in all required fields');
       return;
     }
 
-    // Check if Corporation ID already exists
-    const existingStaff = staffMembers.find(staff => staff.corporationId === newStaff.corporationId.trim());
-    if (existingStaff) {
+    // Check for duplicate corporation ID
+    if (staffMembers.some(s => s.corporationId === newStaff.corporationId)) {
       Alert.alert('Error', 'Corporation ID already exists');
       return;
     }
@@ -304,1443 +378,1021 @@ const AdminScreen: React.FC = () => {
     try {
       await addStaffMember({
         ...newStaff,
-        corporationId: newStaff.corporationId.trim().toUpperCase(),
-        name: newStaff.name.trim(),
-        department: newStaff.department.trim(),
         isActive: true,
+        status: 'Active',
+        created_at: new Date().toISOString(),
       });
       
-      setNewStaff({
-        corporationId: '',
-        name: '',
-        role: 'paramedic',
-        department: '',
-      });
-      setShowAddStaff(false);
+      await addAuditLog('ADD_STAFF', 'Staff', newStaff.corporationId, `Added staff member: ${newStaff.name}`);
+      
       Alert.alert('Success', 'Staff member added successfully');
+      setShowAddStaffModal(false);
+      setNewStaff({ name: '', corporationId: '', role: 'Staff', department: '' });
+      loadStaffMembers();
     } catch (error) {
       Alert.alert('Error', 'Failed to add staff member');
     }
   };
 
-  const handleUpdateStaff = async () => {
-    if (!editingStaff) return;
+  const handleStaffAction = async (staff: StaffMember, action: 'deactivate' | 'reactivate' | 'delete') => {
+    const confirmMessage = action === 'delete' ? 
+      'Are you sure you want to delete this staff member? This action cannot be undone.' :
+      `Are you sure you want to ${action} this staff member?`;
 
-    try {
-      await updateStaffMember(editingStaff.corporationId, editingStaff);
-      setEditingStaff(null);
-      Alert.alert('Success', 'Staff member updated successfully');
-    } catch (error) {
-      Alert.alert('Error', 'Failed to update staff member');
-    }
-  };
-
-  const handleDeleteStaff = (corporationId: string, name: string) => {
     Alert.alert(
-      'Delete Staff Member',
-      `Are you sure you want to delete ${name}? This action cannot be undone.`,
+      'Confirm Action',
+      confirmMessage,
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Delete',
-          style: 'destructive',
+          text: 'Confirm',
+          style: action === 'delete' ? 'destructive' : 'default',
           onPress: async () => {
             try {
-              console.log('Deleting staff member:', corporationId, name);
-              await deleteStaffMember(corporationId);
-              Alert.alert('Success', 'Staff member deleted successfully');
+              if (action === 'deactivate') {
+                await deactivateStaff(staff.corporationId);
+              } else if (action === 'reactivate') {
+                await reactivateStaff(staff.corporationId);
+              }
+              Alert.alert('Success', `Staff member ${action}d successfully`);
+              loadStaffMembers();
             } catch (error) {
-              console.error('Error deleting staff member:', error);
-              Alert.alert('Error', 'Failed to delete staff member');
+              Alert.alert('Error', `Failed to ${action} staff member`);
             }
-          },
-        },
+          }
+        }
       ]
     );
   };
 
-  const toggleStaffStatus = async (staff: StaffMember) => {
+  const handleRoleChange = async (staff: StaffMember, newRole: string) => {
+    if (!isSuperAdmin) {
+      Alert.alert('Permission Denied', 'Only SuperAdmin can change roles');
+      return;
+    }
+
     try {
-      await updateStaffMember(staff.corporationId, {
-        ...staff,
-        isActive: !staff.isActive,
-      });
-      Alert.alert(
-        'Success', 
-        `${staff.name} has been ${!staff.isActive ? 'activated' : 'deactivated'}`
-      );
+      await updateStaffRole(staff.corporationId, newRole);
+      Alert.alert('Success', 'Role updated successfully');
+      loadStaffMembers();
     } catch (error) {
-      Alert.alert('Error', 'Failed to update staff status');
+      Alert.alert('Error', 'Failed to update role');
     }
   };
 
-  const PCRCard: React.FC<{ pcr: CompletedPCR }> = ({ pcr }) => (
-    <View style={styles.pcrCard}>
-      <View style={styles.pcrHeader}>
-        <View>
-          <Text style={styles.pcrId}>PCR #{pcr.id}</Text>
-          <Text style={styles.patientName}>
-            {pcr.patientInfo.firstName || 'N/A'} {pcr.patientInfo.lastName || 'N/A'}
-          </Text>
-          <Text style={styles.submittedDate}>
-            {new Date(pcr.submittedAt).toLocaleString()}
-          </Text>
-          <Text style={styles.submittedBy}>
-            Submitted by: {pcr.submittedBy.name} ({pcr.submittedBy.role})
-          </Text>
+  const renderVaultSection = () => {
+    const data = getVaultData();
+
+    return (
+      <View style={styles.vaultContainer}>
+        <View style={styles.vaultHeader}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.vaultTabs}>
+            {(['pcrs', 'patients', 'encounters', 'vitals', 'ecgs', 'signatures', 'attachments'] as VaultSection[]).map(section => (
+              <TouchableOpacity
+                key={section}
+                style={[styles.vaultTab, vaultSection === section && styles.vaultTabActive]}
+                onPress={() => setVaultSection(section)}
+              >
+                <Text style={[styles.vaultTabText, vaultSection === section && styles.vaultTabTextActive]}>
+                  {section.toUpperCase()}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
         </View>
-        <View style={styles.actionButtons}>
-          <Pressable
-            style={styles.actionButton}
-            onPress={() => {
-              setSelectedPCR(pcr);
-              setShowDetails(true);
-            }}
-          >
-            <Eye size={20} color="#0066CC" />
-          </Pressable>
-          <Pressable
-            style={styles.actionButton}
-            onPress={() => copyToClipboard(pcr)}
-          >
-            <Copy size={20} color="#28a745" />
-          </Pressable>
-          <Pressable
-            style={styles.actionButton}
-            onPress={() => handleDeletePCR(pcr.id)}
-          >
-            <Trash2 size={20} color="#dc3545" />
-          </Pressable>
+
+        <View style={styles.filterBar}>
+          <View style={styles.searchContainer}>
+            <Search size={20} color="#666" />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search..."
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+          </View>
+          
+          <TouchableOpacity style={styles.selectAllButton} onPress={handleSelectAll}>
+            <Text style={styles.selectAllText}>
+              {selectedItems.length === data.length ? 'Deselect All' : 'Select All'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <FlatList
+          data={data}
+          keyExtractor={(item: any) => item.id || item.patient_id || item.encounter_id || item.vitals_id || item.ecg_id || item.signature_id || item.attachment_id}
+          renderItem={({ item }) => {
+            const itemId = item.id || item.patient_id || item.encounter_id || item.vitals_id || item.ecg_id || item.signature_id || item.attachment_id;
+            const isSelected = selectedItems.includes(itemId);
+
+            if (vaultSection === 'pcrs') {
+              const pcr = item as CompletedPCR;
+              return (
+                <TouchableOpacity
+                  style={[styles.dataCard, isSelected && styles.dataCardSelected]}
+                  onPress={() => {
+                    setSelectedPCR(pcr);
+                    setShowReportModal(true);
+                  }}
+                >
+                  <View style={styles.dataCardHeader}>
+                    <Text style={styles.dataCardTitle}>
+                      {pcr.patientInfo.firstName} {pcr.patientInfo.lastName}
+                    </Text>
+                    <Text style={styles.dataCardDate}>
+                      {new Date(pcr.submittedAt).toLocaleDateString()}
+                    </Text>
+                  </View>
+                  <Text style={styles.dataCardSubtext}>MRN: {pcr.patientInfo.mrn}</Text>
+                  <Text style={styles.dataCardSubtext}>Chief: {pcr.incidentInfo.chiefComplaint}</Text>
+                  <Text style={styles.dataCardSubtext}>Submitted by: {pcr.submittedBy.name}</Text>
+                  
+                  <View style={styles.dataCardActions}>
+                    <TouchableOpacity
+                      style={styles.actionButton}
+                      onPress={() => {
+                        setSelectedPCR(pcr);
+                        handleCopyReport('text');
+                      }}
+                    >
+                      <Copy size={16} color="#0066CC" />
+                      <Text style={styles.actionButtonText}>Copy</Text>
+                    </TouchableOpacity>
+                    
+                    <TouchableOpacity
+                      style={styles.actionButton}
+                      onPress={() => {
+                        setSelectedPCR(pcr);
+                        handleExportPDF();
+                      }}
+                    >
+                      <Download size={16} color="#0066CC" />
+                      <Text style={styles.actionButtonText}>PDF</Text>
+                    </TouchableOpacity>
+                  </View>
+                </TouchableOpacity>
+              );
+            }
+
+            // Render other vault sections
+            return (
+              <View style={[styles.dataCard, isSelected && styles.dataCardSelected]}>
+                <Text style={styles.dataCardTitle}>{JSON.stringify(item, null, 2)}</Text>
+              </View>
+            );
+          }}
+          ListEmptyComponent={
+            <View style={styles.emptyState}>
+              <Database size={48} color="#999" />
+              <Text style={styles.emptyStateText}>No data found</Text>
+            </View>
+          }
+        />
+
+        {selectedItems.length > 0 && (
+          <View style={styles.bulkActions}>
+            <Text style={styles.bulkActionsText}>{selectedItems.length} selected</Text>
+            <TouchableOpacity style={styles.bulkActionButton} onPress={() => handleCopyReport('csv')}>
+              <Copy size={20} color="#fff" />
+              <Text style={styles.bulkActionButtonText}>Export CSV</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+    );
+  };
+
+  const renderStaffManagement = () => (
+    <View style={styles.staffContainer}>
+      <View style={styles.staffHeader}>
+        <Text style={styles.sectionTitle}>Staff Management</Text>
+        <TouchableOpacity style={styles.addButton} onPress={() => setShowAddStaffModal(true)}>
+          <Plus size={20} color="#fff" />
+          <Text style={styles.addButtonText}>Add Staff</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.filterBar}>
+        <View style={styles.searchContainer}>
+          <Search size={20} color="#666" />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search staff..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
         </View>
       </View>
-      <View style={styles.pcrSummary}>
-        <Text style={styles.summaryText}>Location: {pcr.incidentInfo.location || 'N/A'}</Text>
-        <Text style={styles.summaryText}>Complaint: {pcr.incidentInfo.chiefComplaint || 'N/A'}</Text>
-        <Text style={styles.summaryText}>Destination: {pcr.transportInfo.destination || 'N/A'}</Text>
-        <Text style={styles.summaryText}>Corporation ID: {pcr.submittedBy.corporationId}</Text>
-      </View>
+
+      <FlatList
+        data={filteredStaff}
+        keyExtractor={(item) => item.corporationId}
+        renderItem={({ item }) => (
+          <View style={styles.staffCard}>
+            <View style={styles.staffCardHeader}>
+              <View>
+                <Text style={styles.staffName}>{item.name}</Text>
+                <Text style={styles.staffId}>ID: {item.corporationId}</Text>
+              </View>
+              <View style={[styles.statusBadge, item.isActive ? styles.statusActive : styles.statusInactive]}>
+                <Text style={styles.statusText}>{item.isActive ? 'Active' : 'Inactive'}</Text>
+              </View>
+            </View>
+            
+            <View style={styles.staffInfo}>
+              <Text style={styles.staffInfoText}>Role: {item.role}</Text>
+              <Text style={styles.staffInfoText}>Department: {item.department}</Text>
+              {item.lastLogin && (
+                <Text style={styles.staffInfoText}>
+                  Last Login: {new Date(item.lastLogin).toLocaleString()}
+                </Text>
+              )}
+            </View>
+
+            <View style={styles.staffActions}>
+              {isSuperAdmin && (
+                <TouchableOpacity
+                  style={styles.staffActionButton}
+                  onPress={() => {
+                    Alert.alert(
+                      'Change Role',
+                      'Select new role',
+                      [
+                        { text: 'Staff', onPress: () => handleRoleChange(item, 'Staff') },
+                        { text: 'Admin', onPress: () => handleRoleChange(item, 'Admin') },
+                        { text: 'SuperAdmin', onPress: () => handleRoleChange(item, 'SuperAdmin') },
+                        { text: 'Cancel', style: 'cancel' },
+                      ]
+                    );
+                  }}
+                >
+                  <Edit3 size={16} color="#0066CC" />
+                  <Text style={styles.staffActionText}>Role</Text>
+                </TouchableOpacity>
+              )}
+              
+              <TouchableOpacity
+                style={styles.staffActionButton}
+                onPress={() => handleStaffAction(item, item.isActive ? 'deactivate' : 'reactivate')}
+              >
+                {item.isActive ? <Lock size={16} color="#FF9500" /> : <Unlock size={16} color="#34C759" />}
+                <Text style={styles.staffActionText}>{item.isActive ? 'Deactivate' : 'Reactivate'}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+        ListEmptyComponent={
+          <View style={styles.emptyState}>
+            <Users size={48} color="#999" />
+            <Text style={styles.emptyStateText}>No staff members found</Text>
+          </View>
+        }
+      />
     </View>
   );
 
-  const PCRDetails: React.FC<{ pcr: CompletedPCR }> = ({ pcr }) => (
-    <ScrollView 
-      style={styles.detailsContainer}
-      keyboardShouldPersistTaps="always"
-      keyboardDismissMode="on-drag"
-      contentContainerStyle={{ paddingBottom: 24 }}
-    >
+  const renderAuditLogs = () => (
+    <View style={styles.auditContainer}>
+      <Text style={styles.sectionTitle}>Audit Logs</Text>
       
-      <View style={styles.submissionInfo}>
-        <Text style={styles.submissionTitle}>Submission Details</Text>
-        <Text style={styles.submissionText}>Submitted: {new Date(pcr.submittedAt).toLocaleString()}</Text>
-        <Text style={styles.submissionText}>By: {pcr.submittedBy.name} ({pcr.submittedBy.corporationId})</Text>
-        <Text style={styles.submissionText}>Role: {pcr.submittedBy.role.toUpperCase()}</Text>
-      </View>
-      
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Patient Information</Text>
-        <Text style={styles.detailText}>Name: {pcr.patientInfo.firstName || 'N/A'} {pcr.patientInfo.lastName || 'N/A'}</Text>
-        <Text style={styles.detailText}>Age: {pcr.patientInfo.age || 'N/A'}</Text>
-        <Text style={styles.detailText}>Gender: {pcr.patientInfo.gender || 'N/A'}</Text>
-        <Text style={styles.detailText}>Phone: {pcr.patientInfo.phone || 'N/A'}</Text>
-        <Text style={styles.detailText}>MRN: {pcr.patientInfo.mrn || 'N/A'}</Text>
+      <View style={styles.filterBar}>
+        <View style={styles.searchContainer}>
+          <Search size={20} color="#666" />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search logs..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+        </View>
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Call Time Information</Text>
-        <Text style={styles.detailText}>Date: {pcr.callTimeInfo.date || 'N/A'}</Text>
-        <Text style={styles.detailText}>Time of Call: {pcr.callTimeInfo.timeOfCall || 'N/A'}</Text>
-        <Text style={styles.detailText}>Arrival on Scene: {pcr.callTimeInfo.arrivalOnScene || 'N/A'}</Text>
-        <Text style={styles.detailText}>At Patient Side: {pcr.callTimeInfo.atPatientSide || 'N/A'}</Text>
-        <Text style={styles.detailText}>To Destination: {pcr.callTimeInfo.toDestination || 'N/A'}</Text>
-        <Text style={styles.detailText}>At Destination: {pcr.callTimeInfo.atDestination || 'N/A'}</Text>
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Incident Information</Text>
-        <Text style={styles.detailText}>Location: {pcr.incidentInfo.location || 'N/A'}</Text>
-        <Text style={styles.detailText}>Chief Complaint: {pcr.incidentInfo.chiefComplaint || 'N/A'}</Text>
-        <Text style={styles.detailText}>History: {pcr.incidentInfo.history || 'N/A'}</Text>
-        <Text style={styles.detailText}>Assessment: {pcr.incidentInfo.assessment || 'N/A'}</Text>
-        <Text style={styles.detailText}>Treatment: {pcr.incidentInfo.treatmentGiven || 'N/A'}</Text>
-        <Text style={styles.detailText}>Priority: {pcr.incidentInfo.priority || 'N/A'}</Text>
-        <Text style={styles.detailText}>On Arrival Info: {pcr.incidentInfo.onArrivalInfo || 'N/A'}</Text>
-        <Text style={styles.detailText}>Provisional Diagnosis: {pcr.incidentInfo.provisionalDiagnosis || 'N/A'}</Text>
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Vital Signs ({pcr.vitals.length} readings)</Text>
-        {pcr.vitals.length > 0 ? pcr.vitals.map((vital, index) => (
-          <View key={index} style={styles.vitalReading}>
-            <Text style={styles.vitalTime}>Reading #{index + 1} - {vital.timestamp ? new Date(vital.timestamp).toLocaleString() : 'N/A'}</Text>
-            <Text style={styles.detailText}>BP: {vital.bloodPressureSystolic || 'N/A'}/{vital.bloodPressureDiastolic || 'N/A'}</Text>
-            <Text style={styles.detailText}>HR: {vital.heartRate || 'N/A'} bpm, RR: {vital.respiratoryRate || 'N/A'} /min</Text>
-            <Text style={styles.detailText}>O2 Sat: {vital.oxygenSaturation || 'N/A'}%, Temp: {vital.temperature || 'N/A'}°C</Text>
-            <Text style={styles.detailText}>Blood Glucose: {vital.bloodGlucose || 'N/A'} mmol/L, Pain: {vital.painScale || 'N/A'}/10</Text>
-            {vital.ecgCapture && (
-              <View style={styles.ecgCaptureInfo}>
-                <Text style={styles.ecgCaptureText}>ECG Captured</Text>
-                <Text style={styles.detailText}>ECG ID: {vital.ecgCapture}</Text>
-                <Text style={styles.detailText}>Captured: {vital.ecgCaptureTimestamp ? new Date(vital.ecgCaptureTimestamp).toLocaleString() : 'N/A'}</Text>
-              </View>
-            )}
+      <FlatList
+        data={filteredAuditLogs}
+        keyExtractor={(item) => item.log_id}
+        renderItem={({ item }) => (
+          <View style={styles.auditCard}>
+            <View style={styles.auditHeader}>
+              <Text style={styles.auditAction}>{item.action}</Text>
+              <Text style={styles.auditTime}>
+                {new Date(item.timestamp).toLocaleString()}
+              </Text>
+            </View>
+            <Text style={styles.auditDetails}>{item.details}</Text>
+            <Text style={styles.auditActor}>By: {item.actor_staff_id}</Text>
+            <Text style={styles.auditTarget}>
+              {item.target_type}: {item.target_id}
+            </Text>
           </View>
-        )) : (
-          <Text style={styles.detailText}>No vital signs recorded</Text>
         )}
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Transport Information</Text>
-        <Text style={styles.detailText}>Destination: {pcr.transportInfo.destination || 'N/A'}</Text>
-        <Text style={styles.detailText}>Mode: {pcr.transportInfo.mode || 'N/A'}</Text>
-        <Text style={styles.detailText}>Unit Number: {pcr.transportInfo.unitNumber || 'N/A'}</Text>
-        <Text style={styles.detailText}>Departure Time: {pcr.transportInfo.departureTime || 'N/A'}</Text>
-        <Text style={styles.detailText}>Arrival Time: {pcr.transportInfo.arrivalTime || 'N/A'}</Text>
-        <Text style={styles.detailText}>Mileage: {pcr.transportInfo.mileage || 'N/A'}</Text>
-        <Text style={styles.detailText}>Primary Paramedic: {pcr.transportInfo.primaryParamedic || 'N/A'}</Text>
-        <Text style={styles.detailText}>Secondary Paramedic: {pcr.transportInfo.secondaryParamedic || 'N/A'}</Text>
-        <Text style={styles.detailText}>Driver: {pcr.transportInfo.driver || 'N/A'}</Text>
-        <Text style={styles.detailText}>Notes: {pcr.transportInfo.notes || 'N/A'}</Text>
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Receiving Staff Signatures</Text>
-        <View style={styles.signatureGroup}>
-          <Text style={styles.signatureTitle}>Nurse</Text>
-          <Text style={styles.detailText}>Name: {pcr.signatureInfo.nurseSignature || 'N/A'}</Text>
-          <Text style={styles.detailText}>Corporation ID: {pcr.signatureInfo.nurseCorporationId || 'N/A'}</Text>
-          <Text style={[styles.detailText, pcr.signatureInfo.nurseSignaturePaths ? styles.signedText : styles.notSignedText]}>
-            Signature: {pcr.signatureInfo.nurseSignaturePaths ? '✓ Signed' : 'Not Signed'}
-          </Text>
-        </View>
-        
-        <View style={styles.signatureGroup}>
-          <Text style={styles.signatureTitle}>Doctor</Text>
-          <Text style={styles.detailText}>Name: {pcr.signatureInfo.doctorSignature || 'N/A'}</Text>
-          <Text style={styles.detailText}>Corporation ID: {pcr.signatureInfo.doctorCorporationId || 'N/A'}</Text>
-          <Text style={[styles.detailText, pcr.signatureInfo.doctorSignaturePaths ? styles.signedText : styles.notSignedText]}>
-            Signature: {pcr.signatureInfo.doctorSignaturePaths ? '✓ Signed' : 'Not Signed'}
-          </Text>
-        </View>
-        
-        <View style={styles.signatureGroup}>
-          <Text style={styles.signatureTitle}>Other</Text>
-          <Text style={styles.detailText}>Name: {pcr.signatureInfo.othersSignature || 'N/A'}</Text>
-          <Text style={styles.detailText}>Role: {pcr.signatureInfo.othersRole || 'N/A'}</Text>
-          <Text style={[styles.detailText, pcr.signatureInfo.othersSignaturePaths ? styles.signedText : styles.notSignedText]}>
-            Signature: {pcr.signatureInfo.othersSignaturePaths ? '✓ Signed' : 'Not Signed'}
-          </Text>
-        </View>
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Refusal Information</Text>
-        <Text style={styles.detailText}>Patient Name: {pcr.refusalInfo.patientName || 'N/A'}</Text>
-        <Text style={styles.detailText}>Date of Refusal: {pcr.refusalInfo.dateOfRefusal || 'N/A'}</Text>
-        <Text style={styles.detailText}>Time of Refusal: {pcr.refusalInfo.timeOfRefusal || 'N/A'}</Text>
-        <Text style={styles.detailText}>Reason: {pcr.refusalInfo.reasonForRefusal || 'N/A'}</Text>
-        <Text style={styles.detailText}>Risks Explained: {pcr.refusalInfo.risksExplained ? 'Yes' : 'No'}</Text>
-        <Text style={styles.detailText}>Mental Capacity: {pcr.refusalInfo.mentalCapacity ? 'Yes' : 'No'}</Text>
-        
-        <View style={styles.signatureGroup}>
-          <Text style={styles.signatureTitle}>Patient Signature</Text>
-          <Text style={[styles.detailText, pcr.refusalInfo.patientSignaturePaths ? styles.signedText : styles.notSignedText]}>
-            {pcr.refusalInfo.patientSignaturePaths ? '✓ Signed' : 'Not Signed'}
-          </Text>
-        </View>
-        
-        <View style={styles.signatureGroup}>
-          <Text style={styles.signatureTitle}>Witness</Text>
-          <Text style={styles.detailText}>Name: {pcr.refusalInfo.witnessName || 'N/A'}</Text>
-          <Text style={[styles.detailText, pcr.refusalInfo.witnessSignaturePaths ? styles.signedText : styles.notSignedText]}>
-            Signature: {pcr.refusalInfo.witnessSignaturePaths ? '✓ Signed' : 'Not Signed'}
-          </Text>
-        </View>
-        
-        <View style={styles.signatureGroup}>
-          <Text style={styles.signatureTitle}>Paramedic</Text>
-          <Text style={styles.detailText}>Name: {pcr.refusalInfo.paramedicName || 'N/A'}</Text>
-          <Text style={[styles.detailText, pcr.refusalInfo.paramedicSignaturePaths ? styles.signedText : styles.notSignedText]}>
-            Signature: {pcr.refusalInfo.paramedicSignaturePaths ? '✓ Signed' : 'Not Signed'}
-          </Text>
-        </View>
-        
-        <Text style={styles.detailText}>Additional Notes: {pcr.refusalInfo.additionalNotes || 'N/A'}</Text>
-      </View>
-
-      <Pressable
-        style={styles.copyButton}
-        onPress={() => copyToClipboard(pcr)}
-      >
-        <Copy size={20} color="#fff" />
-        <Text style={styles.copyButtonText}>Copy Full Report</Text>
-      </Pressable>
-    </ScrollView>
+        ListEmptyComponent={
+          <View style={styles.emptyState}>
+            <Clock size={48} color="#999" />
+            <Text style={styles.emptyStateText}>No audit logs found</Text>
+          </View>
+        }
+      />
+    </View>
   );
 
-  const AddStaffForm: React.FC = () => (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
+  return (
+    <View style={styles.container}>
+      <View style={styles.tabBar}>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'vault' && styles.tabActive]}
+          onPress={() => setActiveTab('vault')}
+        >
+          <Database size={20} color={activeTab === 'vault' ? '#0066CC' : '#666'} />
+          <Text style={[styles.tabText, activeTab === 'vault' && styles.tabTextActive]}>
+            Data Vault
+          </Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'staff' && styles.tabActive]}
+          onPress={() => setActiveTab('staff')}
+        >
+          <Users size={20} color={activeTab === 'staff' ? '#0066CC' : '#666'} />
+          <Text style={[styles.tabText, activeTab === 'staff' && styles.tabTextActive]}>
+            Staff
+          </Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'audit' && styles.tabActive]}
+          onPress={() => setActiveTab('audit')}
+        >
+          <Shield size={20} color={activeTab === 'audit' ? '#0066CC' : '#666'} />
+          <Text style={[styles.tabText, activeTab === 'audit' && styles.tabTextActive]}>
+            Audit
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {isLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#0066CC" />
+          <Text style={styles.loadingText}>Loading admin data...</Text>
+        </View>
+      ) : (
+        <>
+          {activeTab === 'vault' && renderVaultSection()}
+          {activeTab === 'staff' && renderStaffManagement()}
+          {activeTab === 'audit' && renderAuditLogs()}
+        </>
+      )}
+
+      {/* Add Staff Modal */}
+      <Modal
+        visible={showAddStaffModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowAddStaffModal(false)}
       >
-        <ScrollView
-          style={styles.formContainer}
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ paddingBottom: 100 }}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.formContent}>
-          <View style={styles.formSection}>
-            <Text style={styles.fieldLabel}>Corporation ID *</Text>
-          <TextInput
-            style={styles.textInput}
-            value={newStaff.corporationId}
-            onChangeText={(text) => {
-              // Only allow numbers
-              const numericText = text.replace(/[^0-9]/g, '');
-              setNewStaff({ ...newStaff, corporationId: numericText });
-            }}
-            placeholder="Enter corporation number (numbers only)"
-            keyboardType="numeric"
-            autoCorrect={false}
-            returnKeyType="next"
-            blurOnSubmit={false}
-            maxLength={10}
-          />
-        </View>
-
-        <View style={styles.formSection}>
-          <Text style={styles.fieldLabel}>Full Name *</Text>
-          <TextInput
-            style={styles.textInput}
-            value={newStaff.name}
-            onChangeText={(text) => setNewStaff({ ...newStaff, name: text })}
-            placeholder="Enter full name"
-            autoCapitalize="words"
-            autoCorrect={false}
-            returnKeyType="next"
-            blurOnSubmit={false}
-          />
-        </View>
-
-        <View style={styles.formSection}>
-          <Text style={styles.fieldLabel}>Role *</Text>
-          <View style={styles.roleSelector}>
-            {(['paramedic', 'nurse', 'doctor', 'admin', 'supervisor'] as const).map((role) => (
-              <Pressable
-                key={role}
-                style={[
-                  styles.roleOption,
-                  newStaff.role === role && styles.roleOptionSelected,
-                ]}
-                onPress={() => setNewStaff({ ...newStaff, role })}
-              >
-                <Text
-                  style={[
-                    styles.roleOptionText,
-                    newStaff.role === role && styles.roleOptionTextSelected,
-                  ]}
-                >
-                  {role.charAt(0).toUpperCase() + role.slice(1)}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-        </View>
-
-        <View style={styles.formSection}>
-          <Text style={styles.fieldLabel}>Department *</Text>
-          <TextInput
-            style={styles.textInput}
-            value={newStaff.department}
-            onChangeText={(text) => setNewStaff({ ...newStaff, department: text })}
-            placeholder="e.g., Emergency Services, Emergency Department, Paramedic on duty"
-            autoCapitalize="words"
-            autoCorrect={false}
-            returnKeyType="done"
-            blurOnSubmit={false}
-          />
-        </View>
-
-        <View style={styles.formActions}>
-          <Pressable style={styles.addButton} onPress={handleAddStaff}>
-            <Plus size={20} color="#fff" />
-            <Text style={styles.addButtonText}>Add Staff Member</Text>
-          </Pressable>
-        </View>
-
-        <View style={styles.infoBox}>
-          <Text style={styles.infoTitle}>Authorization Info</Text>
-          <Text style={styles.infoText}>
-            • Staff will use their Corporation ID and Full Name to login
-          </Text>
-          <Text style={styles.infoText}>
-            • Admin and Supervisor roles have admin panel access
-          </Text>
-          <Text style={styles.infoText}>
-            • Only active staff members can login to the app
-          </Text>
-        </View>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </TouchableWithoutFeedback>
-  );
-
-  const EditStaffForm: React.FC<{ staff: StaffMember }> = ({ staff }) => {
-    // Use editingStaff state directly which is already set when editing starts
-    return (
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={{ flex: 1 }}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
-        >
-          <ScrollView
-            style={styles.formContainer}
-            keyboardShouldPersistTaps="handled"
-            contentContainerStyle={{ paddingBottom: 100 }}
-            showsVerticalScrollIndicator={false}
-          >
-            <View style={styles.formContent}>
-            <View style={styles.formSection}>
-              <Text style={styles.fieldLabel}>Corporation ID</Text>
-              <TextInput
-                style={[styles.textInput, styles.disabledInput]}
-                value={editingStaff?.corporationId || ''}
-                editable={false}
-              />
-              <Text style={styles.fieldHint}>Corporation ID cannot be changed</Text>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Add Staff Member</Text>
+              <TouchableOpacity onPress={() => setShowAddStaffModal(false)}>
+                <X size={24} color="#666" />
+              </TouchableOpacity>
             </View>
 
-            <View style={styles.formSection}>
-              <Text style={styles.fieldLabel}>Full Name *</Text>
-              <TextInput
-                style={styles.textInput}
-                value={editingStaff?.name || ''}
-                onChangeText={(text) => setEditingStaff(editingStaff ? { ...editingStaff, name: text } : null)}
-                placeholder="Enter full name"
-                autoCapitalize="words"
-                autoCorrect={false}
-                returnKeyType="next"
-                blurOnSubmit={false}
-              />
-            </View>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="Full Name *"
+              value={newStaff.name}
+              onChangeText={(text) => setNewStaff({ ...newStaff, name: text })}
+            />
 
-            <View style={styles.formSection}>
-              <Text style={styles.fieldLabel}>Role *</Text>
-              <View style={styles.roleSelector}>
-                {(['paramedic', 'nurse', 'doctor', 'admin', 'supervisor'] as const).map((role) => (
-                  <Pressable
+            <TextInput
+              style={styles.modalInput}
+              placeholder="Corporation ID *"
+              value={newStaff.corporationId}
+              onChangeText={(text) => setNewStaff({ ...newStaff, corporationId: text })}
+              autoCapitalize="characters"
+            />
+
+            <View style={styles.modalInput}>
+              <Text style={styles.inputLabel}>Role</Text>
+              <View style={styles.roleOptions}>
+                {['Staff', 'Admin', 'SuperAdmin'].map(role => (
+                  <TouchableOpacity
                     key={role}
-                    style={[
-                      styles.roleOption,
-                      editingStaff?.role === role && styles.roleOptionSelected,
-                    ]}
-                    onPress={() => setEditingStaff(editingStaff ? { ...editingStaff, role } : null)}
+                    style={[styles.roleOption, newStaff.role === role && styles.roleOptionActive]}
+                    onPress={() => setNewStaff({ ...newStaff, role: role as any })}
                   >
-                    <Text
-                      style={[
-                        styles.roleOptionText,
-                        editingStaff?.role === role && styles.roleOptionTextSelected,
-                      ]}
-                    >
-                      {role.charAt(0).toUpperCase() + role.slice(1)}
+                    <Text style={[styles.roleOptionText, newStaff.role === role && styles.roleOptionTextActive]}>
+                      {role}
                     </Text>
-                  </Pressable>
+                  </TouchableOpacity>
                 ))}
               </View>
             </View>
 
-            <View style={styles.formSection}>
-              <Text style={styles.fieldLabel}>Department *</Text>
-              <TextInput
-                style={styles.textInput}
-                value={editingStaff?.department || ''}
-                onChangeText={(text) => setEditingStaff(editingStaff ? { ...editingStaff, department: text } : null)}
-                placeholder="e.g., Emergency Services, Emergency Department"
-                autoCapitalize="words"
-                autoCorrect={false}
-                returnKeyType="done"
-                blurOnSubmit={false}
-              />
-            </View>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="Department"
+              value={newStaff.department}
+              onChangeText={(text) => setNewStaff({ ...newStaff, department: text })}
+            />
 
-            <View style={styles.formActions}>
-              <Pressable style={styles.updateButton} onPress={handleUpdateStaff}>
-                <Edit3 size={20} color="#fff" />
-                <Text style={styles.updateButtonText}>Update Staff Member</Text>
-              </Pressable>
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.modalCancelButton} onPress={() => setShowAddStaffModal(false)}>
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.modalSubmitButton} onPress={handleAddStaff}>
+                <Text style={styles.modalSubmitText}>Add Staff</Text>
+              </TouchableOpacity>
             </View>
-            </View>
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </TouchableWithoutFeedback>
-    );
-  };
-
-  const StaffManagement: React.FC = () => (
-    <View style={styles.staffContainer}>
-      <View style={styles.staffHeader}>
-        <View style={styles.staffHeaderLeft}>
-          <Text style={styles.staffTitle}>Staff Management</Text>
-          <Text style={styles.staffSubtitle}>{staffMembers.length} total members</Text>
-        </View>
-        <Pressable
-          style={styles.addStaffButton}
-          onPress={() => setShowAddStaff(true)}
-        >
-          <Plus size={20} color="#fff" />
-          <Text style={styles.addStaffButtonText}>Add Staff</Text>
-        </Pressable>
-      </View>
-
-      <ScrollView
-        style={styles.staffList}
-        keyboardShouldPersistTaps="always"
-        contentContainerStyle={{ paddingBottom: 24 }}
-      >
-        {staffMembers.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Users size={48} color="#6b7280" />
-            <Text style={styles.emptyText}>No staff members found</Text>
-            <Text style={styles.emptySubtext}>Add your first staff member to get started</Text>
           </View>
-        ) : (
-          staffMembers.map((staff) => (
-            <View key={staff.corporationId} style={styles.staffCard}>
-              <View style={styles.staffCardHeader}>
-                <View style={styles.staffInfo}>
-                  <View style={styles.staffNameRow}>
-                    <Text style={styles.staffName}>{staff.name}</Text>
-                    <View style={[
-                      styles.statusBadge,
-                      staff.isActive ? styles.activeBadge : styles.inactiveBadge
-                    ]}>
-                      <Text style={[
-                        styles.statusText,
-                        staff.isActive ? styles.activeText : styles.inactiveText
-                      ]}>
-                        {staff.isActive ? 'Active' : 'Inactive'}
-                      </Text>
-                    </View>
-                  </View>
-                  <Text style={styles.staffId}>ID: {staff.corporationId}</Text>
-                  <Text style={styles.staffRole}>{staff.role.toUpperCase()} • {staff.department}</Text>
-                  {staff.lastLogin && (
-                    <Text style={styles.lastLogin}>
-                      Last login: {new Date(staff.lastLogin).toLocaleString()}
+        </View>
+      </Modal>
+
+      {/* Report Modal */}
+      <Modal
+        visible={showReportModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowReportModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Report Options</Text>
+              <TouchableOpacity onPress={() => setShowReportModal(false)}>
+                <X size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.reportOptions}>
+              <View style={styles.reportOption}>
+                <Text style={styles.reportOptionLabel}>Anonymize Patient</Text>
+                <Switch
+                  value={anonymizeReport}
+                  onValueChange={setAnonymizeReport}
+                  trackColor={{ false: '#E5E5E5', true: '#0066CC' }}
+                />
+              </View>
+
+              <View style={styles.reportOption}>
+                <Text style={styles.reportOptionLabel}>Report Format</Text>
+                <View style={styles.formatOptions}>
+                  <TouchableOpacity
+                    style={[styles.formatOption, reportFormat === 'full' && styles.formatOptionActive]}
+                    onPress={() => setReportFormat('full')}
+                  >
+                    <Text style={[styles.formatOptionText, reportFormat === 'full' && styles.formatOptionTextActive]}>
+                      Full
                     </Text>
-                  )}
-                </View>
-                <View style={styles.staffActions}>
-                  <Pressable
-                    style={styles.actionButton}
-                    onPress={() => setEditingStaff(staff)}
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.formatOption, reportFormat === 'summary' && styles.formatOptionActive]}
+                    onPress={() => setReportFormat('summary')}
                   >
-                    <Edit3 size={18} color="#0066CC" />
-                  </Pressable>
-                  <Pressable
-                    style={styles.actionButton}
-                    onPress={() => toggleStaffStatus(staff)}
-                  >
-                    {staff.isActive ? (
-                      <UserX size={18} color="#dc3545" />
-                    ) : (
-                      <UserCheck size={18} color="#28a745" />
-                    )}
-                  </Pressable>
-                  <Pressable
-                    style={styles.deleteButton}
-                    onPress={() => handleDeleteStaff(staff.corporationId, staff.name)}
-                  >
-                    <Text style={styles.deleteButtonText}>Delete</Text>
-                  </Pressable>
+                    <Text style={[styles.formatOptionText, reportFormat === 'summary' && styles.formatOptionTextActive]}>
+                      Summary
+                    </Text>
+                  </TouchableOpacity>
                 </View>
               </View>
             </View>
-          ))
-        )}
-      </ScrollView>
+
+            <View style={styles.reportActions}>
+              <TouchableOpacity style={styles.reportActionButton} onPress={() => handleCopyReport('text')}>
+                <Copy size={20} color="#0066CC" />
+                <Text style={styles.reportActionText}>Copy as Text</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.reportActionButton} onPress={() => handleCopyReport('csv')}>
+                <FileText size={20} color="#0066CC" />
+                <Text style={styles.reportActionText}>Copy as CSV</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.reportActionButton} onPress={handleExportPDF}>
+                <Download size={20} color="#0066CC" />
+                <Text style={styles.reportActionText}>Export PDF</Text>
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity style={styles.modalCloseButton} onPress={() => setShowReportModal(false)}>
+              <Text style={styles.modalCloseText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
-
-  // If not authenticated, this should not happen as login is handled at app level
-  if (!isAdmin && !currentSession) {
-    return (
-      <View style={styles.container}>
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyText}>Access Denied</Text>
-          <Text style={styles.noAccessText}>Please login to access the admin panel</Text>
-        </View>
-      </View>
-    );
-  }
-
-  if (showDetails && selectedPCR) {
-    return (
-      <View style={styles.container}>
-        <View style={styles.detailsHeader}>
-          <Pressable
-            style={styles.backButton}
-            onPress={() => setShowDetails(false)}
-          >
-            <ArrowLeft size={20} color="#fff" />
-            <Text style={styles.backButtonText}>Back</Text>
-          </Pressable>
-          <Text style={styles.detailsTitle}>PCR Details #{selectedPCR.id}</Text>
-          <View style={{ width: 80 }} />
-        </View>
-        <PCRDetails pcr={selectedPCR} />
-      </View>
-    );
-  }
-
-  if (showAddStaff) {
-    return (
-      <View style={styles.container}>
-        <View style={styles.formHeader}>
-          <Pressable
-            style={styles.backButton}
-            onPress={() => {
-              setShowAddStaff(false);
-              setNewStaff({
-                corporationId: '',
-                name: '',
-                role: 'paramedic',
-                department: '',
-              });
-            }}
-          >
-            <ArrowLeft size={20} color="#fff" />
-            <Text style={styles.backButtonText}>Back</Text>
-          </Pressable>
-          <Text style={styles.formTitle}>Add New Staff Member</Text>
-          <View style={{ width: 80 }} />
-        </View>
-        <AddStaffForm />
-      </View>
-    );
-  }
-
-  if (editingStaff) {
-    return (
-      <View style={styles.container}>
-        <View style={styles.formHeader}>
-          <Pressable
-            style={styles.backButton}
-            onPress={() => setEditingStaff(null)}
-          >
-            <ArrowLeft size={20} color="#fff" />
-            <Text style={styles.backButtonText}>Back</Text>
-          </Pressable>
-          <Text style={styles.formTitle}>Edit Staff Member</Text>
-          <View style={{ width: 80 }} />
-        </View>
-        <EditStaffForm staff={editingStaff} />
-      </View>
-    );
-  }
-
-  if (activeTab === 'staff') {
-    return (
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <Text style={styles.title}>Staff Management</Text>
-            {currentSession && (
-              <View style={styles.sessionInfo}>
-                <Text style={styles.sessionText}>
-                  {currentSession.name} ({currentSession.corporationId})
-                </Text>
-                <Text style={styles.sessionRole}>{currentSession.role.toUpperCase()}</Text>
-              </View>
-            )}
-          </View>
-          <View style={styles.headerActions}>
-            <Pressable
-              style={styles.backButton}
-              onPress={() => setActiveTab('reports')}
-            >
-              <ArrowLeft size={20} color="#fff" />
-              <Text style={styles.backButtonText}>Back</Text>
-            </Pressable>
-          </View>
-        </View>
-        <StaffManagement />
-      </View>
-    );
-  }
-
-  return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Text style={styles.title}>Admin Panel</Text>
-          {currentSession && (
-            <View style={styles.sessionInfo}>
-              <Text style={styles.sessionText}>
-                {currentSession.name} ({currentSession.corporationId})
-              </Text>
-              <Text style={styles.sessionRole}>{currentSession.role.toUpperCase()}</Text>
-            </View>
-          )}
-        </View>
-        <View style={styles.headerActions}>
-          <Pressable style={styles.logoutButton} onPress={handleLogout}>
-            <LogOut size={20} color="#fff" />
-            <Text style={styles.logoutText}>Logout</Text>
-          </Pressable>
-        </View>
-      </View>
-
-      <View style={styles.tabContainer}>
-        <Pressable
-          style={[
-            styles.tabButton,
-            activeTab === 'reports' && styles.activeTabButton,
-          ]}
-          onPress={() => setActiveTab('reports')}
-        >
-          <Eye size={20} color={activeTab === 'reports' ? '#0066CC' : '#6b7280'} />
-          <Text
-            style={[
-              styles.tabButtonText,
-              activeTab === 'reports' && styles.activeTabButtonText,
-            ]}
-          >
-            PCR Reports
-          </Text>
-        </Pressable>
-        <Pressable
-          style={[
-            styles.tabButton,
-            activeTab === 'staff' && styles.activeTabButton,
-          ]}
-          onPress={() => setActiveTab('staff')}
-        >
-          <Users size={20} color={activeTab === 'staff' ? '#0066CC' : '#6b7280'} />
-          <Text
-            style={[
-              styles.tabButtonText,
-              activeTab === 'staff' && styles.activeTabButtonText,
-            ]}
-          >
-            Staff Management
-          </Text>
-        </Pressable>
-      </View>
-
-      <View style={styles.statsContainer}>
-        <View style={styles.statsRow}>
-          <View style={styles.statItem}>
-            <Text style={styles.statsNumber}>{completedPCRs.length}</Text>
-            <Text style={styles.statsLabel}>Total PCRs</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statsNumber}>{staffMembers.filter(s => s.isActive).length}</Text>
-            <Text style={styles.statsLabel}>Active Staff</Text>
-          </View>
-          {currentSession && (
-            <View style={styles.statItem}>
-              <Clock size={16} color="#6b7280" />
-              <Text style={styles.statsLabel}>
-                Logged in: {new Date(currentSession.loginTime).toLocaleTimeString()}
-              </Text>
-            </View>
-          )}
-        </View>
-      </View>
-
-      <ScrollView 
-        style={styles.pcrList}
-        contentContainerStyle={{ paddingBottom: 24 }}
-      >
-        {completedPCRs.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>No PCRs submitted yet</Text>
-            <Text style={styles.emptySubtext}>
-              PCR reports will appear here after staff submit them from the Preview tab.
-            </Text>
-          </View>
-        ) : (
-          completedPCRs
-            .sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime())
-            .map((pcr) => <PCRCard key={pcr.id} pcr={pcr} />)
-        )}
-      </ScrollView>
-    </View>
-  );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f6f7',
+    backgroundColor: '#F5F5F5',
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#0066CC',
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
-  logoutButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#dc3545',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 8,
-    minWidth: 120,
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#fff',
-  },
-  logoutText: {
-    color: '#fff',
-    marginLeft: 8,
-    fontWeight: '600',
-    fontSize: 16,
-  },
-  statsContainer: {
-    padding: 16,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-  },
-  statsText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#374151',
-  },
-  pcrList: {
-    flex: 1,
-    padding: 16,
-  },
-  pcrCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
-  },
-  pcrHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-  },
-  pcrId: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#0066CC',
-  },
-  patientName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
-    marginTop: 2,
-  },
-  submittedDate: {
-    fontSize: 12,
-    color: '#6b7280',
-    marginTop: 2,
-  },
-  submittedBy: {
-    fontSize: 11,
-    color: '#0066CC',
-    marginTop: 2,
-    fontStyle: 'italic',
-  },
-  actionButtons: {
-    flexDirection: 'row',
-  },
-  actionButton: {
-    padding: 8,
-    marginLeft: 4,
-    borderRadius: 6,
-    backgroundColor: '#f9fafb',
-  },
-  pcrSummary: {
-    borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
-    paddingTop: 12,
-  },
-  summaryText: {
-    fontSize: 12,
-    color: '#6b7280',
-    marginBottom: 2,
-  },
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 48,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: '#6b7280',
-  },
-  noAccessText: {
-    fontSize: 18,
-    color: '#6b7280',
-    textAlign: 'center',
-    marginTop: 48,
-  },
-  loginContainer: {
+  accessDenied: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 24,
+    padding: 20,
   },
-  loginTitle: {
+  accessDeniedTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#0066CC',
-    marginBottom: 8,
+    color: '#FF3B30',
+    marginTop: 20,
   },
-  loginSubtitle: {
+  accessDeniedText: {
     fontSize: 16,
-    color: '#6b7280',
+    color: '#666',
+    marginTop: 10,
     textAlign: 'center',
-    marginBottom: 32,
   },
-  passwordInput: {
-    width: '100%',
-    maxWidth: 300,
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 16,
-    backgroundColor: '#fff',
-    marginBottom: 16,
-  },
-  errorText: {
-    color: '#dc3545',
+  accessDeniedSubtext: {
     fontSize: 14,
-    marginBottom: 16,
-    textAlign: 'center',
+    color: '#999',
+    marginTop: 5,
   },
-  loginButton: {
-    width: '100%',
-    maxWidth: 400,
-    backgroundColor: '#0066CC',
-    paddingVertical: 12,
-    borderRadius: 8,
+  tabBar: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5E5',
+    paddingTop: 10,
+  },
+  tab: {
+    flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 24,
+    justifyContent: 'center',
+    paddingVertical: 12,
+    gap: 6,
   },
-  loginButtonText: {
-    color: '#fff',
-    fontSize: 16,
+  tabActive: {
+    borderBottomWidth: 2,
+    borderBottomColor: '#0066CC',
+  },
+  tabText: {
+    fontSize: 14,
+    color: '#666',
+  },
+  tabTextActive: {
+    color: '#0066CC',
     fontWeight: '600',
   },
-  hintContainer: {
-    backgroundColor: '#f0f9ff',
-    padding: 12,
-    borderRadius: 8,
-    borderLeftWidth: 4,
-    borderLeftColor: '#0066CC',
-  },
-  hintText: {
-    fontSize: 12,
-    color: '#0066CC',
-    textAlign: 'center',
-  },
-  hintSubtext: {
-    fontSize: 10,
-    color: '#6b7280',
-    textAlign: 'center',
-    marginTop: 4,
-    fontStyle: 'italic',
-  },
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  detailsContainer: {
+  loadingContainer: {
     flex: 1,
-    backgroundColor: '#fff',
-  },
-  detailsHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'center',
-    padding: 16,
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#666',
+  },
+  vaultContainer: {
+    flex: 1,
+  },
+  vaultHeader: {
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5E5',
+  },
+  vaultTabs: {
+    flexDirection: 'row',
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+  },
+  vaultTab: {
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    marginRight: 10,
+    borderRadius: 20,
+    backgroundColor: '#F5F5F5',
+  },
+  vaultTabActive: {
     backgroundColor: '#0066CC',
   },
-  detailsTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+  vaultTabText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#666',
+  },
+  vaultTabTextActive: {
     color: '#fff',
   },
-  closeButton: {
-    backgroundColor: '#374151',
+  filterBar: {
+    flexDirection: 'row',
+    padding: 15,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    gap: 10,
+  },
+  searchContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+  },
+  searchInput: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    fontSize: 14,
+  },
+  selectAllButton: {
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    backgroundColor: '#0066CC',
+    borderRadius: 6,
+  },
+  selectAllText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  dataCard: {
+    backgroundColor: '#fff',
+    marginHorizontal: 15,
+    marginVertical: 5,
+    padding: 15,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+  },
+  dataCardSelected: {
+    borderColor: '#0066CC',
+    backgroundColor: '#F0F7FF',
+  },
+  dataCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  dataCardTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  dataCardDate: {
+    fontSize: 12,
+    color: '#999',
+  },
+  dataCardSubtext: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 4,
+  },
+  dataCardActions: {
+    flexDirection: 'row',
+    marginTop: 12,
+    gap: 10,
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 6,
-  },
-  closeButtonText: {
-    color: '#fff',
-    fontWeight: '600',
-  },
-  section: {
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#374151',
-    marginBottom: 8,
-  },
-  vitalReading: {
-    backgroundColor: '#f9fafb',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 8,
-  },
-  vitalTime: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#0066CC',
-    marginBottom: 4,
-  },
-  detailText: {
-    fontSize: 14,
-    color: '#374151',
-    marginBottom: 6,
-    lineHeight: 20,
-  },
-  signatureGroup: {
-    backgroundColor: '#f9fafb',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 12,
-    borderLeftWidth: 3,
-    borderLeftColor: '#0066CC',
-  },
-  signatureTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#0066CC',
-    marginBottom: 8,
-  },
-  signedText: {
-    color: '#16a34a',
-    fontWeight: '600',
-  },
-  notSignedText: {
-    color: '#dc2626',
-    fontWeight: '600',
-  },
-  copyButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#28a745',
-    margin: 16,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  copyButtonText: {
-    color: '#fff',
-    fontWeight: '600',
-    marginLeft: 8,
-  },
-  ecgCaptureInfo: {
-    backgroundColor: '#E8F5E8',
-    padding: 8,
-    borderRadius: 6,
-    marginTop: 8,
-    borderLeftWidth: 3,
-    borderLeftColor: '#4CAF50',
-  },
-  ecgCaptureText: {
-    color: '#2E7D32',
-    fontSize: 12,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-
-  // Header updates
-  headerLeft: {
-    flex: 1,
-  },
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 6,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderColor: '#0066CC',
+    gap: 6,
   },
-  backButtonText: {
-    color: '#fff',
-    fontWeight: '600',
-    marginLeft: 4,
-    fontSize: 14,
+  actionButtonText: {
+    fontSize: 12,
+    color: '#0066CC',
+    fontWeight: '500',
   },
-  formContent: {
+  emptyState: {
     flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  emptyStateText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#999',
+  },
+  bulkActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 15,
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderTopColor: '#E5E5E5',
+  },
+  bulkActionsText: {
+    fontSize: 14,
+    color: '#666',
+  },
+  bulkActionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    backgroundColor: '#0066CC',
+    borderRadius: 6,
+    gap: 6,
+  },
+  bulkActionButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
   },
   staffContainer: {
     flex: 1,
-    backgroundColor: '#f5f6f7',
   },
-  sessionInfo: {
-    marginTop: 4,
-  },
-  sessionText: {
-    fontSize: 12,
-    color: '#e5e7eb',
-  },
-  sessionRole: {
-    fontSize: 10,
-    color: '#93c5fd',
-    fontWeight: '600',
-  },
-  // Stats updates
-  statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  statItem: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  statsNumber: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#0066CC',
-  },
-  statsLabel: {
-    fontSize: 12,
-    color: '#6b7280',
-    textAlign: 'center',
-    marginTop: 2,
-  },
-  
-  // Submission info styles
-  submissionInfo: {
-    backgroundColor: '#f0f9ff',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-  },
-  submissionTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#0066CC',
-    marginBottom: 8,
-  },
-  submissionText: {
-    fontSize: 12,
-    color: '#374151',
-    marginBottom: 2,
-  },
-
-  // Tab styles
-  tabContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-  },
-  tabButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 12,
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
-  },
-  activeTabButton: {
-    borderBottomColor: '#0066CC',
-  },
-  tabButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#6b7280',
-    marginLeft: 8,
-  },
-  activeTabButtonText: {
-    color: '#0066CC',
-  },
-
-  // Staff management styles
   staffHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
+    padding: 15,
     backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
   },
-  staffHeaderLeft: {
-    flex: 1,
-  },
-  staffTitle: {
-    fontSize: 18,
+  sectionTitle: {
+    fontSize: 20,
     fontWeight: 'bold',
-    color: '#374151',
-  },
-  staffSubtitle: {
-    fontSize: 12,
-    color: '#6b7280',
-    marginTop: 2,
-  },
-  addStaffButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#0066CC',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  addStaffButtonText: {
-    color: '#fff',
-    fontWeight: '600',
-    marginLeft: 8,
-  },
-  staffList: {
-    flex: 1,
-    padding: 16,
-  },
-  staffCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
-  },
-  staffCardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  staffInfo: {
-    flex: 1,
-  },
-  staffNameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  staffName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#374151',
-    flex: 1,
-  },
-  statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 12,
-    marginLeft: 8,
-  },
-  activeBadge: {
-    backgroundColor: '#dcfce7',
-  },
-  inactiveBadge: {
-    backgroundColor: '#fee2e2',
-  },
-  statusText: {
-    fontSize: 10,
-    fontWeight: '600',
-  },
-  activeText: {
-    color: '#16a34a',
-  },
-  inactiveText: {
-    color: '#dc2626',
-  },
-  staffId: {
-    fontSize: 12,
-    color: '#0066CC',
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-  staffRole: {
-    fontSize: 12,
-    color: '#6b7280',
-    marginBottom: 2,
-  },
-  lastLogin: {
-    fontSize: 10,
-    color: '#9ca3af',
-    fontStyle: 'italic',
-  },
-  staffActions: {
-    flexDirection: 'row',
-  },
-
-  // Form styles
-  formContainer: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  formHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#0066CC',
-  },
-  formTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
-  formSection: {
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
-  },
-  fieldLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: 8,
-  },
-  fieldHint: {
-    fontSize: 12,
-    color: '#6b7280',
-    marginTop: 4,
-    fontStyle: 'italic',
-  },
-  textInput: {
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    fontSize: 16,
-    backgroundColor: '#fff',
-    color: '#374151',
-  },
-  disabledInput: {
-    backgroundColor: '#f9fafb',
-    color: '#6b7280',
-  },
-  roleSelector: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  roleOption: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    backgroundColor: '#fff',
-  },
-  roleOptionSelected: {
-    backgroundColor: '#0066CC',
-    borderColor: '#0066CC',
-  },
-  roleOptionText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#6b7280',
-  },
-  roleOptionTextSelected: {
-    color: '#fff',
-  },
-  formActions: {
-    padding: 16,
+    color: '#333',
   },
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
     backgroundColor: '#0066CC',
-    paddingVertical: 14,
-    borderRadius: 8,
+    borderRadius: 6,
+    gap: 6,
   },
   addButtonText: {
     color: '#fff',
+    fontSize: 14,
     fontWeight: '600',
-    marginLeft: 8,
-    fontSize: 16,
   },
-  updateButton: {
+  staffCard: {
+    backgroundColor: '#fff',
+    marginHorizontal: 15,
+    marginVertical: 5,
+    padding: 15,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+  },
+  staffCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  staffName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  staffId: {
+    fontSize: 12,
+    color: '#999',
+    marginTop: 2,
+  },
+  statusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  statusActive: {
+    backgroundColor: '#E8F5E9',
+  },
+  statusInactive: {
+    backgroundColor: '#FFEBEE',
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  staffInfo: {
+    marginBottom: 10,
+  },
+  staffInfoText: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 2,
+  },
+  staffActions: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  staffActionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#28a745',
-    paddingVertical: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+    gap: 6,
+  },
+  staffActionText: {
+    fontSize: 12,
+    color: '#666',
+  },
+  auditContainer: {
+    flex: 1,
+  },
+  auditCard: {
+    backgroundColor: '#fff',
+    marginHorizontal: 15,
+    marginVertical: 5,
+    padding: 15,
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
   },
-  updateButtonText: {
-    color: '#fff',
-    fontWeight: '600',
-    marginLeft: 8,
-    fontSize: 16,
+  auditHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
   },
-  infoBox: {
-    backgroundColor: '#f0f9ff',
-    margin: 16,
-    padding: 16,
-    borderRadius: 8,
-    borderLeftWidth: 4,
-    borderLeftColor: '#0066CC',
-  },
-  infoTitle: {
+  auditAction: {
     fontSize: 14,
     fontWeight: '600',
     color: '#0066CC',
+  },
+  auditTime: {
+    fontSize: 12,
+    color: '#999',
+  },
+  auditDetails: {
+    fontSize: 14,
+    color: '#333',
+    marginBottom: 6,
+  },
+  auditActor: {
+    fontSize: 12,
+    color: '#666',
+  },
+  auditTarget: {
+    fontSize: 12,
+    color: '#999',
+    marginTop: 2,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 20,
+    width: '90%',
+    maxWidth: 400,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 15,
+    fontSize: 14,
+  },
+  inputLabel: {
+    fontSize: 14,
+    color: '#666',
     marginBottom: 8,
   },
-  infoText: {
-    fontSize: 12,
-    color: '#374151',
-    marginBottom: 4,
-    lineHeight: 16,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    color: '#9ca3af',
-    textAlign: 'center',
+  roleOptions: {
+    flexDirection: 'row',
+    gap: 10,
     marginTop: 8,
   },
-  deleteButton: {
-    backgroundColor: '#dc3545',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+  roleOption: {
+    flex: 1,
+    paddingVertical: 8,
     borderRadius: 6,
-    marginLeft: 4,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+    alignItems: 'center',
   },
-  deleteButtonText: {
+  roleOptionActive: {
+    backgroundColor: '#0066CC',
+    borderColor: '#0066CC',
+  },
+  roleOptionText: {
+    fontSize: 14,
+    color: '#666',
+  },
+  roleOptionTextActive: {
     color: '#fff',
-    fontSize: 12,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 20,
+  },
+  modalCancelButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+    alignItems: 'center',
+  },
+  modalCancelText: {
+    fontSize: 14,
+    color: '#666',
+  },
+  modalSubmitButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    backgroundColor: '#0066CC',
+    alignItems: 'center',
+  },
+  modalSubmitText: {
+    fontSize: 14,
+    color: '#fff',
     fontWeight: '600',
   },
-
+  reportOptions: {
+    marginBottom: 20,
+  },
+  reportOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5E5',
+  },
+  reportOptionLabel: {
+    fontSize: 14,
+    color: '#333',
+  },
+  formatOptions: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  formatOption: {
+    paddingHorizontal: 15,
+    paddingVertical: 6,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+  },
+  formatOptionActive: {
+    backgroundColor: '#0066CC',
+    borderColor: '#0066CC',
+  },
+  formatOptionText: {
+    fontSize: 12,
+    color: '#666',
+  },
+  formatOptionTextActive: {
+    color: '#fff',
+  },
+  reportActions: {
+    gap: 10,
+  },
+  reportActionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#0066CC',
+    gap: 8,
+  },
+  reportActionText: {
+    fontSize: 14,
+    color: '#0066CC',
+    fontWeight: '500',
+  },
+  modalCloseButton: {
+    paddingVertical: 12,
+    borderRadius: 8,
+    backgroundColor: '#F5F5F5',
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  modalCloseText: {
+    fontSize: 14,
+    color: '#666',
+  },
 });
-
-export default AdminScreen;

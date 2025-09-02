@@ -109,19 +109,102 @@ export interface CompletedPCR {
 export interface StaffMember {
   corporationId: string;
   name: string;
-  role: 'paramedic' | 'nurse' | 'doctor' | 'admin' | 'supervisor';
+  role: 'Staff' | 'Admin' | 'SuperAdmin' | 'paramedic' | 'nurse' | 'doctor' | 'admin' | 'supervisor';
   department: string;
   isActive: boolean;
   lastLogin?: string;
+  status?: 'Active' | 'Inactive';
+  created_at?: string;
+  last_login_at?: string;
 }
 
 export interface AuthSession {
   staffId: string;
   corporationId: string;
   name: string;
-  role: 'paramedic' | 'nurse' | 'doctor' | 'admin' | 'supervisor';
+  role: 'Staff' | 'Admin' | 'SuperAdmin' | 'paramedic' | 'nurse' | 'doctor' | 'admin' | 'supervisor';
   loginTime: string;
   isAdmin: boolean;
+  isSuperAdmin?: boolean;
+}
+
+export interface Patient {
+  patient_id: string;
+  full_name: string;
+  dob: string;
+  sex: string;
+  phone: string;
+  address: string;
+  mrn: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Encounter {
+  encounter_id: string;
+  patient_id: string;
+  date_time: string;
+  location: string;
+  chief_complaint: string;
+  history_notes: string;
+  assessment_notes: string;
+  treatments: string;
+  medications: string;
+  attending_staff_ids: string[];
+  disposition: string;
+  created_at: string;
+  updated_at: string;
+  provisional_diagnosis: string;
+}
+
+export interface Vitals {
+  vitals_id: string;
+  encounter_id: string;
+  time_logged: string;
+  heart_rate: string;
+  bp_systolic: string;
+  bp_diastolic: string;
+  resp_rate: string;
+  spo2: string;
+  temperature: string;
+  gcs: string;
+  notes: string;
+}
+
+export interface ECG {
+  ecg_id: string;
+  encounter_id: string;
+  captured_at: string;
+  rhythm_label: string;
+  image_ecg: string;
+  notes: string;
+}
+
+export interface Signature {
+  signature_id: string;
+  encounter_id: string;
+  signer_role: 'Patient' | 'Guardian' | 'Provider';
+  signer_name: string;
+  signed_at: string;
+  signature_image: string;
+}
+
+export interface Attachment {
+  attachment_id: string;
+  encounter_id: string;
+  file: string;
+  label: string;
+  uploaded_at: string;
+}
+
+export interface AuditLog {
+  log_id: string;
+  actor_staff_id: string;
+  action: string;
+  target_type: string;
+  target_id: string;
+  timestamp: string;
+  details: string;
 }
 
 interface PCRStore {
@@ -137,6 +220,14 @@ interface PCRStore {
   currentSession: AuthSession | null;
   staffMembers: StaffMember[];
   isLoggingOut: boolean;
+  // Admin data collections
+  patients: Patient[];
+  encounters: Encounter[];
+  allVitals: Vitals[];
+  ecgs: ECG[];
+  signatures: Signature[];
+  attachments: Attachment[];
+  auditLogs: AuditLog[];
   updateCallTimeInfo: (info: Partial<CallTimeInfo>) => void;
   updatePatientInfo: (info: Partial<PatientInfo>) => void;
   updateIncidentInfo: (info: Partial<IncidentInfo>) => void;
@@ -166,6 +257,20 @@ interface PCRStore {
   saveRefusalData: () => Promise<void>;
   addECGCapture: (ecgData: string) => void;
   updateVitalWithECG: (vitalIndex: number, ecgData: string) => void;
+  // Admin functions
+  loadAdminData: () => Promise<void>;
+  addAuditLog: (action: string, targetType: string, targetId: string, details: string) => Promise<void>;
+  savePatient: (patient: Patient) => Promise<void>;
+  saveEncounter: (encounter: Encounter) => Promise<void>;
+  saveVitals: (vitals: Vitals) => Promise<void>;
+  saveECG: (ecg: ECG) => Promise<void>;
+  saveSignature: (signature: Signature) => Promise<void>;
+  saveAttachment: (attachment: Attachment) => Promise<void>;
+  deletePatient: (patientId: string) => Promise<void>;
+  deleteEncounter: (encounterId: string) => Promise<void>;
+  updateStaffRole: (corporationId: string, newRole: string) => Promise<void>;
+  deactivateStaff: (corporationId: string) => Promise<void>;
+  reactivateStaff: (corporationId: string) => Promise<void>;
 }
 
 const initialPatientInfo: PatientInfo = {
@@ -243,11 +348,22 @@ const initialRefusalInfo: RefusalInfo = {
 // Default staff members for demonstration
 const defaultStaffMembers: StaffMember[] = [
   {
-    corporationId: 'ADMIN001',
-    name: 'System Administrator',
-    role: 'admin',
+    corporationId: 'SUPER001',
+    name: 'Super Administrator',
+    role: 'SuperAdmin',
     department: 'IT',
     isActive: true,
+    status: 'Active',
+    created_at: new Date().toISOString(),
+  },
+  {
+    corporationId: 'ADMIN001',
+    name: 'System Administrator',
+    role: 'Admin',
+    department: 'IT',
+    isActive: true,
+    status: 'Active',
+    created_at: new Date().toISOString(),
   },
   {
     corporationId: 'PARA001',
@@ -299,6 +415,14 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
   currentSession: null,
   staffMembers: [],
   isLoggingOut: false,
+  // Admin data collections
+  patients: [],
+  encounters: [],
+  allVitals: [],
+  ecgs: [],
+  signatures: [],
+  attachments: [],
+  auditLogs: [],
   
   updateCallTimeInfo: (info) => {
     set((state) => ({
@@ -612,7 +736,8 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
         name: staff.name,
         role: staff.role,
         loginTime: new Date().toISOString(),
-        isAdmin: staff.role === 'admin' || staff.role === 'supervisor',
+        isAdmin: staff.role === 'admin' || staff.role === 'Admin' || staff.role === 'SuperAdmin' || staff.role === 'supervisor',
+        isSuperAdmin: staff.role === 'SuperAdmin',
       };
       
       // Update last login time
@@ -904,6 +1029,167 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
       console.error('Error loading staff members:', error);
       set({ staffMembers: defaultStaffMembers });
     }
+  },
+
+  loadAdminData: async () => {
+    try {
+      const [patients, encounters, vitals, ecgs, signatures, attachments, auditLogs] = await Promise.all([
+        AsyncStorage.getItem('admin_patients'),
+        AsyncStorage.getItem('admin_encounters'),
+        AsyncStorage.getItem('admin_vitals'),
+        AsyncStorage.getItem('admin_ecgs'),
+        AsyncStorage.getItem('admin_signatures'),
+        AsyncStorage.getItem('admin_attachments'),
+        AsyncStorage.getItem('admin_auditLogs'),
+      ]);
+
+      set({
+        patients: patients ? JSON.parse(patients) : [],
+        encounters: encounters ? JSON.parse(encounters) : [],
+        allVitals: vitals ? JSON.parse(vitals) : [],
+        ecgs: ecgs ? JSON.parse(ecgs) : [],
+        signatures: signatures ? JSON.parse(signatures) : [],
+        attachments: attachments ? JSON.parse(attachments) : [],
+        auditLogs: auditLogs ? JSON.parse(auditLogs) : [],
+      });
+      console.log('Admin data loaded successfully');
+    } catch (error) {
+      console.error('Error loading admin data:', error);
+    }
+  },
+
+  addAuditLog: async (action: string, targetType: string, targetId: string, details: string) => {
+    const state = get();
+    const currentSession = state.currentSession;
+    if (!currentSession) return;
+
+    const newLog: AuditLog = {
+      log_id: Date.now().toString(),
+      actor_staff_id: currentSession.staffId,
+      action,
+      target_type: targetType,
+      target_id: targetId,
+      timestamp: new Date().toISOString(),
+      details,
+    };
+
+    const updatedLogs = [...state.auditLogs, newLog];
+    await AsyncStorage.setItem('admin_auditLogs', JSON.stringify(updatedLogs));
+    set({ auditLogs: updatedLogs });
+  },
+
+  savePatient: async (patient: Patient) => {
+    const state = get();
+    const existingIndex = state.patients.findIndex(p => p.patient_id === patient.patient_id);
+    let updatedPatients;
+    
+    if (existingIndex >= 0) {
+      updatedPatients = [...state.patients];
+      updatedPatients[existingIndex] = { ...patient, updated_at: new Date().toISOString() };
+      await get().addAuditLog('UPDATE_PATIENT', 'Patient', patient.patient_id, `Updated patient: ${patient.full_name}`);
+    } else {
+      updatedPatients = [...state.patients, { ...patient, created_at: new Date().toISOString() }];
+      await get().addAuditLog('CREATE_PATIENT', 'Patient', patient.patient_id, `Created patient: ${patient.full_name}`);
+    }
+    
+    await AsyncStorage.setItem('admin_patients', JSON.stringify(updatedPatients));
+    set({ patients: updatedPatients });
+  },
+
+  saveEncounter: async (encounter: Encounter) => {
+    const state = get();
+    const existingIndex = state.encounters.findIndex(e => e.encounter_id === encounter.encounter_id);
+    let updatedEncounters;
+    
+    if (existingIndex >= 0) {
+      updatedEncounters = [...state.encounters];
+      updatedEncounters[existingIndex] = { ...encounter, updated_at: new Date().toISOString() };
+      await get().addAuditLog('UPDATE_ENCOUNTER', 'Encounter', encounter.encounter_id, `Updated encounter`);
+    } else {
+      updatedEncounters = [...state.encounters, { ...encounter, created_at: new Date().toISOString() }];
+      await get().addAuditLog('CREATE_ENCOUNTER', 'Encounter', encounter.encounter_id, `Created encounter`);
+    }
+    
+    await AsyncStorage.setItem('admin_encounters', JSON.stringify(updatedEncounters));
+    set({ encounters: updatedEncounters });
+  },
+
+  saveVitals: async (vitals: Vitals) => {
+    const state = get();
+    const updatedVitals = [...state.allVitals, vitals];
+    await AsyncStorage.setItem('admin_vitals', JSON.stringify(updatedVitals));
+    set({ allVitals: updatedVitals });
+    await get().addAuditLog('ADD_VITALS', 'Vitals', vitals.vitals_id, `Added vitals for encounter ${vitals.encounter_id}`);
+  },
+
+  saveECG: async (ecg: ECG) => {
+    const state = get();
+    const updatedECGs = [...state.ecgs, ecg];
+    await AsyncStorage.setItem('admin_ecgs', JSON.stringify(updatedECGs));
+    set({ ecgs: updatedECGs });
+    await get().addAuditLog('ADD_ECG', 'ECG', ecg.ecg_id, `Added ECG for encounter ${ecg.encounter_id}`);
+  },
+
+  saveSignature: async (signature: Signature) => {
+    const state = get();
+    const updatedSignatures = [...state.signatures, signature];
+    await AsyncStorage.setItem('admin_signatures', JSON.stringify(updatedSignatures));
+    set({ signatures: updatedSignatures });
+    await get().addAuditLog('ADD_SIGNATURE', 'Signature', signature.signature_id, `Added ${signature.signer_role} signature`);
+  },
+
+  saveAttachment: async (attachment: Attachment) => {
+    const state = get();
+    const updatedAttachments = [...state.attachments, attachment];
+    await AsyncStorage.setItem('admin_attachments', JSON.stringify(updatedAttachments));
+    set({ attachments: updatedAttachments });
+    await get().addAuditLog('ADD_ATTACHMENT', 'Attachment', attachment.attachment_id, `Added attachment: ${attachment.label}`);
+  },
+
+  deletePatient: async (patientId: string) => {
+    const state = get();
+    const updatedPatients = state.patients.filter(p => p.patient_id !== patientId);
+    await AsyncStorage.setItem('admin_patients', JSON.stringify(updatedPatients));
+    set({ patients: updatedPatients });
+    await get().addAuditLog('DELETE_PATIENT', 'Patient', patientId, `Deleted patient`);
+  },
+
+  deleteEncounter: async (encounterId: string) => {
+    const state = get();
+    const updatedEncounters = state.encounters.filter(e => e.encounter_id !== encounterId);
+    await AsyncStorage.setItem('admin_encounters', JSON.stringify(updatedEncounters));
+    set({ encounters: updatedEncounters });
+    await get().addAuditLog('DELETE_ENCOUNTER', 'Encounter', encounterId, `Deleted encounter`);
+  },
+
+  updateStaffRole: async (corporationId: string, newRole: string) => {
+    const state = get();
+    const updatedStaffMembers = state.staffMembers.map(staff => 
+      staff.corporationId === corporationId ? { ...staff, role: newRole as any } : staff
+    );
+    await AsyncStorage.setItem('staffMembers', JSON.stringify(updatedStaffMembers));
+    set({ staffMembers: updatedStaffMembers });
+    await get().addAuditLog('UPDATE_STAFF_ROLE', 'Staff', corporationId, `Updated role to ${newRole}`);
+  },
+
+  deactivateStaff: async (corporationId: string) => {
+    const state = get();
+    const updatedStaffMembers = state.staffMembers.map(staff => 
+      staff.corporationId === corporationId ? { ...staff, isActive: false, status: 'Inactive' as const } : staff
+    );
+    await AsyncStorage.setItem('staffMembers', JSON.stringify(updatedStaffMembers));
+    set({ staffMembers: updatedStaffMembers });
+    await get().addAuditLog('DEACTIVATE_STAFF', 'Staff', corporationId, `Deactivated staff member`);
+  },
+
+  reactivateStaff: async (corporationId: string) => {
+    const state = get();
+    const updatedStaffMembers = state.staffMembers.map(staff => 
+      staff.corporationId === corporationId ? { ...staff, isActive: true, status: 'Active' as const } : staff
+    );
+    await AsyncStorage.setItem('staffMembers', JSON.stringify(updatedStaffMembers));
+    set({ staffMembers: updatedStaffMembers });
+    await get().addAuditLog('REACTIVATE_STAFF', 'Staff', corporationId, `Reactivated staff member`);
   },
 
 }));
