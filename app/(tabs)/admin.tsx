@@ -117,8 +117,12 @@ export default function AdminScreen() {
     }
   };
 
-  // Check if user is admin
-  const isAdmin = currentSession?.isAdmin || currentSession?.role === 'admin' || currentSession?.role === 'Admin';
+  // Check if user is admin - check all possible admin role variations
+  const isAdmin = currentSession?.isAdmin || 
+    currentSession?.role === 'admin' || 
+    currentSession?.role === 'Admin' || 
+    currentSession?.role === 'SuperAdmin' || 
+    currentSession?.role === 'supervisor';
   const isSuperAdmin = currentSession?.role === 'SuperAdmin' || currentSession?.isSuperAdmin;
 
   if (!isAdmin) {

@@ -790,6 +790,12 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
       console.log('Logging out:', state.currentSession.name);
     }
     
+    // First, immediately clear the session from state to prevent any UI from showing authenticated content
+    set({ 
+      currentSession: null,
+      isAdmin: false,
+    });
+    
     try {
       // Clear all persisted data in parallel for efficiency
       await Promise.all([

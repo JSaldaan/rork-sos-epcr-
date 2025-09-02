@@ -105,7 +105,8 @@ function RootLayoutNav() {
 }
 
 function AppInitializer() {
-  const { loadCurrentPCRDraft, initializeStaffDatabase, loadCompletedPCRs } = usePCRStore();
+  const { loadCurrentPCRDraft, initializeStaffDatabase, loadCompletedPCRs, isLoggingOut } = usePCRStore();
+  const [hasInitialized, setHasInitialized] = React.useState(false);
   
   useEffect(() => {
     const initializeApp = async () => {
@@ -121,25 +122,29 @@ function AppInitializer() {
         await loadCompletedPCRs();
         console.log('Completed PCRs loaded');
         
-        // Check for existing session
-        const storedSession = await AsyncStorage.getItem('currentSession');
-        if (storedSession) {
-          const session = JSON.parse(storedSession);
-          usePCRStore.setState({ 
-            currentSession: session,
-            isAdmin: session.isAdmin
-          });
-          console.log('Restored session for:', session.name);
-          
-          // Reload PCRs after session is restored to ensure proper filtering
-          console.log('Reloading PCRs after session restore...');
-          await loadCompletedPCRs();
+        // Only restore session on first app load, not after logout
+        if (!hasInitialized && !isLoggingOut) {
+          // Check for existing session
+          const storedSession = await AsyncStorage.getItem('currentSession');
+          if (storedSession) {
+            const session = JSON.parse(storedSession);
+            usePCRStore.setState({ 
+              currentSession: session,
+              isAdmin: session.isAdmin
+            });
+            console.log('Restored session for:', session.name);
+            
+            // Reload PCRs after session is restored to ensure proper filtering
+            console.log('Reloading PCRs after session restore...');
+            await loadCompletedPCRs();
+          }
         }
         
         // Load any existing draft
         await loadCurrentPCRDraft();
         console.log('App initialized, draft loaded if available');
         console.log('=== END APP INITIALIZATION ===');
+        setHasInitialized(true);
       } catch (error) {
         console.error('Error initializing app:', error);
       } finally {
@@ -148,8 +153,10 @@ function AppInitializer() {
       }
     };
     
-    initializeApp();
-  }, [loadCurrentPCRDraft, initializeStaffDatabase, loadCompletedPCRs]);
+    if (!hasInitialized) {
+      initializeApp();
+    }
+  }, [loadCurrentPCRDraft, initializeStaffDatabase, loadCompletedPCRs, hasInitialized, isLoggingOut]);
   
   return <RootLayoutNav />;
 }
