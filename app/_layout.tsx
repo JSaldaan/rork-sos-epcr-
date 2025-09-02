@@ -73,6 +73,13 @@ function RootLayoutNav() {
       return;
     }
     
+    // If authenticated but on login page, redirect to tabs
+    if (isAuthenticated && isOnLoginPage) {
+      console.log('Already authenticated, redirecting to tabs');
+      router.replace('/(tabs)');
+      return;
+    }
+    
     // Check admin access for admin tab
     if (isOnAdminTab && isAuthenticated && !isAdmin && !currentSession?.isAdmin) {
       console.log('Non-admin trying to access admin tab, redirecting');
@@ -104,40 +111,17 @@ function AppInitializer() {
         await initializeStaffDatabase();
         console.log('Staff database initialized');
         
-        // Check for existing session AFTER staff database is ready
-        const existingSession = await AsyncStorage.getItem('currentSession');
-        if (existingSession) {
-          try {
-            const session = JSON.parse(existingSession);
-            console.log('Found existing session:', session.name, session.corporationId);
-            
-            // Validate the session against current staff database
-            const staffMember = usePCRStore.getState().staffMembers.find(
-              member => member.corporationId === session.corporationId && member.isActive
-            );
-            
-            if (staffMember) {
-              // Restore valid session
-              usePCRStore.setState({ 
-                currentSession: session,
-                isAdmin: session.isAdmin || staffMember.role === 'Admin' || staffMember.role === 'SuperAdmin'
-              });
-              console.log('Session restored successfully');
-              
-              // Load completed PCRs for authenticated user
-              await loadCompletedPCRs();
-              console.log('Completed PCRs loaded for authenticated user');
-            } else {
-              console.log('Session invalid - staff member not found or inactive, clearing session');
-              await AsyncStorage.removeItem('currentSession');
-            }
-          } catch (error) {
-            console.error('Error parsing existing session:', error);
-            await AsyncStorage.removeItem('currentSession');
-          }
-        } else {
-          console.log('No existing session found, user needs to login');
-        }
+        // Clear any existing sessions to force fresh login
+        console.log('Clearing any existing sessions to force fresh login');
+        await AsyncStorage.removeItem('currentSession');
+        
+        // Ensure store is in clean state
+        usePCRStore.setState({ 
+          currentSession: null,
+          isAdmin: false
+        });
+        
+        console.log('All users must login fresh on app start');
         
         // Load any existing draft
         await loadCurrentPCRDraft();

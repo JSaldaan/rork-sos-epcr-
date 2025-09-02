@@ -517,8 +517,8 @@ export default function AdminScreen() {
         <FlatList
           data={data}
           keyExtractor={(item: any, index: number) => {
-            const baseId = item.id || item.patient_id || item.encounter_id || item.vitals_id || item.ecg_id || item.signature_id || item.attachment_id;
-            return `${vaultSection}_${baseId}_${index}`;
+            const baseId = item.id || item.patient_id || item.encounter_id || item.vitals_id || item.ecg_id || item.signature_id || item.attachment_id || `item_${index}`;
+            return `${vaultSection}_${baseId}_${index}_${Date.now()}`;
           }}
           renderItem={({ item, index }) => {
             const itemId = item.id || item.patient_id || item.encounter_id || item.vitals_id || item.ecg_id || item.signature_id || item.attachment_id;

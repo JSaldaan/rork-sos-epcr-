@@ -95,7 +95,7 @@ const LoginScreen: React.FC = () => {
           >
             <Users size={20} color={loginMode === 'staff' ? '#fff' : '#0066CC'} />
             <Text style={[styles.modeButtonText, loginMode === 'staff' && styles.modeButtonTextActive]}>
-              Staff Login
+              Staff Access
             </Text>
           </Pressable>
           
@@ -108,9 +108,9 @@ const LoginScreen: React.FC = () => {
               setCorporationId('');
             }}
           >
-            <Shield size={20} color={loginMode === 'admin' ? '#fff' : '#0066CC'} />
-            <Text style={[styles.modeButtonText, loginMode === 'admin' && styles.modeButtonTextActive]}>
-              Admin
+            <Shield size={20} color={loginMode === 'admin' ? '#fff' : '#DC2626'} />
+            <Text style={[styles.modeButtonText, loginMode === 'admin' && styles.modeButtonTextActive, loginMode === 'admin' && styles.adminModeText]}>
+              Admin Only
             </Text>
           </Pressable>
         </View>
@@ -192,9 +192,16 @@ const LoginScreen: React.FC = () => {
         )}
         
         {loginMode === 'admin' && (
-          <View style={styles.hintContainer}>
-            <Text style={styles.hintText}>Demo Password: &quot;admin123&quot;</Text>
-            <Text style={styles.hintSubtext}>Admin can view and manage PCR reports</Text>
+          <View style={styles.adminHintContainer}>
+            <Text style={styles.adminHintTitle}>🔐 Administrator Access</Text>
+            <Text style={styles.adminHintText}>Demo Password: &quot;admin123&quot;</Text>
+            <Text style={styles.adminHintSubtext}>Full system access including:</Text>
+            <View style={styles.adminFeaturesList}>
+              <Text style={styles.adminFeature}>• View all patient reports</Text>
+              <Text style={styles.adminFeature}>• Manage staff accounts</Text>
+              <Text style={styles.adminFeature}>• Export comprehensive data</Text>
+              <Text style={styles.adminFeature}>• Access audit logs</Text>
+            </View>
           </View>
         )}
         
@@ -279,6 +286,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     borderRadius: 6,
     backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: 'transparent',
   },
   modeButtonActive: {
     backgroundColor: '#0066CC',
@@ -291,6 +300,9 @@ const styles = StyleSheet.create({
   },
   modeButtonTextActive: {
     color: '#fff',
+  },
+  adminModeText: {
+    color: '#DC2626',
   },
   inputContainer: {
     width: '100%',
@@ -388,6 +400,43 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 4,
     fontStyle: 'italic',
+  },
+  adminHintContainer: {
+    backgroundColor: '#fef2f2',
+    padding: 16,
+    borderRadius: 8,
+    borderLeftWidth: 4,
+    borderLeftColor: '#DC2626',
+    width: '100%',
+    maxWidth: 400,
+  },
+  adminHintTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#DC2626',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  adminHintText: {
+    fontSize: 12,
+    color: '#DC2626',
+    textAlign: 'center',
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  adminHintSubtext: {
+    fontSize: 11,
+    color: '#7f1d1d',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  adminFeaturesList: {
+    alignItems: 'flex-start',
+  },
+  adminFeature: {
+    fontSize: 10,
+    color: '#991b1b',
+    marginBottom: 2,
   },
   debugButton: {
     marginTop: 20,

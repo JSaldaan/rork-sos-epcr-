@@ -683,11 +683,30 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
     const adminPassword = 'admin123';
     
     if (password === adminPassword) {
-      set({ isAdmin: true });
-      console.log('Admin login successful, loading PCRs...');
-      // Load PCRs immediately after successful login
+      // Create admin session
+      const adminSession: AuthSession = {
+        staffId: 'ADMIN_SYSTEM',
+        corporationId: 'ADMIN_SYSTEM',
+        name: 'System Administrator',
+        role: 'SuperAdmin',
+        loginTime: new Date().toISOString(),
+        isAdmin: true,
+        isSuperAdmin: true,
+      };
+      
+      set({ 
+        isAdmin: true,
+        currentSession: adminSession
+      });
+      
+      // Store admin session
+      AsyncStorage.setItem('currentSession', JSON.stringify(adminSession)).catch(console.error);
+      
+      console.log('Admin login successful, loading data...');
+      // Load all data immediately after successful login
       setTimeout(() => {
         get().loadCompletedPCRs();
+        get().loadAdminData();
       }, 100);
       return true;
     }
@@ -810,12 +829,6 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
       console.log('Logging out:', state.currentSession.name);
     }
     
-    // First, immediately clear the session from state to prevent any UI from showing authenticated content
-    set({ 
-      currentSession: null,
-      isAdmin: false,
-    });
-    
     try {
       // Clear all persisted data in parallel for efficiency
       await Promise.all([
@@ -827,12 +840,6 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
       ]);
       console.log('All persisted data cleared');
       
-      // Clear any global auth headers if using axios or fetch interceptors
-      // This is where you'd clear axios defaults or fetch interceptors
-      // Example: axios.defaults.headers.common['Authorization'] = undefined;
-      
-      // React Query cache will be cleared by the component that handles logout
-      // since queryClient is not accessible here
     } catch (error) {
       console.error('Error during logout cleanup:', error);
     } finally {
@@ -843,6 +850,14 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
         completedPCRs: [],
         staffMembers: [],
         isLoggingOut: false,
+        // Reset admin data
+        patients: [],
+        encounters: [],
+        allVitals: [],
+        ecgs: [],
+        signatures: [],
+        attachments: [],
+        auditLogs: [],
         // Reset PCR data to initial values
         callTimeInfo: initialCallTimeInfo,
         patientInfo: initialPatientInfo,
@@ -1189,33 +1204,51 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
   },
 
   updateStaffRole: async (corporationId: string, newRole: string) => {
-    const state = get();
-    const updatedStaffMembers = state.staffMembers.map(staff => 
-      staff.corporationId === corporationId ? { ...staff, role: newRole as any } : staff
-    );
-    await AsyncStorage.setItem('staffMembers', JSON.stringify(updatedStaffMembers));
-    set({ staffMembers: updatedStaffMembers });
-    await get().addAuditLog('UPDATE_STAFF_ROLE', 'Staff', corporationId, `Updated role to ${newRole}`);
+    try {
+      const state = get();
+      const updatedStaffMembers = state.staffMembers.map(staff => 
+        staff.corporationId === corporationId ? { ...staff, role: newRole as any } : staff
+      );
+      await AsyncStorage.setItem('staffMembers', JSON.stringify(updatedStaffMembers));
+      set({ staffMembers: updatedStaffMembers });
+      await get().addAuditLog('UPDATE_STAFF_ROLE', 'Staff', corporationId, `Updated role to ${newRole}`);
+      console.log('Staff role updated successfully:', corporationId, 'to', newRole);
+    } catch (error) {
+      console.error('Error updating staff role:', error);
+      throw error;
+    }
   },
 
   deactivateStaff: async (corporationId: string) => {
-    const state = get();
-    const updatedStaffMembers = state.staffMembers.map(staff => 
-      staff.corporationId === corporationId ? { ...staff, isActive: false, status: 'Inactive' as const } : staff
-    );
-    await AsyncStorage.setItem('staffMembers', JSON.stringify(updatedStaffMembers));
-    set({ staffMembers: updatedStaffMembers });
-    await get().addAuditLog('DEACTIVATE_STAFF', 'Staff', corporationId, `Deactivated staff member`);
+    try {
+      const state = get();
+      const updatedStaffMembers = state.staffMembers.map(staff => 
+        staff.corporationId === corporationId ? { ...staff, isActive: false, status: 'Inactive' as const } : staff
+      );
+      await AsyncStorage.setItem('staffMembers', JSON.stringify(updatedStaffMembers));
+      set({ staffMembers: updatedStaffMembers });
+      await get().addAuditLog('DEACTIVATE_STAFF', 'Staff', corporationId, `Deactivated staff member`);
+      console.log('Staff deactivated successfully:', corporationId);
+    } catch (error) {
+      console.error('Error deactivating staff:', error);
+      throw error;
+    }
   },
 
   reactivateStaff: async (corporationId: string) => {
-    const state = get();
-    const updatedStaffMembers = state.staffMembers.map(staff => 
-      staff.corporationId === corporationId ? { ...staff, isActive: true, status: 'Active' as const } : staff
-    );
-    await AsyncStorage.setItem('staffMembers', JSON.stringify(updatedStaffMembers));
-    set({ staffMembers: updatedStaffMembers });
-    await get().addAuditLog('REACTIVATE_STAFF', 'Staff', corporationId, `Reactivated staff member`);
+    try {
+      const state = get();
+      const updatedStaffMembers = state.staffMembers.map(staff => 
+        staff.corporationId === corporationId ? { ...staff, isActive: true, status: 'Active' as const } : staff
+      );
+      await AsyncStorage.setItem('staffMembers', JSON.stringify(updatedStaffMembers));
+      set({ staffMembers: updatedStaffMembers });
+      await get().addAuditLog('REACTIVATE_STAFF', 'Staff', corporationId, `Reactivated staff member`);
+      console.log('Staff reactivated successfully:', corporationId);
+    } catch (error) {
+      console.error('Error reactivating staff:', error);
+      throw error;
+    }
   },
 
   storeComprehensiveAdminData: async (pcr: CompletedPCR) => {
