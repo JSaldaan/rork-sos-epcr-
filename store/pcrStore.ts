@@ -521,10 +521,19 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
     if (!isAdmin) {
       // When logging out, clear everything from state and storage
       AsyncStorage.removeItem('currentSession').catch(console.error);
+      AsyncStorage.removeItem('currentPCRDraft').catch(console.error);
       set({ 
         isAdmin: false,
         completedPCRs: [],
-        currentSession: null
+        currentSession: null,
+        // Reset PCR data to initial values
+        callTimeInfo: initialCallTimeInfo,
+        patientInfo: initialPatientInfo,
+        incidentInfo: initialIncidentInfo,
+        vitals: [],
+        transportInfo: initialTransportInfo,
+        signatureInfo: initialSignatureInfo,
+        refusalInfo: initialRefusalInfo,
       });
       console.log('Admin logged out, cleared state and session storage');
     } else {
@@ -673,6 +682,10 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
     });
     
     console.log('Staff logout complete - all state cleared');
+    console.log('Current state after logout:', {
+      currentSession: get().currentSession,
+      isAdmin: get().isAdmin
+    });
     console.log('=== END STAFF LOGOUT ===');
   },
 

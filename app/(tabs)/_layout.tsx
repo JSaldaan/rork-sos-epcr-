@@ -1,5 +1,5 @@
 import { Tabs, router } from "expo-router";
-import { FileText, Activity, Truck, User, FileX, Eye, ArrowRight, FolderOpen } from "lucide-react-native";
+import { FileText, Activity, Truck, User, FileX, Eye, LogOut, FolderOpen } from "lucide-react-native";
 import React from "react";
 import { TouchableOpacity, Alert, Text, View, StyleSheet, Platform } from "react-native";
 import { usePCRStore } from "../../store/pcrStore";
@@ -7,7 +7,7 @@ import { usePCRStore } from "../../store/pcrStore";
 export default function TabLayout() {
   const { isAdmin, currentSession, staffLogout, setAdminMode } = usePCRStore();
   
-  const handleLogout = () => {
+  const handleLogout = async () => {
     const logoutMessage = currentSession 
       ? `Are you sure you want to logout ${currentSession.name}?`
       : 'Are you sure you want to logout?';
@@ -19,26 +19,36 @@ export default function TabLayout() {
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Logout',
-          onPress: () => {
+          onPress: async () => {
             console.log('=== LOGOUT PROCESS STARTED ===');
             console.log('Current session before logout:', currentSession);
             console.log('Is admin before logout:', isAdmin);
             
-            // Clear session data
-            if (currentSession) {
-              console.log('Logging out staff member:', currentSession.name);
-              staffLogout();
-            } else if (isAdmin) {
-              console.log('Logging out admin');
-              setAdminMode(false);
+            try {
+              // Clear session data
+              if (currentSession) {
+                console.log('Logging out staff member:', currentSession.name);
+                await staffLogout();
+              } else if (isAdmin) {
+                console.log('Logging out admin');
+                setAdminMode(false);
+              }
+              
+              console.log('Logout functions completed, navigating to login...');
+              
+              // Use setTimeout to ensure state updates are processed before navigation
+              setTimeout(() => {
+                // Navigate to login and clear the navigation stack
+                router.replace('/login');
+                console.log('Navigation to login completed');
+              }, 100);
+              
+            } catch (error) {
+              console.error('Error during logout:', error);
+              // Still navigate to login even if there's an error
+              router.replace('/login');
             }
             
-            console.log('Logout functions completed, navigating to login...');
-            
-            // Navigate to login and clear the navigation stack
-            router.replace('/login');
-            
-            console.log('Navigation to login initiated');
             console.log('=== LOGOUT PROCESS COMPLETED ===');
           },
         },
@@ -56,8 +66,7 @@ export default function TabLayout() {
       accessibilityLabel="Logout"
       accessibilityRole="button"
     >
-      <ArrowRight size={20} color="#fff" />
-      <Text style={styles.logoutText}>Logout</Text>
+      <LogOut size={20} color="#fff" />
     </TouchableOpacity>
   );
   
@@ -144,19 +153,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginRight: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    padding: 10,
     borderRadius: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
-    minWidth: 90,
-    minHeight: 40,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    minWidth: 44,
+    minHeight: 44,
     justifyContent: 'center',
-  },
-
-  logoutText: {
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: '600',
-    marginLeft: 6,
   },
 });
