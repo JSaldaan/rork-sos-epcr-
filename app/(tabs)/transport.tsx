@@ -23,6 +23,11 @@ export default function TransportScreen() {
       return;
     }
     
+    if (transportInfo.destination === "Other" && !transportInfo.customDestination.trim()) {
+      Alert.alert("Required", "Please enter the name of the destination hospital");
+      return;
+    }
+    
     try {
       await saveTransportData();
       console.log('Transport information saved to draft');
@@ -31,7 +36,7 @@ export default function TransportScreen() {
       console.error('Error saving transport data:', error);
       Alert.alert("Error", "Failed to save transport information");
     }
-  }, [transportInfo.destination, saveTransportData]);
+  }, [transportInfo.destination, transportInfo.customDestination, saveTransportData]);
 
   const hospitals = useMemo(() => [
     "Hamad General Hospital",
@@ -42,6 +47,7 @@ export default function TransportScreen() {
     "National Center for Cancer Care & Research",
     "Rumailah Hospital",
     "Al Amal Hospital",
+    "Other",
   ], []);
 
   const transportModes = useMemo(() => [
@@ -53,6 +59,9 @@ export default function TransportScreen() {
 
   const handleHospitalSelect = useCallback((hospital: string) => {
     updateTransportInfo({ destination: hospital });
+    if (hospital !== "Other") {
+      updateTransportInfo({ customDestination: "" });
+    }
     setShowHospitalDropdown(false);
   }, [updateTransportInfo]);
 
@@ -74,10 +83,24 @@ export default function TransportScreen() {
             styles.dropdownButtonText,
             !transportInfo.destination && styles.dropdownPlaceholder
           ]}>
-            {transportInfo.destination || "Select destination hospital"}
+            {transportInfo.destination === "Other" && transportInfo.customDestination 
+              ? transportInfo.customDestination 
+              : transportInfo.destination || "Select destination hospital"}
           </Text>
           <ChevronDown size={20} color="#666" />
         </TouchableOpacity>
+        
+        {transportInfo.destination === "Other" && (
+          <>
+            <Text style={styles.label}>Hospital Name</Text>
+            <TextInput
+              style={styles.input}
+              value={transportInfo.customDestination}
+              onChangeText={(text) => updateTransportInfo({ customDestination: text })}
+              placeholder="Enter the name of the destination hospital"
+            />
+          </>
+        )}
       </View>
 
       <View style={styles.section}>
@@ -194,7 +217,9 @@ export default function TransportScreen() {
                   style={styles.dropdownItem}
                   onPress={() => handleHospitalSelect(item)}
                 >
-                  <Text style={styles.dropdownItemText}>{item}</Text>
+                  <Text style={styles.dropdownItemText}>
+                    {item}
+                  </Text>
                   {transportInfo.destination === item && (
                     <Check size={20} color="#0066CC" />
                   )}

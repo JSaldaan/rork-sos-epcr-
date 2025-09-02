@@ -46,6 +46,7 @@ export interface VitalSigns {
 
 export interface TransportInfo {
   destination: string;
+  customDestination: string;
   mode: string;
   unitNumber: string;
   departureTime: string;
@@ -307,6 +308,7 @@ const initialIncidentInfo: IncidentInfo = {
 
 const initialTransportInfo: TransportInfo = {
   destination: '',
+  customDestination: '',
   mode: '',
   unitNumber: '',
   departureTime: '',
@@ -1524,7 +1526,10 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
     
     // Transport Information
     report += `[TRANSPORT INFORMATION]\n`;
-    report += `Destination: ${pcr.transportInfo.destination}\n`;
+    const finalDestination = pcr.transportInfo.destination === "Other" && pcr.transportInfo.customDestination 
+      ? pcr.transportInfo.customDestination 
+      : pcr.transportInfo.destination;
+    report += `Destination: ${finalDestination}\n`;
     report += `Mode: ${pcr.transportInfo.mode}\n`;
     report += `Unit Number: ${pcr.transportInfo.unitNumber}\n`;
     report += `Departure Time: ${pcr.transportInfo.departureTime}\n`;
