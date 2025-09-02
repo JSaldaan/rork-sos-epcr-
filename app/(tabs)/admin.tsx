@@ -415,12 +415,15 @@ export default function AdminScreen() {
             try {
               if (action === 'deactivate') {
                 await deactivateStaff(staff.corporationId);
+                await addAuditLog('DEACTIVATE_STAFF', 'Staff', staff.corporationId, `Deactivated ${staff.name}`);
               } else if (action === 'reactivate') {
                 await reactivateStaff(staff.corporationId);
+                await addAuditLog('REACTIVATE_STAFF', 'Staff', staff.corporationId, `Reactivated ${staff.name}`);
               }
               Alert.alert('Success', `Staff member ${action}d successfully`);
-              loadStaffMembers();
+              await loadStaffMembers();
             } catch (error) {
+              console.error(`Error ${action}ing staff:`, error);
               Alert.alert('Error', `Failed to ${action} staff member`);
             }
           }
@@ -437,9 +440,11 @@ export default function AdminScreen() {
 
     try {
       await updateStaffRole(staff.corporationId, newRole);
+      await addAuditLog('UPDATE_ROLE', 'Staff', staff.corporationId, `Changed role from ${staff.role} to ${newRole}`);
       Alert.alert('Success', 'Role updated successfully');
-      loadStaffMembers();
+      await loadStaffMembers();
     } catch (error) {
+      console.error('Error updating role:', error);
       Alert.alert('Error', 'Failed to update role');
     }
   };

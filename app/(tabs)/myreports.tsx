@@ -76,21 +76,17 @@ const MyReportsScreen: React.FC = () => {
             try {
               console.log('Starting logout process...');
               
-              // Call the logout function
-              await staffLogout();
+              // Show success message first
+              Alert.alert('Success', 'You have been logged out successfully');
               
-              console.log('Logout successful, state cleared');
-              
-              // Small delay to ensure state is cleared
-              setTimeout(() => {
-                console.log('Navigating to login screen...');
-                // Force navigation to login
-                router.replace('/login');
+              // Small delay for alert to show
+              setTimeout(async () => {
+                // Call the logout function
+                await staffLogout();
+                console.log('Logout successful, state cleared');
                 
-                // Show success message after navigation
-                setTimeout(() => {
-                  Alert.alert('Success', 'You have been logged out successfully');
-                }, 500);
+                // Navigate to login immediately after logout
+                router.replace('/login');
               }, 100);
             } catch (error) {
               console.error('Logout error:', error);

@@ -57,11 +57,16 @@ function RootLayoutNav() {
     console.log('Is on login page:', isOnLoginPage);
     console.log('Is on admin tab:', isOnAdminTab);
     
-    // On app startup (root path), always go to login first
+    // On app startup (root path), check authentication
     if (isOnRootPath && !hasNavigatedToLogin) {
-      console.log('App starting, redirecting to login');
       setHasNavigatedToLogin(true);
-      router.replace('/login');
+      if (isAuthenticated) {
+        console.log('App starting with existing session, redirecting to tabs');
+        router.replace('/(tabs)');
+      } else {
+        console.log('App starting without session, redirecting to login');
+        router.replace('/login');
+      }
       return;
     }
     
@@ -99,15 +104,28 @@ function AppInitializer() {
       try {
         console.log('=== APP INITIALIZATION ===');
         
-        // Clear any existing session on app startup to force login
-        await AsyncStorage.removeItem('currentSession');
-        console.log('Cleared any existing session to force login');
+        // Check for existing session
+        const existingSession = await AsyncStorage.getItem('currentSession');
+        if (existingSession) {
+          console.log('Found existing session, will restore it');
+          const session = JSON.parse(existingSession);
+          // Restore session in store
+          const { currentSession: storeSession } = usePCRStore.getState();
+          if (!storeSession) {
+            usePCRStore.setState({ 
+              currentSession: session,
+              isAdmin: session.isAdmin
+            });
+          }
+        } else {
+          console.log('No existing session found, user needs to login');
+        }
         
         // Initialize staff database first
         await initializeStaffDatabase();
         console.log('Staff database initialized');
         
-        // Load completed PCRs (will be empty without session)
+        // Load completed PCRs
         console.log('Loading completed PCRs on app start...');
         await loadCompletedPCRs();
         console.log('Completed PCRs loaded');
