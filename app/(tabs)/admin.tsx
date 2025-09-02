@@ -10,6 +10,8 @@ import {
   Platform,
   TextInput,
   KeyboardAvoidingView,
+  Keyboard,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { router } from 'expo-router';
@@ -578,18 +580,19 @@ const AdminScreen: React.FC = () => {
   );
 
   const AddStaffForm: React.FC = () => (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={{ flex: 1 }}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
-    >
-      <ScrollView
-        style={styles.formContainer}
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ paddingBottom: 100 }}
-        showsVerticalScrollIndicator={false}
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
       >
-        <View style={styles.formContent}>
+        <ScrollView
+          style={styles.formContainer}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{ paddingBottom: 100 }}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.formContent}>
           <View style={styles.formSection}>
             <Text style={styles.fieldLabel}>Corporation ID *</Text>
           <TextInput
@@ -681,26 +684,28 @@ const AdminScreen: React.FC = () => {
             • Only active staff members can login to the app
           </Text>
         </View>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </TouchableWithoutFeedback>
   );
 
   const EditStaffForm: React.FC<{ staff: StaffMember }> = ({ staff }) => {
     // Use editingStaff state directly which is already set when editing starts
     return (
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
-      >
-        <ScrollView
-          style={styles.formContainer}
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ paddingBottom: 100 }}
-          showsVerticalScrollIndicator={false}
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ flex: 1 }}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
         >
-          <View style={styles.formContent}>
+          <ScrollView
+            style={styles.formContainer}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ paddingBottom: 100 }}
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.formContent}>
             <View style={styles.formSection}>
               <Text style={styles.fieldLabel}>Corporation ID</Text>
               <TextInput
@@ -770,9 +775,10 @@ const AdminScreen: React.FC = () => {
                 <Text style={styles.updateButtonText}>Update Staff Member</Text>
               </Pressable>
             </View>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </TouchableWithoutFeedback>
     );
   };
 
