@@ -35,8 +35,8 @@ export default function TabLayout() {
             
             console.log('Logout functions completed, navigating to login...');
             
-            // Use push instead of replace to ensure proper navigation
-            router.push('/login');
+            // Navigate to login and clear the navigation stack
+            router.replace('/login');
             
             console.log('Navigation to login initiated');
             console.log('=== LOGOUT PROCESS COMPLETED ===');
@@ -47,8 +47,16 @@ export default function TabLayout() {
   };
   
   const LogoutButton = () => (
-    <Pressable style={styles.logoutButton} onPress={handleLogout}>
-      <LogOut size={18} color="#fff" />
+    <Pressable 
+      style={({ pressed }) => [
+        styles.logoutButton,
+        pressed && styles.logoutButtonPressed
+      ]} 
+      onPress={handleLogout}
+      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+    >
+      <LogOut size={20} color="#fff" />
+      <Text style={styles.logoutText}>Logout</Text>
     </Pressable>
   );
   
@@ -132,9 +140,22 @@ export default function TabLayout() {
 
 const styles = StyleSheet.create({
   logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginRight: 16,
-    padding: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     borderRadius: 6,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    minWidth: 80,
+  },
+  logoutButtonPressed: {
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  logoutText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+    marginLeft: 6,
   },
 });

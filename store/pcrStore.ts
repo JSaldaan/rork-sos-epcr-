@@ -646,19 +646,33 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
     }
     
     try {
+      // Clear session from AsyncStorage
       await AsyncStorage.removeItem('currentSession');
       console.log('Session removed from AsyncStorage');
+      
+      // Also clear any draft data on logout
+      await AsyncStorage.removeItem('currentPCRDraft');
+      console.log('Draft data cleared');
     } catch (error) {
-      console.error('Error removing session from storage:', error);
+      console.error('Error removing data from storage:', error);
     }
     
+    // Reset all state to initial values
     set({ 
       currentSession: null,
       isAdmin: false,
-      completedPCRs: []
+      completedPCRs: [],
+      // Reset PCR data to initial values
+      callTimeInfo: initialCallTimeInfo,
+      patientInfo: initialPatientInfo,
+      incidentInfo: initialIncidentInfo,
+      vitals: [],
+      transportInfo: initialTransportInfo,
+      signatureInfo: initialSignatureInfo,
+      refusalInfo: initialRefusalInfo,
     });
     
-    console.log('Staff logout complete - state cleared');
+    console.log('Staff logout complete - all state cleared');
     console.log('=== END STAFF LOGOUT ===');
   },
 
