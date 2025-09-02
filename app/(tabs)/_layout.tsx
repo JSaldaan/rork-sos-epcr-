@@ -1,13 +1,20 @@
 import { Tabs, router } from "expo-router";
 import { FileText, Activity, Truck, User, FileX, Eye, LogOut, FolderOpen } from "lucide-react-native";
-import React from "react";
+import React, { useCallback } from "react";
 import { Pressable, Alert, StyleSheet } from "react-native";
 import { usePCRStore } from "../../store/pcrStore";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function TabLayout() {
-  const { currentSession, staffLogout } = usePCRStore();
+  const { currentSession, staffLogout, isLoggingOut } = usePCRStore();
+  const queryClient = useQueryClient();
   
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
+    // Prevent multiple logout attempts
+    if (isLoggingOut) {
+      console.log('Logout already in progress');
+      return;
+    }
     Alert.alert(
       'Confirm Logout',
       `Are you sure you want to logout${currentSession ? ` ${currentSession.name}` : ''}?`,
@@ -21,23 +28,29 @@ export default function TabLayout() {
           style: 'destructive',
           onPress: async () => {
             try {
+              console.log('Starting logout process...');
+              
+              // Clear React Query cache first
+              queryClient.clear();
+              queryClient.cancelQueries();
+              console.log('React Query cache cleared');
+              
               // Call the logout function
               await staffLogout();
+              console.log('Store logout completed');
               
-              // Show success message
-              Alert.alert(
-                'Success',
-                'You have been logged out successfully',
-                [
-                  {
-                    text: 'OK',
-                    onPress: () => {
-                      // Navigate to login screen
-                      router.replace('/login');
-                    }
-                  }
-                ]
-              );
+              // Use replace to prevent back navigation
+              router.replace('/login');
+              console.log('Navigation to login completed');
+              
+              // Show success message after navigation
+              setTimeout(() => {
+                Alert.alert(
+                  'Success',
+                  'You have been logged out successfully',
+                  [{ text: 'OK' }]
+                );
+              }, 100);
             } catch (error) {
               console.error('Logout error:', error);
               Alert.alert('Error', 'Failed to logout. Please try again.');
@@ -46,7 +59,7 @@ export default function TabLayout() {
         }
       ]
     );
-  };
+  }, [currentSession, staffLogout, queryClient, isLoggingOut]);
   
   const LogoutButton = () => (
     <Pressable 
@@ -56,6 +69,7 @@ export default function TabLayout() {
       ]}
       onPress={handleLogout}
       hitSlop={20}
+      disabled={isLoggingOut}
     >
       <LogOut size={22} color="#fff" />
     </Pressable>

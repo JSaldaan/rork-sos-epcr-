@@ -136,6 +136,7 @@ interface PCRStore {
   isAdmin: boolean;
   currentSession: AuthSession | null;
   staffMembers: StaffMember[];
+  isLoggingOut: boolean;
   updateCallTimeInfo: (info: Partial<CallTimeInfo>) => void;
   updatePatientInfo: (info: Partial<PatientInfo>) => void;
   updateIncidentInfo: (info: Partial<IncidentInfo>) => void;
@@ -297,6 +298,7 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
   isAdmin: false,
   currentSession: null,
   staffMembers: [],
+  isLoggingOut: false,
   
   updateCallTimeInfo: (info) => {
     set((state) => ({
@@ -650,43 +652,63 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
   staffLogout: async () => {
     console.log('=== STAFF LOGOUT ===');
     const state = get();
+    
+    // Prevent multiple simultaneous logout calls
+    if (state.isLoggingOut) {
+      console.log('Logout already in progress, skipping');
+      return;
+    }
+    
+    set({ isLoggingOut: true });
+    
     if (state.currentSession) {
       console.log('Logging out:', state.currentSession.name);
     }
     
     try {
-      // Clear session from AsyncStorage
-      await AsyncStorage.removeItem('currentSession');
-      console.log('Session removed from AsyncStorage');
+      // Clear all persisted data in parallel for efficiency
+      await Promise.all([
+        AsyncStorage.removeItem('currentSession'),
+        AsyncStorage.removeItem('currentPCRDraft'),
+        AsyncStorage.removeItem('authToken'),
+        AsyncStorage.removeItem('refreshToken'),
+        AsyncStorage.multiRemove(['userPreferences', 'cachedData']).catch(() => {})
+      ]);
+      console.log('All persisted data cleared');
       
-      // Also clear any draft data on logout
-      await AsyncStorage.removeItem('currentPCRDraft');
-      console.log('Draft data cleared');
+      // Clear any global auth headers if using axios or fetch interceptors
+      // This is where you'd clear axios defaults or fetch interceptors
+      // Example: axios.defaults.headers.common['Authorization'] = undefined;
+      
+      // React Query cache will be cleared by the component that handles logout
+      // since queryClient is not accessible here
     } catch (error) {
-      console.error('Error removing data from storage:', error);
+      console.error('Error during logout cleanup:', error);
+    } finally {
+      // Reset all state to initial values - this must happen even if cleanup fails
+      set({ 
+        currentSession: null,
+        isAdmin: false,
+        completedPCRs: [],
+        staffMembers: [],
+        isLoggingOut: false,
+        // Reset PCR data to initial values
+        callTimeInfo: initialCallTimeInfo,
+        patientInfo: initialPatientInfo,
+        incidentInfo: initialIncidentInfo,
+        vitals: [],
+        transportInfo: initialTransportInfo,
+        signatureInfo: initialSignatureInfo,
+        refusalInfo: initialRefusalInfo,
+      });
+      
+      console.log('Staff logout complete - all state cleared');
+      console.log('Current state after logout:', {
+        currentSession: get().currentSession,
+        isAdmin: get().isAdmin
+      });
+      console.log('=== END STAFF LOGOUT ===');
     }
-    
-    // Reset all state to initial values
-    set({ 
-      currentSession: null,
-      isAdmin: false,
-      completedPCRs: [],
-      // Reset PCR data to initial values
-      callTimeInfo: initialCallTimeInfo,
-      patientInfo: initialPatientInfo,
-      incidentInfo: initialIncidentInfo,
-      vitals: [],
-      transportInfo: initialTransportInfo,
-      signatureInfo: initialSignatureInfo,
-      refusalInfo: initialRefusalInfo,
-    });
-    
-    console.log('Staff logout complete - all state cleared');
-    console.log('Current state after logout:', {
-      currentSession: get().currentSession,
-      isAdmin: get().isAdmin
-    });
-    console.log('=== END STAFF LOGOUT ===');
   },
 
   saveCurrentPCRDraft: async () => {

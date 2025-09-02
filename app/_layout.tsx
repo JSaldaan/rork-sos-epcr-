@@ -26,6 +26,7 @@ function RootLayoutNav() {
   const segments = useSegments();
   const router = useRouter();
   const [isInitialized, setIsInitialized] = React.useState(false);
+  const [lastAuthState, setLastAuthState] = React.useState<boolean | null>(null);
   
   useEffect(() => {
     // Wait for store initialization before handling navigation
@@ -40,8 +41,9 @@ function RootLayoutNav() {
     if (!isInitialized) return;
     
     const inAuthGroup = segments[0] === '(tabs)';
-    const isAuthenticated = currentSession || isAdmin;
+    const isAuthenticated = !!(currentSession || isAdmin);
     const isOnRootPath = (segments as string[]).length === 0;
+    const isOnLoginPage = segments[0] === 'login';
     
     console.log('=== ROUTE PROTECTION ===');
     console.log('Current segments:', segments);
@@ -50,6 +52,17 @@ function RootLayoutNav() {
     console.log('Is admin:', isAdmin);
     console.log('Is authenticated:', isAuthenticated);
     console.log('Is on root path:', isOnRootPath);
+    console.log('Is on login page:', isOnLoginPage);
+    
+    // Track auth state changes to detect logout
+    if (lastAuthState === true && isAuthenticated === false) {
+      // User just logged out - force to login
+      console.log('Auth state changed: User logged out, forcing to login');
+      router.replace('/login');
+      setLastAuthState(false);
+      return;
+    }
+    setLastAuthState(isAuthenticated);
     
     // Always redirect to login if not authenticated and trying to access protected routes
     if (!isAuthenticated && inAuthGroup) {
@@ -61,10 +74,13 @@ function RootLayoutNav() {
       console.log('App starting, redirecting to login');
       router.replace('/login');
     }
-    // Don't auto-redirect authenticated users to tabs - let them stay on login
-    // They can navigate to tabs manually after login
+    // Prevent authenticated users from going back to protected routes after logout
+    else if (!isAuthenticated && !isOnLoginPage && !isOnRootPath) {
+      console.log('Not authenticated and not on login - redirecting');
+      router.replace('/login');
+    }
     console.log('=== END ROUTE PROTECTION ===');
-  }, [currentSession, isAdmin, segments, router, isInitialized]);
+  }, [currentSession, isAdmin, segments, router, isInitialized, lastAuthState]);
   
   return (
     <Stack screenOptions={{ headerBackTitle: "Back" }}>
