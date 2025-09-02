@@ -346,8 +346,6 @@ const AdminScreen: React.FC = () => {
             try {
               console.log('Deleting staff member:', corporationId, name);
               await deleteStaffMember(corporationId);
-              // Reload staff members after deletion
-              await loadStaffMembers();
               Alert.alert('Success', 'Staff member deleted successfully');
             } catch (error) {
               console.error('Error deleting staff member:', error);
@@ -587,8 +585,7 @@ const AdminScreen: React.FC = () => {
     >
       <ScrollView
         style={styles.formContainer}
-        keyboardShouldPersistTaps="always"
-        keyboardDismissMode="none"
+        keyboardShouldPersistTaps="handled"
         contentContainerStyle={{ paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
       >
@@ -609,9 +606,6 @@ const AdminScreen: React.FC = () => {
             returnKeyType="next"
             blurOnSubmit={false}
             maxLength={10}
-            selectTextOnFocus={false}
-            clearButtonMode="never"
-            autoFocus={false}
           />
         </View>
 
@@ -626,9 +620,6 @@ const AdminScreen: React.FC = () => {
             autoCorrect={false}
             returnKeyType="next"
             blurOnSubmit={false}
-            selectTextOnFocus={false}
-            clearButtonMode="never"
-            autoFocus={false}
           />
         </View>
 
@@ -668,9 +659,6 @@ const AdminScreen: React.FC = () => {
             autoCorrect={false}
             returnKeyType="done"
             blurOnSubmit={false}
-            selectTextOnFocus={false}
-            clearButtonMode="never"
-            autoFocus={false}
           />
         </View>
 
@@ -708,8 +696,7 @@ const AdminScreen: React.FC = () => {
       >
         <ScrollView
           style={styles.formContainer}
-          keyboardShouldPersistTaps="always"
-          keyboardDismissMode="none"
+          keyboardShouldPersistTaps="handled"
           contentContainerStyle={{ paddingBottom: 100 }}
           showsVerticalScrollIndicator={false}
         >
@@ -735,9 +722,6 @@ const AdminScreen: React.FC = () => {
                 autoCorrect={false}
                 returnKeyType="next"
                 blurOnSubmit={false}
-                selectTextOnFocus={false}
-                clearButtonMode="never"
-                autoFocus={false}
               />
             </View>
 
@@ -777,9 +761,6 @@ const AdminScreen: React.FC = () => {
                 autoCorrect={false}
                 returnKeyType="done"
                 blurOnSubmit={false}
-                selectTextOnFocus={false}
-                clearButtonMode="never"
-                autoFocus={false}
               />
             </View>
 

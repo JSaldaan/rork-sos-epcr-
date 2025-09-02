@@ -35,15 +35,15 @@ export default function TabLayout() {
               
               console.log('Logout functions completed, navigating to login...');
               
-              // Use router.push instead of replace to ensure navigation works
-              router.push('/login');
+              // Navigate to login page
+              router.replace('/login');
               
               console.log('Navigation to login initiated');
               console.log('=== LOGOUT PROCESS COMPLETED ===');
             } catch (error) {
               console.error('Error during logout:', error);
-              // Still try to navigate even if logout fails
-              router.push('/login');
+              // Force navigation even if logout fails
+              router.replace('/login');
             }
           },
         },
