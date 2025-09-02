@@ -1,73 +1,64 @@
 import { Tabs, router } from "expo-router";
 import { FileText, Activity, Truck, User, FileX, Eye, LogOut, FolderOpen } from "lucide-react-native";
 import React from "react";
-import { TouchableOpacity, Alert, Text, View, StyleSheet, Platform } from "react-native";
+import { Pressable, Alert, StyleSheet } from "react-native";
 import { usePCRStore } from "../../store/pcrStore";
 
 export default function TabLayout() {
-  const { isAdmin, currentSession, staffLogout, setAdminMode } = usePCRStore();
+  const { currentSession, staffLogout } = usePCRStore();
   
-  const handleLogout = async () => {
-    const logoutMessage = currentSession 
-      ? `Are you sure you want to logout ${currentSession.name}?`
-      : 'Are you sure you want to logout?';
-    
+  const handleLogout = () => {
     Alert.alert(
-      'Logout',
-      logoutMessage,
+      'Confirm Logout',
+      `Are you sure you want to logout${currentSession ? ` ${currentSession.name}` : ''}?`,
       [
-        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Cancel',
+          style: 'cancel'
+        },
         {
           text: 'Logout',
+          style: 'destructive',
           onPress: async () => {
-            console.log('=== LOGOUT PROCESS STARTED ===');
-            console.log('Current session before logout:', currentSession);
-            console.log('Is admin before logout:', isAdmin);
-            
             try {
-              // Clear session data
-              if (currentSession) {
-                console.log('Logging out staff member:', currentSession.name);
-                await staffLogout();
-              } else if (isAdmin) {
-                console.log('Logging out admin');
-                setAdminMode(false);
-              }
+              // Call the logout function
+              await staffLogout();
               
-              console.log('Logout functions completed, navigating to login...');
-              
-              // Use setTimeout to ensure state updates are processed before navigation
-              setTimeout(() => {
-                // Navigate to login and clear the navigation stack
-                router.replace('/login');
-                console.log('Navigation to login completed');
-              }, 100);
-              
+              // Show success message
+              Alert.alert(
+                'Success',
+                'You have been logged out successfully',
+                [
+                  {
+                    text: 'OK',
+                    onPress: () => {
+                      // Navigate to login screen
+                      router.replace('/login');
+                    }
+                  }
+                ]
+              );
             } catch (error) {
-              console.error('Error during logout:', error);
-              // Still navigate to login even if there's an error
-              router.replace('/login');
+              console.error('Logout error:', error);
+              Alert.alert('Error', 'Failed to logout. Please try again.');
             }
-            
-            console.log('=== LOGOUT PROCESS COMPLETED ===');
-          },
-        },
+          }
+        }
       ]
     );
   };
   
   const LogoutButton = () => (
-    <TouchableOpacity 
-      style={styles.logoutButton}
+    <Pressable 
+      style={({ pressed }) => [
+        styles.logoutButton,
+        pressed && styles.logoutButtonPressed
+      ]}
       onPress={handleLogout}
-      activeOpacity={0.7}
-      hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
-      accessible={true}
-      accessibilityLabel="Logout"
-      accessibilityRole="button"
+      hitSlop={20}
     >
-      <LogOut size={20} color="#fff" />
-    </TouchableOpacity>
+      <LogOut size={22} color="#fff" />
+    </Pressable>
   );
   
   return (
@@ -150,14 +141,14 @@ export default function TabLayout() {
 
 const styles = StyleSheet.create({
   logoutButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
     marginRight: 16,
-    padding: 10,
-    borderRadius: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    minWidth: 44,
-    minHeight: 44,
+    padding: 8,
+    borderRadius: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    alignItems: 'center',
     justifyContent: 'center',
+  },
+  logoutButtonPressed: {
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
   },
 });
