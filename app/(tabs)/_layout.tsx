@@ -19,32 +19,27 @@ export default function TabLayout() {
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Logout',
-          onPress: async () => {
-            try {
-              console.log('=== LOGOUT PROCESS STARTED ===');
-              console.log('Current session before logout:', currentSession);
-              console.log('Is admin before logout:', isAdmin);
-              
-              if (currentSession) {
-                console.log('Logging out staff member:', currentSession.name);
-                await staffLogout();
-              } else if (isAdmin) {
-                console.log('Logging out admin');
-                setAdminMode(false);
-              }
-              
-              console.log('Logout functions completed, navigating to login...');
-              
-              // Navigate to login page
-              router.replace('/login');
-              
-              console.log('Navigation to login initiated');
-              console.log('=== LOGOUT PROCESS COMPLETED ===');
-            } catch (error) {
-              console.error('Error during logout:', error);
-              // Force navigation even if logout fails
-              router.replace('/login');
+          onPress: () => {
+            console.log('=== LOGOUT PROCESS STARTED ===');
+            console.log('Current session before logout:', currentSession);
+            console.log('Is admin before logout:', isAdmin);
+            
+            // Clear session data
+            if (currentSession) {
+              console.log('Logging out staff member:', currentSession.name);
+              staffLogout();
+            } else if (isAdmin) {
+              console.log('Logging out admin');
+              setAdminMode(false);
             }
+            
+            console.log('Logout functions completed, navigating to login...');
+            
+            // Use push instead of replace to ensure proper navigation
+            router.push('/login');
+            
+            console.log('Navigation to login initiated');
+            console.log('=== LOGOUT PROCESS COMPLETED ===');
           },
         },
       ]
