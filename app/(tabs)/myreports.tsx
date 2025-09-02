@@ -12,19 +12,23 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { usePCRStore, CompletedPCR } from '../../store/pcrStore';
-import { Copy, Eye, FileText, Clock, User, Calendar } from 'lucide-react-native';
+import { Copy, Eye, FileText, Clock, User, Calendar, LogOut } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
 
 const MyReportsScreen: React.FC = () => {
   const {
     getMySubmittedPCRs,
     loadCompletedPCRs,
     currentSession,
+    staffLogout,
   } = usePCRStore();
+  const router = useRouter();
   
   const [selectedPCR, setSelectedPCR] = useState<CompletedPCR | null>(null);
   const [showDetails, setShowDetails] = useState<boolean>(false);
   const [myPCRs, setMyPCRs] = useState<CompletedPCR[]>([]);
   const [refreshKey, setRefreshKey] = useState<number>(0);
+  const [isLoggingOut, setIsLoggingOut] = useState<boolean>(false);
 
   // Load PCRs when screen is focused
   useFocusEffect(
@@ -50,6 +54,48 @@ const MyReportsScreen: React.FC = () => {
       }
     }, [currentSession, loadCompletedPCRs, getMySubmittedPCRs])
   );
+
+  const handleLogout = async () => {
+    if (isLoggingOut) return;
+    
+    setIsLoggingOut(true);
+    
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+          onPress: () => setIsLoggingOut(false),
+        },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              console.log('Starting logout process...');
+              await staffLogout();
+              console.log('Logout successful, navigating to login...');
+              
+              // Use replace to prevent going back
+              router.replace('/login');
+              
+              // Show success message
+              setTimeout(() => {
+                Alert.alert('Success', 'You have been logged out successfully');
+              }, 100);
+            } catch (error) {
+              console.error('Logout error:', error);
+              Alert.alert('Error', 'Failed to logout. Please try again.');
+              setIsLoggingOut(false);
+            }
+          },
+        },
+      ],
+      { cancelable: true }
+    );
+  };
 
   const formatPCRForCopy = (pcr: CompletedPCR): string => {
     return `ELECTRONIC PATIENT CARE REPORT\n` +
@@ -416,9 +462,19 @@ const MyReportsScreen: React.FC = () => {
             </Text>
           </View>
         </View>
-        <View style={styles.statsContainer}>
-          <Text style={styles.statsNumber}>{myPCRs.length}</Text>
-          <Text style={styles.statsLabel}>Reports</Text>
+        <View style={styles.headerRight}>
+          <View style={styles.statsContainer}>
+            <Text style={styles.statsNumber}>{myPCRs.length}</Text>
+            <Text style={styles.statsLabel}>Reports</Text>
+          </View>
+          <Pressable
+            style={[styles.logoutButton, isLoggingOut && styles.logoutButtonDisabled]}
+            onPress={handleLogout}
+            disabled={isLoggingOut}
+          >
+            <LogOut size={20} color="#fff" />
+            <Text style={styles.logoutButtonText}>Logout</Text>
+          </Pressable>
         </View>
       </View>
 
@@ -479,8 +535,30 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     marginTop: 2,
   },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
   statsContainer: {
     alignItems: 'center',
+  },
+  logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#dc2626',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 6,
+  },
+  logoutButtonDisabled: {
+    opacity: 0.5,
+  },
+  logoutButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
   },
   statsNumber: {
     fontSize: 20,
