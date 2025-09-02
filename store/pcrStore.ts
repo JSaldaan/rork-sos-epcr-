@@ -117,6 +117,8 @@ export interface StaffMember {
   status?: 'Active' | 'Inactive';
   created_at?: string;
   last_login_at?: string;
+  mobileNumber: string;
+  email?: string;
 }
 
 export interface AuthSession {
@@ -360,6 +362,8 @@ const defaultStaffMembers: StaffMember[] = [
     isActive: true,
     status: 'Active',
     created_at: new Date().toISOString(),
+    mobileNumber: '+1234567890',
+    email: 'superadmin@hospital.com',
   },
   {
     corporationId: 'ADMIN001',
@@ -369,6 +373,8 @@ const defaultStaffMembers: StaffMember[] = [
     isActive: true,
     status: 'Active',
     created_at: new Date().toISOString(),
+    mobileNumber: '+1234567891',
+    email: 'admin@hospital.com',
   },
   {
     corporationId: 'PARA001',
@@ -376,6 +382,8 @@ const defaultStaffMembers: StaffMember[] = [
     role: 'paramedic',
     department: 'Emergency Services',
     isActive: true,
+    mobileNumber: '+1234567892',
+    email: 'john.smith@hospital.com',
   },
   {
     corporationId: 'PARA002',
@@ -383,6 +391,8 @@ const defaultStaffMembers: StaffMember[] = [
     role: 'paramedic',
     department: 'Emergency Services',
     isActive: true,
+    mobileNumber: '+1234567893',
+    email: 'sarah.johnson@hospital.com',
   },
   {
     corporationId: 'NURSE001',
@@ -390,6 +400,8 @@ const defaultStaffMembers: StaffMember[] = [
     role: 'nurse',
     department: 'Emergency Department',
     isActive: true,
+    mobileNumber: '+1234567894',
+    email: 'emily.davis@hospital.com',
   },
   {
     corporationId: 'DOC001',
@@ -397,6 +409,8 @@ const defaultStaffMembers: StaffMember[] = [
     role: 'doctor',
     department: 'Emergency Medicine',
     isActive: true,
+    mobileNumber: '+1234567895',
+    email: 'michael.brown@hospital.com',
   },
   {
     corporationId: 'SUP001',
@@ -404,6 +418,8 @@ const defaultStaffMembers: StaffMember[] = [
     role: 'supervisor',
     department: 'Operations',
     isActive: true,
+    mobileNumber: '+1234567896',
+    email: 'lisa.wilson@hospital.com',
   },
 ];
 

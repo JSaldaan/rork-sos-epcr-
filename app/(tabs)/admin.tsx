@@ -106,6 +106,8 @@ export default function AdminScreen() {
     corporationId: '',
     role: 'Staff' as StaffMember['role'],
     department: '',
+    mobileNumber: '',
+    email: '',
   });
 
   // Date range filter
@@ -1035,8 +1037,15 @@ export default function AdminScreen() {
   };
 
   const handleAddStaff = async () => {
-    if (!newStaff.name || !newStaff.corporationId) {
-      Alert.alert('Error', 'Please fill in all required fields');
+    if (!newStaff.name || !newStaff.corporationId || !newStaff.mobileNumber) {
+      Alert.alert('Error', 'Please fill in all required fields (Name, Corporation ID, and Mobile Number)');
+      return;
+    }
+    
+    // Validate mobile number format
+    const mobileRegex = /^\+?[1-9]\d{1,14}$/;
+    if (!mobileRegex.test(newStaff.mobileNumber)) {
+      Alert.alert('Error', 'Please enter a valid mobile number (e.g., +1234567890)');
       return;
     }
 
@@ -1058,7 +1067,7 @@ export default function AdminScreen() {
       
       Alert.alert('Success', 'Staff member added successfully');
       setShowAddStaffModal(false);
-      setNewStaff({ name: '', corporationId: '', role: 'Staff', department: '' });
+      setNewStaff({ name: '', corporationId: '', role: 'Staff', department: '', mobileNumber: '', email: '' });
       loadStaffMembers();
     } catch (error) {
       Alert.alert('Error', 'Failed to add staff member');
@@ -1331,6 +1340,10 @@ export default function AdminScreen() {
             <View style={styles.staffInfo}>
               <Text style={styles.staffInfoText}>Role: {item.role}</Text>
               <Text style={styles.staffInfoText}>Department: {item.department}</Text>
+              <Text style={styles.staffInfoText}>Mobile: {item.mobileNumber}</Text>
+              {item.email && (
+                <Text style={styles.staffInfoText}>Email: {item.email}</Text>
+              )}
               {item.lastLogin && (
                 <Text style={styles.staffInfoText}>
                   Last Login: {new Date(item.lastLogin).toLocaleString()}
@@ -1524,6 +1537,23 @@ export default function AdminScreen() {
               placeholder="Department"
               value={newStaff.department}
               onChangeText={(text) => setNewStaff({ ...newStaff, department: text })}
+            />
+            
+            <TextInput
+              style={styles.modalInput}
+              placeholder="Mobile Number * (e.g., +1234567890)"
+              value={newStaff.mobileNumber}
+              onChangeText={(text) => setNewStaff({ ...newStaff, mobileNumber: text })}
+              keyboardType="phone-pad"
+            />
+            
+            <TextInput
+              style={styles.modalInput}
+              placeholder="Email (optional)"
+              value={newStaff.email}
+              onChangeText={(text) => setNewStaff({ ...newStaff, email: text })}
+              keyboardType="email-address"
+              autoCapitalize="none"
             />
 
             <View style={styles.modalActions}>
