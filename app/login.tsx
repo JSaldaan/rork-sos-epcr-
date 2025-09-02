@@ -7,6 +7,7 @@ import {
   StyleSheet,
   SafeAreaView,
   Alert,
+  Keyboard,
 } from 'react-native';
 import { router } from 'expo-router';
 import { usePCRStore } from '@/store/pcrStore';
@@ -416,6 +417,11 @@ const LoginScreen: React.FC = () => {
                   const numericText = text.replace(/[^0-9]/g, '').slice(0, 6);
                   setOtpCode(numericText);
                   setLoginError('');
+                  
+                  // Dismiss keyboard when 6 digits are entered
+                  if (numericText.length === 6) {
+                    Keyboard.dismiss();
+                  }
                 }}
                 keyboardType="numeric"
                 maxLength={6}
