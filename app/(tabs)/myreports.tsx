@@ -74,23 +74,31 @@ const MyReportsScreen: React.FC = () => {
           style: 'destructive',
           onPress: async () => {
             try {
-              console.log('Starting logout process...');
+              console.log('=== STARTING LOGOUT PROCESS ===');
+              console.log('Current session before logout:', currentSession);
               
-              // Show success message first
-              Alert.alert('Success', 'You have been logged out successfully');
+              // Call the logout function first
+              await staffLogout();
+              console.log('Staff logout completed');
               
-              // Small delay for alert to show
-              setTimeout(async () => {
-                // Call the logout function
-                await staffLogout();
-                console.log('Logout successful, state cleared');
-                
-                // Navigate to login immediately after logout
-                router.replace('/login');
-              }, 100);
+              // Clear local state
+              setMyPCRs([]);
+              setSelectedPCR(null);
+              setShowDetails(false);
+              
+              // Navigate to login screen
+              router.replace('/login');
+              
+              // Show success message after navigation
+              setTimeout(() => {
+                Alert.alert('Success', 'You have been logged out successfully');
+              }, 500);
+              
+              console.log('=== LOGOUT PROCESS COMPLETED ===');
             } catch (error) {
               console.error('Logout error:', error);
               Alert.alert('Error', 'Failed to logout. Please try again.');
+            } finally {
               setIsLoggingOut(false);
             }
           },

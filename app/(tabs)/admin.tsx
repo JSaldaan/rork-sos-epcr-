@@ -413,6 +413,7 @@ export default function AdminScreen() {
           style: action === 'delete' ? 'destructive' : 'default',
           onPress: async () => {
             try {
+              console.log(`${action}ing staff:`, staff.corporationId, staff.name);
               if (action === 'deactivate') {
                 await deactivateStaff(staff.corporationId);
                 await addAuditLog('DEACTIVATE_STAFF', 'Staff', staff.corporationId, `Deactivated ${staff.name}`);
@@ -439,6 +440,7 @@ export default function AdminScreen() {
     }
 
     try {
+      console.log('Updating role for:', staff.corporationId, 'from', staff.role, 'to', newRole);
       await updateStaffRole(staff.corporationId, newRole);
       await addAuditLog('UPDATE_ROLE', 'Staff', staff.corporationId, `Changed role from ${staff.role} to ${newRole}`);
       Alert.alert('Success', 'Role updated successfully');

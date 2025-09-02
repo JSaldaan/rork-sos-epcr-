@@ -25,24 +25,26 @@ function RootLayoutNav() {
   const { currentSession, isAdmin } = usePCRStore();
   const segments = useSegments();
   const router = useRouter();
-  const [isInitialized, setIsInitialized] = React.useState(false);
-  const [hasNavigatedToLogin, setHasNavigatedToLogin] = React.useState(false);
+  const [isAppReady, setIsAppReady] = React.useState(false);
   
   useEffect(() => {
-    // Wait for store initialization before handling navigation
+    // Wait for app initialization to complete
     const timer = setTimeout(() => {
-      setIsInitialized(true);
-    }, 100);
+      setIsAppReady(true);
+    }, 500); // Give more time for initialization
     
     return () => clearTimeout(timer);
   }, []);
   
   useEffect(() => {
-    if (!isInitialized) return;
+    if (!isAppReady) {
+      console.log('App not ready yet, waiting...');
+      return;
+    }
     
     const segmentsArray = segments as string[];
     const inAuthGroup = segmentsArray[0] === '(tabs)';
-    const isAuthenticated = !!currentSession;
+    const isAuthenticated = !!currentSession || isAdmin;
     const isOnRootPath = segmentsArray.length === 0;
     const isOnLoginPage = segmentsArray[0] === 'login';
     const isOnAdminTab = segmentsArray.length > 1 && segmentsArray[1] === 'admin';
@@ -57,35 +59,29 @@ function RootLayoutNav() {
     console.log('Is on login page:', isOnLoginPage);
     console.log('Is on admin tab:', isOnAdminTab);
     
-    // On app startup (root path), check authentication
-    if (isOnRootPath && !hasNavigatedToLogin) {
-      setHasNavigatedToLogin(true);
-      if (isAuthenticated) {
-        console.log('App starting with existing session, redirecting to tabs');
-        router.replace('/(tabs)');
-      } else {
-        console.log('App starting without session, redirecting to login');
-        router.replace('/login');
-      }
+    // Always redirect to login first on app startup
+    if (isOnRootPath) {
+      console.log('App starting, redirecting to login');
+      router.replace('/login');
       return;
     }
     
     // If not authenticated and trying to access protected routes
-    if (!isAuthenticated && (inAuthGroup || (!isOnLoginPage && !isOnRootPath))) {
+    if (!isAuthenticated && inAuthGroup) {
       console.log('Not authenticated, redirecting to login');
       router.replace('/login');
       return;
     }
     
     // Check admin access for admin tab
-    if (isOnAdminTab && isAuthenticated && !isAdmin) {
+    if (isOnAdminTab && isAuthenticated && !isAdmin && !currentSession?.isAdmin) {
       console.log('Non-admin trying to access admin tab, redirecting');
       router.replace('/(tabs)');
       return;
     }
     
     console.log('=== END ROUTE PROTECTION ===');
-  }, [currentSession, isAdmin, segments, router, isInitialized, hasNavigatedToLogin]);
+  }, [currentSession, isAdmin, segments, router, isAppReady]);
   
   return (
     <Stack screenOptions={{ headerBackTitle: "Back" }}>
@@ -104,31 +100,44 @@ function AppInitializer() {
       try {
         console.log('=== APP INITIALIZATION ===');
         
-        // Check for existing session
-        const existingSession = await AsyncStorage.getItem('currentSession');
-        if (existingSession) {
-          console.log('Found existing session, will restore it');
-          const session = JSON.parse(existingSession);
-          // Restore session in store
-          const { currentSession: storeSession } = usePCRStore.getState();
-          if (!storeSession) {
-            usePCRStore.setState({ 
-              currentSession: session,
-              isAdmin: session.isAdmin
-            });
-          }
-        } else {
-          console.log('No existing session found, user needs to login');
-        }
-        
         // Initialize staff database first
         await initializeStaffDatabase();
         console.log('Staff database initialized');
         
-        // Load completed PCRs
-        console.log('Loading completed PCRs on app start...');
-        await loadCompletedPCRs();
-        console.log('Completed PCRs loaded');
+        // Check for existing session AFTER staff database is ready
+        const existingSession = await AsyncStorage.getItem('currentSession');
+        if (existingSession) {
+          try {
+            const session = JSON.parse(existingSession);
+            console.log('Found existing session:', session.name, session.corporationId);
+            
+            // Validate the session against current staff database
+            const staffMember = usePCRStore.getState().staffMembers.find(
+              member => member.corporationId === session.corporationId && member.isActive
+            );
+            
+            if (staffMember) {
+              // Restore valid session
+              usePCRStore.setState({ 
+                currentSession: session,
+                isAdmin: session.isAdmin || staffMember.role === 'Admin' || staffMember.role === 'SuperAdmin'
+              });
+              console.log('Session restored successfully');
+              
+              // Load completed PCRs for authenticated user
+              await loadCompletedPCRs();
+              console.log('Completed PCRs loaded for authenticated user');
+            } else {
+              console.log('Session invalid - staff member not found or inactive, clearing session');
+              await AsyncStorage.removeItem('currentSession');
+            }
+          } catch (error) {
+            console.error('Error parsing existing session:', error);
+            await AsyncStorage.removeItem('currentSession');
+          }
+        } else {
+          console.log('No existing session found, user needs to login');
+        }
         
         // Load any existing draft
         await loadCurrentPCRDraft();
@@ -137,6 +146,7 @@ function AppInitializer() {
         setHasInitialized(true);
       } catch (error) {
         console.error('Error initializing app:', error);
+        setHasInitialized(true); // Still mark as initialized to prevent infinite loading
       } finally {
         // Hide splash screen after initialization
         SplashScreen.hideAsync().catch(console.error);
