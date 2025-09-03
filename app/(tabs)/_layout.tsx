@@ -1,10 +1,12 @@
 import { Tabs, router } from "expo-router";
 import { FileText, Activity, Truck, User, FileX, Eye, LogOut, FolderOpen, Shield } from "lucide-react-native";
 import React, { useCallback } from "react";
-import { Pressable, Alert, StyleSheet, View } from "react-native";
+import { Pressable, Alert, StyleSheet, View, Dimensions } from "react-native";
 import { usePCRStore } from "../../store/pcrStore";
 import { useQueryClient } from "@tanstack/react-query";
 import { OfflineStatusBar } from "@/components/OfflineStatusBar";
+
+const { width: screenWidth } = Dimensions.get('window');
 
 export default function TabLayout() {
   const { currentSession, staffLogout, isLoggingOut } = usePCRStore();
@@ -101,6 +103,12 @@ export default function TabLayout() {
             tabBarStyle: {
               backgroundColor: "#fff",
               borderTopColor: "#E5E5E5",
+              height: Math.max(60, screenWidth * 0.15),
+              paddingBottom: Math.max(5, screenWidth * 0.01),
+              paddingTop: Math.max(5, screenWidth * 0.01),
+            },
+            tabBarLabelStyle: {
+              fontSize: Math.max(10, Math.min(12, screenWidth * 0.03)),
             },
           }}
         >
@@ -108,7 +116,7 @@ export default function TabLayout() {
           name="admin"
           options={{
             title: "Admin Dashboard",
-            tabBarIcon: ({ color }) => <Shield size={24} color={color} />,
+            tabBarIcon: ({ color }) => <Shield size={Math.max(20, Math.min(24, screenWidth * 0.06))} color={color} />,
             headerTitle: "Administrator Dashboard",
           }}
         />
@@ -177,6 +185,12 @@ export default function TabLayout() {
           tabBarStyle: {
             backgroundColor: "#fff",
             borderTopColor: "#E5E5E5",
+            height: Math.max(60, screenWidth * 0.15),
+            paddingBottom: Math.max(5, screenWidth * 0.01),
+            paddingTop: Math.max(5, screenWidth * 0.01),
+          },
+          tabBarLabelStyle: {
+            fontSize: Math.max(10, Math.min(12, screenWidth * 0.03)),
           },
         }}
       >
@@ -184,7 +198,7 @@ export default function TabLayout() {
         name="index"
         options={{
           title: "New PCR",
-          tabBarIcon: ({ color }) => <FileText size={24} color={color} />,
+          tabBarIcon: ({ color }) => <FileText size={Math.max(20, Math.min(24, screenWidth * 0.06))} color={color} />,
           headerTitle: "Electronic Patient Care Record",
         }}
       />
@@ -192,7 +206,7 @@ export default function TabLayout() {
         name="vitals"
         options={{
           title: "Vitals",
-          tabBarIcon: ({ color }) => <Activity size={24} color={color} />,
+          tabBarIcon: ({ color }) => <Activity size={Math.max(20, Math.min(24, screenWidth * 0.06))} color={color} />,
           headerTitle: "Vital Signs",
         }}
       />
@@ -200,7 +214,7 @@ export default function TabLayout() {
         name="transport"
         options={{
           title: "Transport",
-          tabBarIcon: ({ color }) => <Truck size={24} color={color} />,
+          tabBarIcon: ({ color }) => <Truck size={Math.max(20, Math.min(24, screenWidth * 0.06))} color={color} />,
           headerTitle: "Transport Information",
         }}
       />
@@ -208,7 +222,7 @@ export default function TabLayout() {
         name="summary"
         options={{
           title: "Summary",
-          tabBarIcon: ({ color }) => <User size={24} color={color} />,
+          tabBarIcon: ({ color }) => <User size={Math.max(20, Math.min(24, screenWidth * 0.06))} color={color} />,
           headerTitle: "PCR Summary",
         }}
       />
@@ -216,7 +230,7 @@ export default function TabLayout() {
         name="refusal"
         options={{
           title: "Refusal",
-          tabBarIcon: ({ color }) => <FileX size={24} color={color} />,
+          tabBarIcon: ({ color }) => <FileX size={Math.max(20, Math.min(24, screenWidth * 0.06))} color={color} />,
           headerTitle: "Patient Refusal Form",
         }}
       />
@@ -224,7 +238,7 @@ export default function TabLayout() {
         name="preview"
         options={{
           title: "Preview",
-          tabBarIcon: ({ color }) => <Eye size={24} color={color} />,
+          tabBarIcon: ({ color }) => <Eye size={Math.max(20, Math.min(24, screenWidth * 0.06))} color={color} />,
           headerTitle: "Report Preview",
         }}
       />
@@ -232,7 +246,7 @@ export default function TabLayout() {
         name="myreports"
         options={{
           title: "My Reports",
-          tabBarIcon: ({ color }) => <FolderOpen size={24} color={color} />,
+          tabBarIcon: ({ color }) => <FolderOpen size={Math.max(20, Math.min(24, screenWidth * 0.06))} color={color} />,
           headerTitle: "My Submitted Reports",
         }}
       />

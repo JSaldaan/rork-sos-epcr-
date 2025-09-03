@@ -9,10 +9,13 @@ import {
   Alert,
   Modal,
   FlatList,
+  Dimensions,
 } from "react-native";
 import { Clock, MapPin, User, ChevronDown, Shield } from "lucide-react-native";
 import { usePCRStore } from "@/store/pcrStore";
 import { router } from "expo-router";
+
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 const priorityOptions = ["Emergency", "Urgent", "Non-Urgent"] as const;
 
@@ -632,8 +635,8 @@ const styles = StyleSheet.create({
   },
   section: {
     backgroundColor: "#fff",
-    margin: 16,
-    padding: 20,
+    margin: Math.max(12, screenWidth * 0.03),
+    padding: Math.max(16, screenWidth * 0.04),
     borderRadius: 12,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -644,33 +647,33 @@ const styles = StyleSheet.create({
   sectionHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: Math.max(16, screenHeight * 0.02),
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: Math.max(16, Math.min(18, screenWidth * 0.045)),
     fontWeight: "600",
     color: "#333",
     marginLeft: 8,
   },
   label: {
-    fontSize: 14,
+    fontSize: Math.max(12, Math.min(14, screenWidth * 0.035)),
     fontWeight: "500",
     color: "#333",
-    marginBottom: 8,
+    marginBottom: Math.max(6, screenHeight * 0.01),
   },
   input: {
     borderWidth: 1,
     borderColor: "#E0E0E0",
     borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
+    padding: Math.max(10, screenWidth * 0.03),
+    fontSize: Math.max(14, Math.min(16, screenWidth * 0.04)),
     backgroundColor: "#fff",
-    marginBottom: 16,
-    minHeight: 44,
+    marginBottom: Math.max(12, screenHeight * 0.015),
+    minHeight: Math.max(44, screenHeight * 0.055),
     color: "#333",
   },
   textArea: {
-    height: 80,
+    height: Math.max(80, screenHeight * 0.1),
     textAlignVertical: "top",
   },
   row: {
