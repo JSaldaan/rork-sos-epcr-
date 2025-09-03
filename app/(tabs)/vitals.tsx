@@ -12,6 +12,7 @@ import {
 import { Activity, Clock, Plus, Camera } from "lucide-react-native";
 import { usePCRStore } from "@/store/pcrStore";
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import { EmergencyLogoutButton } from "@/components/LogoutButton";
 
 export default function VitalsScreen() {
   const { vitals, addVitalSigns, saveVitalsData, addECGCapture } = usePCRStore();
@@ -291,6 +292,16 @@ export default function VitalsScreen() {
       )}
 
       <View style={styles.bottomPadding} />
+      
+      {/* Emergency Logout Button */}
+      <EmergencyLogoutButton 
+        style={{
+          position: 'absolute',
+          top: 50,
+          right: 20,
+          zIndex: 1000,
+        }}
+      />
       
       {showCamera && (
         <View style={styles.cameraContainer}>

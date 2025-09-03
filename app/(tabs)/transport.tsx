@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { Truck, MapPin, Users, FileText, ChevronDown, Check } from "lucide-react-native";
 import { usePCRStore } from "@/store/pcrStore";
+import { EmergencyLogoutButton } from "@/components/LogoutButton";
 
 export default function TransportScreen() {
   const { transportInfo, updateTransportInfo, saveTransportData } = usePCRStore();
@@ -192,6 +193,16 @@ export default function TransportScreen() {
       </TouchableOpacity>
 
         <View style={styles.bottomPadding} />
+        
+        {/* Emergency Logout Button */}
+        <EmergencyLogoutButton 
+          style={{
+            position: 'absolute',
+            top: 50,
+            right: 20,
+            zIndex: 1000,
+          }}
+        />
       </ScrollView>
 
       <Modal

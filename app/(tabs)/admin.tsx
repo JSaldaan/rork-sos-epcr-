@@ -50,7 +50,7 @@ import {
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { OfflineManagementScreen } from '@/components/OfflineManagementScreen';
-import { LogoutButton } from '@/components/LogoutButton';
+import { EmergencyLogoutButton } from '@/components/LogoutButton';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type TabType = 'vault' | 'staff' | 'audit' | 'reports' | 'offline';
@@ -1553,30 +1553,9 @@ export default function AdminScreen() {
           </Text>
         </TouchableOpacity>
         
-        <LogoutButton variant="tab" iconSize={20} />
+        <EmergencyLogoutButton style={styles.tabEmergencyButton} />
         
-        <TouchableOpacity
-          style={styles.emergencyLogoutButton}
-          onPress={async () => {
-            console.log('🚨 EMERGENCY LOGOUT TRIGGERED FROM ADMIN');
-            try {
-              await AsyncStorage.clear();
-              usePCRStore.setState({
-                currentSession: null,
-                isAdmin: false,
-                completedPCRs: [],
-                staffMembers: [],
-              });
-              router.replace('/login');
-              console.log('✅ Emergency logout completed');
-            } catch (error) {
-              console.error('❌ Emergency logout error:', error);
-              router.replace('/login');
-            }
-          }}
-        >
-          <Text style={styles.emergencyLogoutText}>🚨</Text>
-        </TouchableOpacity>
+
       </View>
 
       {isLoading ? (
@@ -1775,13 +1754,7 @@ export default function AdminScreen() {
         </View>
       </Modal>
       
-      {/* Universal Logout Button - Floating */}
-      <LogoutButton 
-        variant="floating"
-        position="top-left"
-        showText={false}
-        iconSize={18}
-      />
+
     </View>
   );
 }
@@ -2335,6 +2308,9 @@ const styles = StyleSheet.create({
   emergencyLogoutText: {
     fontSize: 16,
     color: '#fff',
+  },
+  tabEmergencyButton: {
+    marginLeft: 8,
   },
 
 });
