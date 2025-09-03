@@ -85,15 +85,19 @@ function RootLayoutNav() {
     }
     
     // If authenticated but on login page, redirect based on role
+    // Add a small delay to prevent conflicts with logout navigation
     if (isAuthenticated && isOnLoginPage) {
-      if (isAdminUser) {
-        console.log('Admin user authenticated, redirecting to admin tab');
-        router.replace('/(tabs)/admin');
-      } else {
-        console.log('Staff user authenticated, redirecting to staff tabs');
-        router.replace('/(tabs)');
-      }
-      return;
+      const redirectTimer = setTimeout(() => {
+        if (isAdminUser) {
+          console.log('Admin user authenticated, redirecting to admin tab');
+          router.replace('/(tabs)/admin');
+        } else {
+          console.log('Staff user authenticated, redirecting to staff tabs');
+          router.replace('/(tabs)');
+        }
+      }, 100);
+      
+      return () => clearTimeout(redirectTimer);
     }
     
     // Role-based access control for tabs

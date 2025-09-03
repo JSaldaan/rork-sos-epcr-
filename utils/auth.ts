@@ -29,22 +29,56 @@ export async function performCompleteLogout() {
     const sessionInfo = state.currentSession;
     console.log('Logging out user:', sessionInfo?.name || 'Unknown');
     
-    // Step 2: Clear all AsyncStorage keys
-    const keysToRemove = Object.values(AUTH_KEYS);
-    await AsyncStorage.multiRemove(keysToRemove);
-    console.log('Cleared AsyncStorage keys:', keysToRemove);
+    // Step 2: Clear all AsyncStorage keys (more comprehensive)
+    const allKeys = await AsyncStorage.getAllKeys();
+    const authRelatedKeys = allKeys.filter(key => 
+      key.includes('session') || 
+      key.includes('token') || 
+      key.includes('auth') ||
+      key.includes('user') ||
+      key.includes('PCR') ||
+      key.includes('draft')
+    );
+    
+    if (authRelatedKeys.length > 0) {
+      await AsyncStorage.multiRemove(authRelatedKeys);
+      console.log('Cleared AsyncStorage keys:', authRelatedKeys);
+    }
     
     // Step 3: Call store logout (handles state reset)
     await state.staffLogout();
     console.log('Store logout completed');
     
-    // Step 4: Navigate to login with replace (prevents back navigation)
+    // Step 4: Verify logout was successful
+    const newState = usePCRStore.getState();
+    if (newState.currentSession !== null || newState.isAdmin !== false) {
+      console.warn('Logout verification failed - state not properly cleared');
+      // Force state reset
+      usePCRStore.setState({
+        currentSession: null,
+        isAdmin: false,
+        isLoggingOut: false
+      });
+    }
+    
+    // Step 5: Navigate to login with replace (prevents back navigation)
     router.replace('/login');
     console.log('Navigation to login completed');
     
     return { success: true };
   } catch (error) {
     console.error('Complete logout failed:', error);
+    // Force cleanup even if error occurred
+    try {
+      usePCRStore.setState({
+        currentSession: null,
+        isAdmin: false,
+        isLoggingOut: false
+      });
+      router.replace('/login');
+    } catch (cleanupError) {
+      console.error('Emergency cleanup failed:', cleanupError);
+    }
     return { success: false, error };
   } finally {
     console.log('=== END COMPLETE LOGOUT FLOW ===');
