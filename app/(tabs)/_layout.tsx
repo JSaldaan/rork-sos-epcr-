@@ -1,13 +1,15 @@
 import { Tabs, router } from "expo-router";
 import { FileText, Activity, Truck, User, FileX, Eye, LogOut, FolderOpen, Shield } from "lucide-react-native";
-import React, { useCallback } from "react";
-import { Pressable, Alert, StyleSheet } from "react-native";
+import React, { useCallback, useState } from "react";
+import { Pressable, Alert, StyleSheet, ActivityIndicator, View } from "react-native";
 import { usePCRStore } from "../../store/pcrStore";
 import { useQueryClient } from "@tanstack/react-query";
+import { performCompleteLogout } from "../../utils/auth";
 
 export default function TabLayout() {
   const { currentSession, staffLogout, isLoggingOut } = usePCRStore();
   const queryClient = useQueryClient();
+  const [isProcessingLogout, setIsProcessingLogout] = useState<boolean>(false);
   
   // Determine user access level
   const isAdminUser = currentSession?.role === 'admin' || 
@@ -18,10 +20,11 @@ export default function TabLayout() {
   
   const handleLogout = useCallback(() => {
     // Prevent multiple logout attempts
-    if (isLoggingOut) {
+    if (isLoggingOut || isProcessingLogout) {
       console.log('Logout already in progress');
       return;
     }
+    
     Alert.alert(
       'Confirm Logout',
       `Are you sure you want to logout${currentSession ? ` ${currentSession.name}` : ''}?`,
@@ -34,53 +37,87 @@ export default function TabLayout() {
           text: 'Logout',
           style: 'destructive',
           onPress: async () => {
+            setIsProcessingLogout(true);
+            
             try {
-              console.log('Starting logout process...');
+              console.log('=== STARTING COMPLETE LOGOUT PROCESS ===');
               
               // Clear React Query cache first
+              console.log('Clearing React Query cache...');
               queryClient.clear();
               queryClient.cancelQueries();
-              console.log('React Query cache cleared');
               
-              // Call the logout function
-              await staffLogout();
-              console.log('Store logout completed');
+              // Use the comprehensive logout utility
+              const result = await performCompleteLogout();
               
-              // Use replace to prevent back navigation
-              router.replace('/login');
-              console.log('Navigation to login completed');
-              
-              // Show success message after navigation
-              setTimeout(() => {
+              if (result.success) {
+                console.log('Complete logout successful');
+                // Show success message after a brief delay
+                setTimeout(() => {
+                  Alert.alert(
+                    'Logged Out',
+                    'You have been logged out successfully',
+                    [{ text: 'OK' }]
+                  );
+                }, 200);
+              } else {
+                console.error('Logout failed:', result.error);
                 Alert.alert(
-                  'Success',
-                  'You have been logged out successfully',
-                  [{ text: 'OK' }]
+                  'Logout Error', 
+                  'There was an issue logging out. Please try again.',
+                  [
+                    {
+                      text: 'Retry',
+                      onPress: () => {
+                        // Retry logout
+                        setTimeout(() => handleLogout(), 100);
+                      }
+                    },
+                    { text: 'Cancel' }
+                  ]
                 );
-              }, 100);
+              }
             } catch (error) {
-              console.error('Logout error:', error);
-              Alert.alert('Error', 'Failed to logout. Please try again.');
+              console.error('Unexpected logout error:', error);
+              Alert.alert(
+                'Logout Error', 
+                'An unexpected error occurred. Please restart the app.',
+                [{ text: 'OK' }]
+              );
+            } finally {
+              setIsProcessingLogout(false);
             }
           }
         }
       ]
     );
-  }, [currentSession, staffLogout, queryClient, isLoggingOut]);
+  }, [currentSession, queryClient, isLoggingOut, isProcessingLogout]);
   
-  const LogoutButton = () => (
-    <Pressable 
-      style={({ pressed }) => [
-        styles.logoutButton,
-        pressed && styles.logoutButtonPressed
-      ]}
-      onPress={handleLogout}
-      hitSlop={20}
-      disabled={isLoggingOut}
-    >
-      <LogOut size={22} color="#fff" />
-    </Pressable>
-  );
+  const LogoutButton = () => {
+    const isDisabled = isLoggingOut || isProcessingLogout;
+    
+    return (
+      <Pressable 
+        style={({ pressed }) => [
+          styles.logoutButton,
+          pressed && !isDisabled && styles.logoutButtonPressed,
+          isDisabled && styles.logoutButtonDisabled
+        ]}
+        onPress={isDisabled ? undefined : handleLogout}
+        hitSlop={20}
+        disabled={isDisabled}
+        testID="logout-button"
+      >
+        {isDisabled ? (
+          <View style={styles.logoutButtonContent}>
+            <ActivityIndicator size="small" color="#fff" />
+          </View>
+        ) : (
+          <LogOut size={22} color="#fff" />
+        )}
+      </Pressable>
+    );
+  };
   
   // Admin users only see admin tab
   if (isAdminUser) {
@@ -249,8 +286,18 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.15)',
     alignItems: 'center',
     justifyContent: 'center',
+    minWidth: 38,
+    minHeight: 38,
   },
   logoutButtonPressed: {
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  logoutButtonDisabled: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    opacity: 0.7,
+  },
+  logoutButtonContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

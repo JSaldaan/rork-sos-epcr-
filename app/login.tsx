@@ -9,8 +9,9 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { usePCRStore } from '@/store/pcrStore';
-import { Shield, Users } from 'lucide-react-native';
+import { Shield, Users, TestTube } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { verifyCompleteLogout } from '@/utils/auth';
 
 const LoginScreen: React.FC = () => {
   const {
@@ -256,36 +257,60 @@ const LoginScreen: React.FC = () => {
           </View>
         )}
         
-        {/* Debug button to clear all data - remove in production */}
-        <Pressable
-          style={styles.debugButton}
-          onPress={async () => {
-            try {
-              console.log('=== CLEARING ALL DATA FOR DEBUG ===');
-              await AsyncStorage.clear();
-              console.log('All AsyncStorage data cleared');
-              
-              // Reset store to initial state
-              usePCRStore.setState({
-                currentSession: null,
-                isAdmin: false,
-                completedPCRs: [],
-                staffMembers: [],
-              });
-              
-              // Re-initialize staff database
-              await usePCRStore.getState().initializeStaffDatabase();
-              
-              alert('All data cleared and reset. You can now test login.');
-              console.log('=== END CLEARING ALL DATA ===');
-            } catch (error) {
-              console.error('Error clearing data:', error);
-              alert('Error clearing data: ' + error);
-            }
-          }}
-        >
-          <Text style={styles.debugButtonText}>🔧 Clear All Data (Debug)</Text>
-        </Pressable>
+        {/* Debug buttons - remove in production */}
+        <View style={styles.debugContainer}>
+          <Pressable
+            style={styles.debugButton}
+            onPress={async () => {
+              try {
+                console.log('=== CLEARING ALL DATA FOR DEBUG ===');
+                await AsyncStorage.clear();
+                console.log('All AsyncStorage data cleared');
+                
+                // Reset store to initial state
+                usePCRStore.setState({
+                  currentSession: null,
+                  isAdmin: false,
+                  completedPCRs: [],
+                  staffMembers: [],
+                });
+                
+                // Re-initialize staff database
+                await usePCRStore.getState().initializeStaffDatabase();
+                
+                alert('All data cleared and reset. You can now test login.');
+                console.log('=== END CLEARING ALL DATA ===');
+              } catch (error) {
+                console.error('Error clearing data:', error);
+                alert('Error clearing data: ' + error);
+              }
+            }}
+          >
+            <Text style={styles.debugButtonText}>🔧 Clear All Data</Text>
+          </Pressable>
+          
+          <Pressable
+            style={[styles.debugButton, styles.testButton]}
+            onPress={async () => {
+              try {
+                console.log('=== TESTING LOGOUT VERIFICATION ===');
+                const result = await verifyCompleteLogout();
+                
+                if (result.passed) {
+                  alert('✅ Logout verification passed - System is clean');
+                } else {
+                  alert(`❌ Logout verification failed:\n${result.errors.join('\n')}`);
+                }
+              } catch (error) {
+                console.error('Error testing logout:', error);
+                alert('Error testing logout: ' + error);
+              }
+            }}
+          >
+            <TestTube size={16} color="#6b7280" />
+            <Text style={styles.debugButtonText}>Test Logout State</Text>
+          </Pressable>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -489,21 +514,33 @@ const styles = StyleSheet.create({
     color: '#991b1b',
     marginBottom: 2,
   },
-  debugButton: {
+  debugContainer: {
     marginTop: 20,
+    gap: 8,
+    width: '100%',
+    maxWidth: 400,
+  },
+  debugButton: {
     paddingVertical: 8,
     paddingHorizontal: 16,
     backgroundColor: '#f3f4f6',
     borderRadius: 6,
     borderWidth: 1,
     borderColor: '#d1d5db',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  testButton: {
+    backgroundColor: '#fef3c7',
+    borderColor: '#f59e0b',
   },
   debugButtonText: {
     fontSize: 12,
     color: '#6b7280',
     textAlign: 'center',
   },
-
 });
 
 export default LoginScreen;
