@@ -50,7 +50,7 @@ import {
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { OfflineManagementScreen } from '@/components/OfflineManagementScreen';
-import { EmergencyLogoutButton } from '@/components/LogoutButton';
+import { EmergencyLogoutButton, DebugLogoutButton } from '@/components/LogoutButton';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type TabType = 'vault' | 'staff' | 'audit' | 'reports' | 'offline';
@@ -1553,6 +1553,7 @@ export default function AdminScreen() {
           </Text>
         </TouchableOpacity>
         
+        <DebugLogoutButton />
         <EmergencyLogoutButton style={styles.tabEmergencyButton} />
         
 
