@@ -4,7 +4,7 @@ import React from "react";
 import { StyleSheet, View, Dimensions } from "react-native";
 import { usePCRStore } from "../../store/pcrStore";
 import { OfflineStatusBar } from "@/components/OfflineStatusBar";
-import { LogoutButton } from "@/components/LogoutButton";
+import { SimpleLogout } from "@/components/SimpleLogout";
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -19,12 +19,10 @@ export default function TabLayout() {
   const isStaffUser = !isAdminUser && !isSupervisorOrAdmin;
   
   const HeaderLogoutButton = () => (
-    <LogoutButton 
+    <SimpleLogout 
       showText={false}
       iconSize={22}
-      iconColor="#fff"
-      variant="primary"
-      style={styles.headerLogoutButton}
+      variant="button"
     />
   );
   
