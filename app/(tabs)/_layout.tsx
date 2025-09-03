@@ -4,7 +4,7 @@ import React from "react";
 import { StyleSheet, View, Dimensions } from "react-native";
 import { usePCRStore } from "../../store/pcrStore";
 import { OfflineStatusBar } from "@/components/OfflineStatusBar";
-import { GlobalLogoutButton } from "@/components/GlobalLogoutButton";
+import { LogoutButton } from "@/components/LogoutButton";
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -19,7 +19,7 @@ export default function TabLayout() {
   const isStaffUser = !isAdminUser && !isSupervisorOrAdmin;
   
   const HeaderLogoutButton = () => (
-    <GlobalLogoutButton 
+    <LogoutButton 
       variant="header"
       showText={false}
       iconSize={22}

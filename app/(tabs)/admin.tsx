@@ -48,10 +48,9 @@ import {
   LogOut,
 } from 'lucide-react-native';
 import * as Print from 'expo-print';
-import { UniversalLogoutButton } from '@/components/UniversalLogoutButton';
 import * as Sharing from 'expo-sharing';
 import { OfflineManagementScreen } from '@/components/OfflineManagementScreen';
-import { SimpleLogout } from '@/components/SimpleLogout';
+import { LogoutButton } from '@/components/LogoutButton';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type TabType = 'vault' | 'staff' | 'audit' | 'reports' | 'offline';
@@ -1554,7 +1553,7 @@ export default function AdminScreen() {
           </Text>
         </TouchableOpacity>
         
-        <SimpleLogout variant="tab" iconSize={20} />
+        <LogoutButton variant="tab" iconSize={20} />
         
         <TouchableOpacity
           style={styles.emergencyLogoutButton}
@@ -1777,7 +1776,7 @@ export default function AdminScreen() {
       </Modal>
       
       {/* Universal Logout Button - Floating */}
-      <UniversalLogoutButton 
+      <LogoutButton 
         variant="floating"
         position="top-left"
         showText={false}

@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, SafeAreaView } from 'react-native';
-import { GlobalLogoutButton } from '@/components/GlobalLogoutButton';
+import { LogoutButton } from '@/components/LogoutButton';
 import { useAuthCheck } from '@/components/RequireAuth';
 
 /**
@@ -32,7 +32,7 @@ export default function LogoutDemoScreen() {
             Perfect for navigation headers and top bars
           </Text>
           <View style={styles.demoContainer}>
-            <GlobalLogoutButton 
+            <LogoutButton 
               variant="header"
               showText={true}
               iconSize={20}
@@ -47,7 +47,7 @@ export default function LogoutDemoScreen() {
             Default logout button for forms and main content areas
           </Text>
           <View style={styles.demoContainer}>
-            <GlobalLogoutButton 
+            <LogoutButton 
               variant="button"
               showText={true}
               testID="demo-button-logout"
@@ -61,7 +61,7 @@ export default function LogoutDemoScreen() {
             Compact logout button for tight spaces
           </Text>
           <View style={styles.demoContainer}>
-            <GlobalLogoutButton 
+            <LogoutButton 
               variant="minimal"
               showText={true}
               iconSize={16}
@@ -76,7 +76,7 @@ export default function LogoutDemoScreen() {
             Designed to fit in tab bars and navigation areas
           </Text>
           <View style={styles.demoContainer}>
-            <GlobalLogoutButton 
+            <LogoutButton 
               variant="tab"
               showText={true}
               testID="demo-tab-logout"
@@ -90,9 +90,10 @@ export default function LogoutDemoScreen() {
             Bypasses confirmation dialog - use for security situations
           </Text>
           <View style={styles.demoContainer}>
-            <GlobalLogoutButton 
-              variant="emergency"
+            <LogoutButton 
+              variant="button"
               showText={true}
+              showConfirmation={false}
               testID="demo-emergency-logout"
             />
           </View>
@@ -104,7 +105,7 @@ export default function LogoutDemoScreen() {
             Button with custom confirmation message
           </Text>
           <View style={styles.demoContainer}>
-            <GlobalLogoutButton 
+            <LogoutButton 
               variant="button"
               showText={true}
               confirmTitle="Custom Logout"
@@ -120,7 +121,7 @@ export default function LogoutDemoScreen() {
             Just the logout icon without text
           </Text>
           <View style={styles.demoContainer}>
-            <GlobalLogoutButton 
+            <LogoutButton 
               variant="button"
               showText={false}
               iconSize={24}
@@ -156,7 +157,7 @@ export default function LogoutDemoScreen() {
       </ScrollView>
 
       {/* Floating logout button demo */}
-      <GlobalLogoutButton 
+      <LogoutButton 
         variant="floating"
         position="bottom-right"
         showText={false}

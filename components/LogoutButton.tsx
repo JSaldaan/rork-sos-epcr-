@@ -1,261 +1,229 @@
-import React, { useState } from 'react';
-import { TouchableOpacity, Text, StyleSheet, Alert, ViewStyle, TextStyle } from 'react-native';
+import React from 'react';
+import { TouchableOpacity, Text, StyleSheet, View } from 'react-native';
 import { LogOut } from 'lucide-react-native';
-import { router } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { usePCRStore } from '@/store/pcrStore';
+import { useLogout } from '@/hooks/useLogout';
 
 interface LogoutButtonProps {
-  style?: ViewStyle;
-  textStyle?: TextStyle;
-  iconSize?: number;
-  iconColor?: string;
+  variant?: 'button' | 'tab' | 'header' | 'floating' | 'minimal';
   showText?: boolean;
-  variant?: 'primary' | 'secondary' | 'danger';
-  onLogoutStart?: () => void;
-  onLogoutComplete?: () => void;
+  iconSize?: number;
+  color?: string;
+  backgroundColor?: string;
+  position?: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left';
+  showConfirmation?: boolean;
+  style?: any;
+  confirmTitle?: string;
+  confirmMessage?: string;
+  testID?: string;
 }
 
+/**
+ * Universal logout button that works from any screen or form
+ */
 export const LogoutButton: React.FC<LogoutButtonProps> = ({
-  style,
-  textStyle,
-  iconSize = 20,
-  iconColor,
+  variant = 'button',
   showText = true,
-  variant = 'danger',
-  onLogoutStart,
-  onLogoutComplete,
+  iconSize = 20,
+  color,
+  backgroundColor,
+  position = 'top-right',
+  showConfirmation = true,
+  style,
+  confirmTitle,
+  confirmMessage,
+  testID,
 }) => {
-  const { currentSession } = usePCRStore();
-  const [isLoggingOut, setIsLoggingOut] = useState<boolean>(false);
+  const { logout, isLoggingOut, isLoggedIn, currentSession } = useLogout();
 
-  const getVariantStyles = () => {
+  // Set default colors based on variant
+  const getDefaultColor = () => {
     switch (variant) {
-      case 'primary':
-        return {
-          button: styles.primaryButton,
-          text: styles.primaryText,
-          defaultIconColor: '#fff',
-        };
-      case 'secondary':
-        return {
-          button: styles.secondaryButton,
-          text: styles.secondaryText,
-          defaultIconColor: '#666',
-        };
-      case 'danger':
+      case 'header':
+        return '#FFFFFF';
+      case 'floating':
+        return '#FFFFFF';
       default:
-        return {
-          button: styles.dangerButton,
-          text: styles.dangerText,
-          defaultIconColor: '#FF3B30',
-        };
+        return '#FF3B30';
     }
   };
 
-  const performLogout = async () => {
-    console.log('🚀 SIMPLE LOGOUT: Starting logout process');
-    setIsLoggingOut(true);
-    onLogoutStart?.();
-    
-    try {
-      // Step 1: Clear all AsyncStorage data
-      console.log('🧹 Clearing AsyncStorage...');
-      await AsyncStorage.clear();
-      
-      // Step 2: Reset store state completely
-      console.log('🔄 Resetting store state...');
-      usePCRStore.setState({
-        currentSession: null,
-        isAdmin: false,
-        isLoggingOut: false,
-        completedPCRs: [],
-        staffMembers: [],
-        patients: [],
-        encounters: [],
-        allVitals: [],
-        ecgs: [],
-        signatures: [],
-        attachments: [],
-        auditLogs: [],
-        callTimeInfo: {
-          timeOfCall: '',
-          date: '',
-          arrivalOnScene: '',
-          atPatientSide: '',
-          toDestination: '',
-          atDestination: '',
-        },
-        patientInfo: {
-          firstName: '',
-          lastName: '',
-          age: '',
-          gender: '',
-          phone: '',
-          mrn: '',
-        },
-        incidentInfo: {
-          location: '',
-          chiefComplaint: '',
-          history: '',
-          assessment: '',
-          treatmentGiven: '',
-          priority: '',
-          onArrivalInfo: '',
-          provisionalDiagnosis: '',
-        },
-        vitals: [],
-        transportInfo: {
-          destination: '',
-          customDestination: '',
-          mode: '',
-          unitNumber: '',
-          departureTime: '',
-          arrivalTime: '',
-          mileage: '',
-          primaryParamedic: '',
-          secondaryParamedic: '',
-          driver: '',
-          notes: '',
-        },
-        signatureInfo: {
-          nurseSignature: '',
-          nurseCorporationId: '',
-          nurseSignaturePaths: '',
-          doctorSignature: '',
-          doctorCorporationId: '',
-          doctorSignaturePaths: '',
-          othersSignature: '',
-          othersRole: '',
-          othersSignaturePaths: '',
-        },
-        refusalInfo: {
-          patientName: '',
-          dateOfRefusal: '',
-          timeOfRefusal: '',
-          reasonForRefusal: '',
-          risksExplained: false,
-          mentalCapacity: false,
-          patientSignature: '',
-          patientSignaturePaths: '',
-          witnessName: '',
-          witnessSignature: '',
-          witnessSignaturePaths: '',
-          paramedicName: '',
-          paramedicSignature: '',
-          paramedicSignaturePaths: '',
-          additionalNotes: '',
-        },
-      });
-      
-      // Step 3: Wait a moment for state to update
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // Step 4: Navigate to login
-      console.log('🔄 Navigating to login...');
-      router.replace('/login');
-      
-      console.log('✅ SIMPLE LOGOUT: Logout completed successfully');
-      onLogoutComplete?.();
-      
-    } catch (error) {
-      console.error('❌ SIMPLE LOGOUT: Error during logout:', error);
-      // Force navigation even if there's an error
-      router.replace('/login');
-    } finally {
-      setIsLoggingOut(false);
+  const getDefaultBackgroundColor = () => {
+    switch (variant) {
+      case 'header':
+        return 'rgba(255, 255, 255, 0.15)';
+      case 'floating':
+        return '#FF3B30';
+      case 'button':
+        return '#FFEBEE';
+      default:
+        return 'transparent';
     }
   };
+
+  const finalColor = color || getDefaultColor();
+  const finalBackgroundColor = backgroundColor || getDefaultBackgroundColor();
 
   const handleLogout = () => {
-    if (isLoggingOut) {
-      console.log('Logout already in progress, ignoring button press');
-      return;
-    }
-
-    Alert.alert(
-      'Confirm Logout',
-      `Are you sure you want to logout${currentSession ? ` ${currentSession.name}` : ''}? All unsaved data will be lost.`,
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: performLogout,
-        },
-      ]
-    );
+    logout({
+      showConfirmation,
+      confirmTitle,
+      confirmMessage,
+    });
   };
 
-  const variantStyles = getVariantStyles();
-  const finalIconColor = iconColor || variantStyles.defaultIconColor;
+  // Don't render if no session (user not logged in)
+  if (!isLoggedIn()) {
+    return null;
+  }
+
+  const getButtonStyle = () => {
+    const baseStyle = [
+      styles[variant],
+      { backgroundColor: finalBackgroundColor },
+      isLoggingOut && styles.disabled,
+    ];
+
+    if (variant === 'floating') {
+      const positionStyle = styles[position];
+      return [baseStyle, positionStyle, style];
+    }
+
+    return [baseStyle, style];
+  };
+
+  const getButtonText = () => {
+    if (isLoggingOut) {
+      return 'Logging out...';
+    }
+    
+    switch (variant) {
+      case 'minimal':
+        return 'Exit';
+      default:
+        return 'Logout';
+    }
+  };
+
+  const renderContent = () => (
+    <>
+      <LogOut size={iconSize} color={finalColor} />
+      {showText && (
+        <Text style={[styles.text, { color: finalColor }]}>
+          {getButtonText()}
+        </Text>
+      )}
+    </>
+  );
+
+  if (variant === 'floating') {
+    return (
+      <View style={styles.floatingContainer}>
+        <TouchableOpacity
+          style={getButtonStyle()}
+          onPress={handleLogout}
+          disabled={isLoggingOut}
+          testID={testID || `logout-${variant}`}
+          accessibilityLabel={`Logout ${currentSession?.name || 'user'}`}
+          accessibilityHint="Logs out and returns to login screen"
+        >
+          {renderContent()}
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <TouchableOpacity
-      style={[variantStyles.button, style]}
+      style={getButtonStyle()}
       onPress={handleLogout}
       disabled={isLoggingOut}
-      activeOpacity={0.7}
-      testID="logout-button"
+      testID={testID || `logout-${variant}`}
+      accessibilityLabel={`Logout ${currentSession?.name || 'user'}`}
+      accessibilityHint="Logs out and returns to login screen"
     >
-      <LogOut size={iconSize} color={finalIconColor} />
-      {showText && (
-        <Text style={[variantStyles.text, textStyle]}>
-          {isLoggingOut ? 'Logging out...' : 'Logout'}
-        </Text>
-      )}
+      {renderContent()}
     </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
-  primaryButton: {
+  button: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 10,
-    backgroundColor: '#0066CC',
-    borderRadius: 8,
-    gap: 8,
-  },
-  primaryText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  secondaryButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: '#F5F5F5',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#E5E5E5',
-    gap: 8,
-  },
-  secondaryText: {
-    color: '#666',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  dangerButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: '#FFEBEE',
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#FF3B30',
     gap: 8,
   },
-  dangerText: {
-    color: '#FF3B30',
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 6,
+    gap: 6,
+  },
+  tab: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    gap: 6,
+    borderLeftWidth: 1,
+    borderLeftColor: '#E5E5E5',
+  },
+  floating: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 25,
+    gap: 6,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  minimal: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 4,
+    gap: 4,
+  },
+  disabled: {
+    opacity: 0.6,
+  },
+  text: {
     fontSize: 14,
     fontWeight: '600',
+  },
+  floatingContainer: {
+    position: 'absolute',
+    zIndex: 1000,
+  },
+  'top-right': {
+    top: 60,
+    right: 20,
+  },
+  'top-left': {
+    top: 60,
+    left: 20,
+  },
+  'bottom-right': {
+    bottom: 100,
+    right: 20,
+  },
+  'bottom-left': {
+    bottom: 100,
+    left: 20,
   },
 });
