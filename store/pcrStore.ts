@@ -1048,21 +1048,46 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
     console.log('=== GET MY SUBMITTED PCRs ===');
     console.log('Current session:', currentSession);
     console.log('Total PCRs in state:', state.completedPCRs.length);
+    console.log('All PCRs in state:', state.completedPCRs.map(pcr => ({
+      id: pcr.id,
+      patient: `${pcr.patientInfo.firstName} ${pcr.patientInfo.lastName}`,
+      submittedBy: pcr.submittedBy ? pcr.submittedBy.corporationId : 'NO_SUBMITTER',
+      submittedAt: pcr.submittedAt
+    })));
     
     if (!currentSession) {
       console.log('No current session, returning empty array');
       return [];
     }
     
-    const myPCRs = state.completedPCRs.filter(pcr => 
-      pcr.submittedBy && pcr.submittedBy.corporationId === currentSession.corporationId
-    );
+    // More flexible filtering - check both corporationId and staffId
+    const myPCRs = state.completedPCRs.filter(pcr => {
+      if (!pcr.submittedBy) {
+        console.log('PCR without submittedBy field:', pcr.id);
+        return false;
+      }
+      
+      const isMyPCR = pcr.submittedBy.corporationId === currentSession.corporationId ||
+                      pcr.submittedBy.staffId === currentSession.staffId ||
+                      pcr.submittedBy.staffId === currentSession.corporationId;
+      
+      console.log(`PCR ${pcr.id} match check:`, {
+        pcrSubmitter: pcr.submittedBy.corporationId,
+        pcrStaffId: pcr.submittedBy.staffId,
+        currentCorp: currentSession.corporationId,
+        currentStaff: currentSession.staffId,
+        isMatch: isMyPCR
+      });
+      
+      return isMyPCR;
+    });
     
     console.log('My PCRs found:', myPCRs.length);
     console.log('My PCRs details:', myPCRs.map(pcr => ({
       id: pcr.id,
       patient: `${pcr.patientInfo.firstName} ${pcr.patientInfo.lastName}`,
-      submittedBy: pcr.submittedBy.corporationId
+      submittedBy: pcr.submittedBy.corporationId,
+      submittedAt: pcr.submittedAt
     })));
     console.log('=== END GET MY SUBMITTED PCRs ===');
     

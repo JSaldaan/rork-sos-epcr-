@@ -30,6 +30,18 @@ const MyReportsScreen: React.FC = () => {
   const [myPCRs, setMyPCRs] = useState<CompletedPCR[]>([]);
   const [refreshKey, setRefreshKey] = useState<number>(0);
 
+  // Add a refresh function that can be called when needed
+  const refreshReports = React.useCallback(async () => {
+    console.log('🔄 Manually refreshing reports...');
+    await loadCompletedPCRs();
+    setTimeout(() => {
+      const mySubmittedPCRs = getMySubmittedPCRs();
+      setMyPCRs(mySubmittedPCRs);
+      setRefreshKey(prev => prev + 1);
+      console.log('✅ Reports refreshed, found:', mySubmittedPCRs.length);
+    }, 100);
+  }, [loadCompletedPCRs, getMySubmittedPCRs]);
+
 
   // Load PCRs when screen is focused
   useFocusEffect(
@@ -39,12 +51,16 @@ const MyReportsScreen: React.FC = () => {
         console.log('Current session:', currentSession);
         console.log('Loading my submitted PCRs...');
         
+        // Force reload from storage first
         await loadCompletedPCRs();
-        const mySubmittedPCRs = getMySubmittedPCRs();
-        setMyPCRs(mySubmittedPCRs);
         
-        console.log('My PCRs loaded:', mySubmittedPCRs.length);
-        console.log('=== END MY REPORTS SCREEN FOCUSED ===');
+        // Small delay to ensure state is updated
+        setTimeout(() => {
+          const mySubmittedPCRs = getMySubmittedPCRs();
+          setMyPCRs(mySubmittedPCRs);
+          console.log('My PCRs loaded:', mySubmittedPCRs.length);
+          console.log('=== END MY REPORTS SCREEN FOCUSED ===');
+        }, 100);
       };
       
       if (currentSession) {
@@ -53,7 +69,7 @@ const MyReportsScreen: React.FC = () => {
         console.log('No current session in MyReports screen');
         setMyPCRs([]);
       }
-    }, [currentSession, loadCompletedPCRs, getMySubmittedPCRs])
+    }, [currentSession, loadCompletedPCRs, getMySubmittedPCRs, refreshKey])
   );
 
 
@@ -424,6 +440,12 @@ const MyReportsScreen: React.FC = () => {
           </View>
         </View>
         <View style={styles.headerRight}>
+          <Pressable
+            style={styles.refreshButton}
+            onPress={refreshReports}
+          >
+            <Text style={styles.refreshButtonText}>🔄</Text>
+          </Pressable>
           <View style={styles.statsContainer}>
             <Text style={styles.statsNumber}>{myPCRs.length}</Text>
             <Text style={styles.statsLabel}>Reports</Text>
@@ -522,6 +544,15 @@ const styles = StyleSheet.create({
   statsLabel: {
     fontSize: 12,
     color: '#6b7280',
+  },
+  refreshButton: {
+    padding: 8,
+    borderRadius: 6,
+    backgroundColor: '#f3f4f6',
+    marginRight: 8,
+  },
+  refreshButtonText: {
+    fontSize: 16,
   },
   pcrList: {
     flex: 1,
