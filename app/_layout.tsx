@@ -4,6 +4,7 @@ import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { usePCRStore } from "@/store/pcrStore";
+import { useOfflineStore } from "@/store/offlineStore";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
@@ -125,6 +126,7 @@ function RootLayoutNav() {
 
 function AppInitializer() {
   const { loadCurrentPCRDraft, initializeStaffDatabase, loadCompletedPCRs } = usePCRStore();
+  const { initialize: initializeOfflineStore } = useOfflineStore();
   const [hasInitialized, setHasInitialized] = React.useState(false);
   
   useEffect(() => {
@@ -132,7 +134,11 @@ function AppInitializer() {
       try {
         console.log('=== APP INITIALIZATION ===');
         
-        // Initialize staff database first
+        // Initialize offline store first
+        await initializeOfflineStore();
+        console.log('Offline store initialized');
+        
+        // Initialize staff database
         await initializeStaffDatabase();
         console.log('Staff database initialized');
         
@@ -165,7 +171,7 @@ function AppInitializer() {
     if (!hasInitialized) {
       initializeApp();
     }
-  }, [loadCurrentPCRDraft, initializeStaffDatabase, loadCompletedPCRs, hasInitialized]);
+  }, [loadCurrentPCRDraft, initializeStaffDatabase, loadCompletedPCRs, initializeOfflineStore, hasInitialized]);
   
   return <RootLayoutNav />;
 }

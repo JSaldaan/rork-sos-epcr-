@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useOfflineStore } from './offlineStore';
 
 export interface PatientInfo {
   firstName: string;
@@ -539,6 +540,12 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
       throw new Error('No active session found. Please login first.');
     }
     
+    // Check if offline and queue action
+    const offlineStore = useOfflineStore.getState();
+    if (!offlineStore.isOnline) {
+      console.log('📱 Offline mode: Queuing PCR submission for later sync');
+    }
+    
     const completedPCR: CompletedPCR = {
       id: Date.now().toString(),
       submittedAt: new Date().toISOString(),
@@ -560,6 +567,17 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
 
     // Store comprehensive admin data when PCR is submitted
     await get().storeComprehensiveAdminData(completedPCR);
+    
+    // Add to offline queue if not online
+    const offlineStoreState = useOfflineStore.getState();
+    if (!offlineStoreState.isOnline) {
+      await offlineStoreState.addPendingAction({
+        type: 'SUBMIT_PCR',
+        data: completedPCR,
+        maxRetries: 3,
+      });
+      console.log('📱 PCR queued for sync when online');
+    }
 
     console.log('=== SUBMITTING PCR ===');
     console.log('Current session:', currentSession);
@@ -662,6 +680,17 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
     const updatedPCRs = state.completedPCRs.filter(pcr => pcr.id !== id);
     await AsyncStorage.setItem('completedPCRs', JSON.stringify(updatedPCRs));
     set({ completedPCRs: updatedPCRs });
+    
+    // Add to offline queue if not online
+    const offlineStore = useOfflineStore.getState();
+    if (!offlineStore.isOnline) {
+      await offlineStore.addPendingAction({
+        type: 'DELETE_PCR',
+        data: { id },
+        maxRetries: 3,
+      });
+    }
+    
     console.log('PCR deleted:', id);
   },
 
@@ -1050,6 +1079,17 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
     const updatedStaffMembers = [...state.staffMembers, newStaff];
     await AsyncStorage.setItem('staffMembers', JSON.stringify(updatedStaffMembers));
     set({ staffMembers: updatedStaffMembers });
+    
+    // Add to offline queue if not online
+    const offlineStore = useOfflineStore.getState();
+    if (!offlineStore.isOnline) {
+      await offlineStore.addPendingAction({
+        type: 'ADD_STAFF',
+        data: newStaff,
+        maxRetries: 3,
+      });
+    }
+    
     console.log('Staff member added:', newStaff.name);
   },
 
@@ -1061,6 +1101,17 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
     
     await AsyncStorage.setItem('staffMembers', JSON.stringify(updatedStaffMembers));
     set({ staffMembers: updatedStaffMembers });
+    
+    // Add to offline queue if not online
+    const offlineStore = useOfflineStore.getState();
+    if (!offlineStore.isOnline) {
+      await offlineStore.addPendingAction({
+        type: 'UPDATE_STAFF',
+        data: { corporationId, updates },
+        maxRetries: 3,
+      });
+    }
+    
     console.log('Staff member updated:', corporationId);
   },
 

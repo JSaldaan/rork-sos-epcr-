@@ -44,11 +44,13 @@ import {
   RefreshCw,
   Eye,
   EyeOff,
+  Wifi,
 } from 'lucide-react-native';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
+import { OfflineManagementScreen } from '@/components/OfflineManagementScreen';
 
-type TabType = 'vault' | 'staff' | 'audit' | 'reports';
+type TabType = 'vault' | 'staff' | 'audit' | 'reports' | 'offline';
 type VaultSection = 'patients' | 'encounters' | 'vitals' | 'ecgs' | 'signatures' | 'attachments' | 'pcrs';
 
 export default function AdminScreen() {
@@ -89,7 +91,7 @@ export default function AdminScreen() {
     }
   }, [isStaffUser]);
 
-  const [activeTab, setActiveTab] = useState<TabType>('vault');
+  const [activeTab, setActiveTab] = useState<TabType>('offline');
   const [vaultSection, setVaultSection] = useState<VaultSection>('pcrs');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
@@ -1474,6 +1476,16 @@ export default function AdminScreen() {
             Audit
           </Text>
         </TouchableOpacity>
+        
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'offline' && styles.tabActive]}
+          onPress={() => setActiveTab('offline')}
+        >
+          <Wifi size={20} color={activeTab === 'offline' ? '#0066CC' : '#666'} />
+          <Text style={[styles.tabText, activeTab === 'offline' && styles.tabTextActive]}>
+            Offline
+          </Text>
+        </TouchableOpacity>
       </View>
 
       {isLoading ? (
@@ -1486,6 +1498,7 @@ export default function AdminScreen() {
           {activeTab === 'vault' && renderVaultSection()}
           {activeTab === 'staff' && renderStaffManagement()}
           {activeTab === 'audit' && renderAuditLogs()}
+          {activeTab === 'offline' && <OfflineManagementScreen />}
         </>
       )}
 

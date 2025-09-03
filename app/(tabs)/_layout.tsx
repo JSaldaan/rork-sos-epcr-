@@ -1,9 +1,10 @@
 import { Tabs, router } from "expo-router";
 import { FileText, Activity, Truck, User, FileX, Eye, LogOut, FolderOpen, Shield } from "lucide-react-native";
 import React, { useCallback } from "react";
-import { Pressable, Alert, StyleSheet } from "react-native";
+import { Pressable, Alert, StyleSheet, View } from "react-native";
 import { usePCRStore } from "../../store/pcrStore";
 import { useQueryClient } from "@tanstack/react-query";
+import { OfflineStatusBar } from "@/components/OfflineStatusBar";
 
 export default function TabLayout() {
   const { currentSession, staffLogout, isLoggingOut } = usePCRStore();
@@ -85,22 +86,24 @@ export default function TabLayout() {
   // Admin users only see admin tab
   if (isAdminUser) {
     return (
-      <Tabs
-        screenOptions={{
-          tabBarActiveTintColor: "#DC2626",
-          tabBarInactiveTintColor: "#666",
-          headerShown: true,
-          headerStyle: {
-            backgroundColor: "#DC2626",
-          },
-          headerTintColor: "#fff",
-          headerRight: () => <LogoutButton />,
-          tabBarStyle: {
-            backgroundColor: "#fff",
-            borderTopColor: "#E5E5E5",
-          },
-        }}
-      >
+      <View style={{ flex: 1 }}>
+        <OfflineStatusBar />
+        <Tabs
+          screenOptions={{
+            tabBarActiveTintColor: "#DC2626",
+            tabBarInactiveTintColor: "#666",
+            headerShown: true,
+            headerStyle: {
+              backgroundColor: "#DC2626",
+            },
+            headerTintColor: "#fff",
+            headerRight: () => <LogoutButton />,
+            tabBarStyle: {
+              backgroundColor: "#fff",
+              borderTopColor: "#E5E5E5",
+            },
+          }}
+        >
         <Tabs.Screen
           name="admin"
           options={{
@@ -152,28 +155,31 @@ export default function TabLayout() {
             href: null,
           }}
         />
-      </Tabs>
+        </Tabs>
+      </View>
     );
   }
   
   // Staff and supervisors see staff tabs (no admin tab)
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: "#0066CC",
-        tabBarInactiveTintColor: "#666",
-        headerShown: true,
-        headerStyle: {
-          backgroundColor: "#0066CC",
-        },
-        headerTintColor: "#fff",
-        headerRight: () => <LogoutButton />,
-        tabBarStyle: {
-          backgroundColor: "#fff",
-          borderTopColor: "#E5E5E5",
-        },
-      }}
-    >
+    <View style={{ flex: 1 }}>
+      <OfflineStatusBar />
+      <Tabs
+        screenOptions={{
+          tabBarActiveTintColor: "#0066CC",
+          tabBarInactiveTintColor: "#666",
+          headerShown: true,
+          headerStyle: {
+            backgroundColor: "#0066CC",
+          },
+          headerTintColor: "#fff",
+          headerRight: () => <LogoutButton />,
+          tabBarStyle: {
+            backgroundColor: "#fff",
+            borderTopColor: "#E5E5E5",
+          },
+        }}
+      >
       <Tabs.Screen
         name="index"
         options={{
@@ -237,7 +243,8 @@ export default function TabLayout() {
           href: null,
         }}
       />
-    </Tabs>
+      </Tabs>
+    </View>
   );
 }
 
