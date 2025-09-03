@@ -1,17 +1,15 @@
-import { Tabs, router } from "expo-router";
-import { FileText, Activity, Truck, User, FileX, Eye, LogOut, FolderOpen, Shield } from "lucide-react-native";
-import React, { useCallback } from "react";
-import { Pressable, Alert, StyleSheet, View, Dimensions } from "react-native";
+import { Tabs } from "expo-router";
+import { FileText, Activity, Truck, User, FileX, Eye, FolderOpen, Shield } from "lucide-react-native";
+import React from "react";
+import { StyleSheet, View, Dimensions } from "react-native";
 import { usePCRStore } from "../../store/pcrStore";
-import { useQueryClient } from "@tanstack/react-query";
 import { OfflineStatusBar } from "@/components/OfflineStatusBar";
-import { performCompleteLogout } from "@/utils/auth";
+import { LogoutButton } from "@/components/LogoutButton";
 
 const { width: screenWidth } = Dimensions.get('window');
 
 export default function TabLayout() {
-  const { currentSession, staffLogout, isLoggingOut } = usePCRStore();
-  const queryClient = useQueryClient();
+  const { currentSession } = usePCRStore();
   
   // Determine user access level
   const isAdminUser = currentSession?.role === 'admin' || 
@@ -20,78 +18,14 @@ export default function TabLayout() {
   const isSupervisorOrAdmin = isAdminUser || currentSession?.role === 'supervisor';
   const isStaffUser = !isAdminUser && !isSupervisorOrAdmin;
   
-  const handleLogout = useCallback(() => {
-    // Prevent multiple logout attempts
-    if (isLoggingOut) {
-      console.log('Logout already in progress');
-      return;
-    }
-    
-    console.log('=== LOGOUT BUTTON PRESSED ===');
-    console.log('Current session:', currentSession?.name || 'No session');
-    console.log('Is logging out:', isLoggingOut);
-    
-    Alert.alert(
-      'Confirm Logout',
-      `Are you sure you want to logout${currentSession ? ` ${currentSession.name}` : ''}?`,
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel'
-        },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              console.log('=== STARTING LOGOUT PROCESS ===');
-              
-              // Clear React Query cache first
-              queryClient.clear();
-              queryClient.cancelQueries();
-              console.log('React Query cache cleared');
-              
-              // Use the comprehensive logout utility
-              console.log('Calling performCompleteLogout...');
-              const result = await performCompleteLogout();
-              
-              if (result.success) {
-                console.log('✅ Complete logout successful');
-                // Don't show success alert as user will be redirected to login
-              } else {
-                console.error('❌ Complete logout failed:', result.error);
-                Alert.alert(
-                  'Logout Error', 
-                  'There was an issue logging out completely. You may need to restart the app.',
-                  [{ text: 'OK' }]
-                );
-              }
-            } catch (error) {
-              console.error('❌ Logout error:', error);
-              Alert.alert(
-                'Logout Error', 
-                'Failed to logout properly. Please restart the app if you continue to have issues.',
-                [{ text: 'OK' }]
-              );
-            }
-          }
-        }
-      ]
-    );
-  }, [currentSession, queryClient, isLoggingOut]);
-  
-  const LogoutButton = () => (
-    <Pressable 
-      style={({ pressed }) => [
-        styles.logoutButton,
-        pressed && styles.logoutButtonPressed
-      ]}
-      onPress={handleLogout}
-      hitSlop={20}
-      disabled={isLoggingOut}
-    >
-      <LogOut size={22} color="#fff" />
-    </Pressable>
+  const HeaderLogoutButton = () => (
+    <LogoutButton 
+      showText={false}
+      iconSize={22}
+      iconColor="#fff"
+      variant="primary"
+      style={styles.headerLogoutButton}
+    />
   );
   
   // Admin users only see admin tab
@@ -108,7 +42,7 @@ export default function TabLayout() {
               backgroundColor: "#DC2626",
             },
             headerTintColor: "#fff",
-            headerRight: () => <LogoutButton />,
+            headerRight: () => <HeaderLogoutButton />,
             tabBarStyle: {
               backgroundColor: "#fff",
               borderTopColor: "#E5E5E5",
@@ -190,7 +124,7 @@ export default function TabLayout() {
             backgroundColor: "#0066CC",
           },
           headerTintColor: "#fff",
-          headerRight: () => <LogoutButton />,
+          headerRight: () => <HeaderLogoutButton />,
           tabBarStyle: {
             backgroundColor: "#fff",
             borderTopColor: "#E5E5E5",
@@ -272,15 +206,12 @@ export default function TabLayout() {
 }
 
 const styles = StyleSheet.create({
-  logoutButton: {
+  headerLogoutButton: {
     marginRight: 16,
     padding: 8,
     borderRadius: 6,
     backgroundColor: 'rgba(255, 255, 255, 0.15)',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  logoutButtonPressed: {
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
   },
 });

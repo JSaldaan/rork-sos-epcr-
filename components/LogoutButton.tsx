@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { TouchableOpacity, Text, StyleSheet, Alert, ViewStyle, TextStyle } from 'react-native';
 import { LogOut } from 'lucide-react-native';
-import { performCompleteLogout } from '@/utils/auth';
+import { router } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { usePCRStore } from '@/store/pcrStore';
 
 interface LogoutButtonProps {
@@ -25,7 +26,8 @@ export const LogoutButton: React.FC<LogoutButtonProps> = ({
   onLogoutStart,
   onLogoutComplete,
 }) => {
-  const { currentSession, isLoggingOut, addAuditLog } = usePCRStore();
+  const { currentSession } = usePCRStore();
+  const [isLoggingOut, setIsLoggingOut] = useState<boolean>(false);
 
   const getVariantStyles = () => {
     switch (variant) {
@@ -51,7 +53,121 @@ export const LogoutButton: React.FC<LogoutButtonProps> = ({
     }
   };
 
-  const handleLogout = async () => {
+  const performLogout = async () => {
+    console.log('🚀 SIMPLE LOGOUT: Starting logout process');
+    setIsLoggingOut(true);
+    onLogoutStart?.();
+    
+    try {
+      // Step 1: Clear all AsyncStorage data
+      console.log('🧹 Clearing AsyncStorage...');
+      await AsyncStorage.clear();
+      
+      // Step 2: Reset store state completely
+      console.log('🔄 Resetting store state...');
+      usePCRStore.setState({
+        currentSession: null,
+        isAdmin: false,
+        isLoggingOut: false,
+        completedPCRs: [],
+        staffMembers: [],
+        patients: [],
+        encounters: [],
+        allVitals: [],
+        ecgs: [],
+        signatures: [],
+        attachments: [],
+        auditLogs: [],
+        callTimeInfo: {
+          timeOfCall: '',
+          date: '',
+          arrivalOnScene: '',
+          atPatientSide: '',
+          toDestination: '',
+          atDestination: '',
+        },
+        patientInfo: {
+          firstName: '',
+          lastName: '',
+          age: '',
+          gender: '',
+          phone: '',
+          mrn: '',
+        },
+        incidentInfo: {
+          location: '',
+          chiefComplaint: '',
+          history: '',
+          assessment: '',
+          treatmentGiven: '',
+          priority: '',
+          onArrivalInfo: '',
+          provisionalDiagnosis: '',
+        },
+        vitals: [],
+        transportInfo: {
+          destination: '',
+          customDestination: '',
+          mode: '',
+          unitNumber: '',
+          departureTime: '',
+          arrivalTime: '',
+          mileage: '',
+          primaryParamedic: '',
+          secondaryParamedic: '',
+          driver: '',
+          notes: '',
+        },
+        signatureInfo: {
+          nurseSignature: '',
+          nurseCorporationId: '',
+          nurseSignaturePaths: '',
+          doctorSignature: '',
+          doctorCorporationId: '',
+          doctorSignaturePaths: '',
+          othersSignature: '',
+          othersRole: '',
+          othersSignaturePaths: '',
+        },
+        refusalInfo: {
+          patientName: '',
+          dateOfRefusal: '',
+          timeOfRefusal: '',
+          reasonForRefusal: '',
+          risksExplained: false,
+          mentalCapacity: false,
+          patientSignature: '',
+          patientSignaturePaths: '',
+          witnessName: '',
+          witnessSignature: '',
+          witnessSignaturePaths: '',
+          paramedicName: '',
+          paramedicSignature: '',
+          paramedicSignaturePaths: '',
+          additionalNotes: '',
+        },
+      });
+      
+      // Step 3: Wait a moment for state to update
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Step 4: Navigate to login
+      console.log('🔄 Navigating to login...');
+      router.replace('/login');
+      
+      console.log('✅ SIMPLE LOGOUT: Logout completed successfully');
+      onLogoutComplete?.();
+      
+    } catch (error) {
+      console.error('❌ SIMPLE LOGOUT: Error during logout:', error);
+      // Force navigation even if there's an error
+      router.replace('/login');
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
+
+  const handleLogout = () => {
     if (isLoggingOut) {
       console.log('Logout already in progress, ignoring button press');
       return;
@@ -68,50 +184,7 @@ export const LogoutButton: React.FC<LogoutButtonProps> = ({
         {
           text: 'Logout',
           style: 'destructive',
-          onPress: async () => {
-            try {
-              console.log('=== LOGOUT BUTTON: Starting logout process ===');
-              onLogoutStart?.();
-              
-              // Add audit log before logout
-              if (currentSession) {
-                await addAuditLog(
-                  'USER_LOGOUT',
-                  'System',
-                  currentSession.corporationId,
-                  `User ${currentSession.name} (${currentSession.role}) initiated logout`
-                );
-              }
-              
-              // Perform complete logout
-              const result = await performCompleteLogout();
-              
-              if (result.success) {
-                console.log('✅ LOGOUT BUTTON: Logout successful');
-                onLogoutComplete?.();
-              } else {
-                console.error('❌ LOGOUT BUTTON: Logout failed:', result.error);
-                Alert.alert(
-                  'Logout Error',
-                  'There was an issue logging out completely. Please try again or restart the app.',
-                  [{ text: 'OK' }]
-                );
-              }
-            } catch (error) {
-              console.error('❌ LOGOUT BUTTON: Logout error:', error);
-              // Force logout even if there's an error
-              try {
-                await performCompleteLogout();
-              } catch (forceError) {
-                console.error('❌ LOGOUT BUTTON: Force logout also failed:', forceError);
-                Alert.alert(
-                  'Logout Error',
-                  'Failed to logout properly. Please restart the app.',
-                  [{ text: 'OK' }]
-                );
-              }
-            }
-          },
+          onPress: performLogout,
         },
       ]
     );
@@ -126,6 +199,7 @@ export const LogoutButton: React.FC<LogoutButtonProps> = ({
       onPress={handleLogout}
       disabled={isLoggingOut}
       activeOpacity={0.7}
+      testID="logout-button"
     >
       <LogOut size={iconSize} color={finalIconColor} />
       {showText && (
