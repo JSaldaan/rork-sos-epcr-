@@ -48,6 +48,7 @@ import {
   LogOut,
 } from 'lucide-react-native';
 import * as Print from 'expo-print';
+import { UniversalLogoutButton } from '@/components/UniversalLogoutButton';
 import * as Sharing from 'expo-sharing';
 import { OfflineManagementScreen } from '@/components/OfflineManagementScreen';
 import { SimpleLogout } from '@/components/SimpleLogout';
@@ -1774,6 +1775,14 @@ export default function AdminScreen() {
           </View>
         </View>
       </Modal>
+      
+      {/* Universal Logout Button - Floating */}
+      <UniversalLogoutButton 
+        variant="floating"
+        position="top-left"
+        showText={false}
+        iconSize={18}
+      />
     </View>
   );
 }

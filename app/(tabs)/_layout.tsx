@@ -22,7 +22,8 @@ export default function TabLayout() {
     <SimpleLogout 
       showText={false}
       iconSize={22}
-      variant="button"
+      variant="header"
+      color="#FFFFFF"
     />
   );
   

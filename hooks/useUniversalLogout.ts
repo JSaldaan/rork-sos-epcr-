@@ -1,31 +1,15 @@
-import React, { useState } from 'react';
-import { TouchableOpacity, Text, StyleSheet, Alert, Platform } from 'react-native';
-import { LogOut } from 'lucide-react-native';
+import { useState } from 'react';
+import { Alert, Platform } from 'react-native';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { usePCRStore } from '@/store/pcrStore';
 
-interface SimpleLogoutProps {
-  variant?: 'button' | 'tab' | 'header';
-  showText?: boolean;
-  iconSize?: number;
-  color?: string;
-}
-
-export const SimpleLogout: React.FC<SimpleLogoutProps> = ({
-  variant = 'button',
-  showText = true,
-  iconSize = 20,
-  color,
-}) => {
-  // Set default color based on variant
-  const defaultColor = variant === 'header' ? '#FFFFFF' : '#FF3B30';
-  const finalColor = color || defaultColor;
+export const useUniversalLogout = () => {
   const [isLoggingOut, setIsLoggingOut] = useState<boolean>(false);
   const { currentSession, staffLogout } = usePCRStore();
 
   const performCompleteLogout = async () => {
-    console.log('🚀 UNIVERSAL LOGOUT: Starting complete logout process...');
+    console.log('🚀 UNIVERSAL LOGOUT HOOK: Starting complete logout process...');
     
     if (isLoggingOut) {
       console.log('⚠️ Logout already in progress, preventing duplicate');
@@ -154,7 +138,7 @@ export const SimpleLogout: React.FC<SimpleLogoutProps> = ({
       router.replace('/login');
       console.log('✅ Navigation to login completed');
       
-      console.log('🎉 UNIVERSAL LOGOUT: Complete logout successful!');
+      console.log('🎉 UNIVERSAL LOGOUT HOOK: Complete logout successful!');
       
     } catch (error) {
       console.error('❌ LOGOUT ERROR:', error);
@@ -176,7 +160,7 @@ export const SimpleLogout: React.FC<SimpleLogoutProps> = ({
     }
   };
 
-  const handleLogout = () => {
+  const logout = (showConfirmation: boolean = true) => {
     if (isLoggingOut) {
       console.log('⚠️ Logout already in progress, ignoring user interaction');
       return;
@@ -186,6 +170,11 @@ export const SimpleLogout: React.FC<SimpleLogoutProps> = ({
     const userRole = currentSession?.role || 'Unknown';
     
     console.log(`🔐 Logout requested for: ${userName} (${userRole})`);
+    
+    if (!showConfirmation) {
+      performCompleteLogout();
+      return;
+    }
     
     Alert.alert(
       'Confirm Logout',
@@ -212,103 +201,9 @@ export const SimpleLogout: React.FC<SimpleLogoutProps> = ({
     );
   };
 
-  if (variant === 'header') {
-    return (
-      <TouchableOpacity
-        style={styles.headerLogout}
-        onPress={handleLogout}
-        disabled={isLoggingOut}
-        testID="logout-header"
-      >
-        <LogOut size={iconSize} color={finalColor} />
-        {showText && (
-          <Text style={[styles.headerLogoutText, { color: finalColor }]}>
-            {isLoggingOut ? 'Logging out...' : 'Logout'}
-          </Text>
-        )}
-      </TouchableOpacity>
-    );
-  }
-
-  if (variant === 'tab') {
-    return (
-      <TouchableOpacity
-        style={styles.logoutTab}
-        onPress={handleLogout}
-        disabled={isLoggingOut}
-        testID="logout-tab"
-      >
-        <LogOut size={iconSize} color={finalColor} />
-        {showText && (
-          <Text style={[styles.logoutTabText, { color: finalColor }]}>
-            {isLoggingOut ? 'Logging out...' : 'Logout'}
-          </Text>
-        )}
-      </TouchableOpacity>
-    );
-  }
-
-  return (
-    <TouchableOpacity
-      style={[styles.logoutButton, isLoggingOut && styles.logoutButtonDisabled]}
-      onPress={handleLogout}
-      disabled={isLoggingOut}
-      testID="logout-button"
-    >
-      <LogOut size={iconSize} color={finalColor} />
-      {showText && (
-        <Text style={[styles.logoutButtonText, { color: finalColor }]}>
-          {isLoggingOut ? 'Logging out...' : 'Logout'}
-        </Text>
-      )}
-    </TouchableOpacity>
-  );
+  return {
+    logout,
+    isLoggingOut,
+    currentSession,
+  };
 };
-
-const styles = StyleSheet.create({
-  logoutButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: '#FFEBEE',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#FF3B30',
-    gap: 8,
-  },
-  logoutButtonDisabled: {
-    opacity: 0.6,
-  },
-  logoutButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  headerLogout: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    gap: 6,
-  },
-  headerLogoutText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  logoutTab: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    gap: 6,
-    borderLeftWidth: 1,
-    borderLeftColor: '#E5E5E5',
-  },
-  logoutTabText: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-});

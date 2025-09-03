@@ -14,6 +14,7 @@ import {
 import { Clock, MapPin, User, ChevronDown, Shield } from "lucide-react-native";
 import { usePCRStore } from "@/store/pcrStore";
 import { router } from "expo-router";
+import { UniversalLogoutButton } from "@/components/UniversalLogoutButton";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -624,6 +625,14 @@ export default function NewPCRScreen() {
       </TouchableOpacity>
 
       <View style={styles.bottomPadding} />
+      
+      {/* Universal Logout Button - Floating */}
+      <UniversalLogoutButton 
+        variant="floating"
+        position="bottom-right"
+        showText={false}
+        iconSize={18}
+      />
     </ScrollView>
   );
 }
