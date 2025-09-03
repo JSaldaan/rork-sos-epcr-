@@ -26,6 +26,11 @@ export default function TabLayout() {
       console.log('Logout already in progress');
       return;
     }
+    
+    console.log('=== LOGOUT BUTTON PRESSED ===');
+    console.log('Current session:', currentSession?.name || 'No session');
+    console.log('Is logging out:', isLoggingOut);
+    
     Alert.alert(
       'Confirm Logout',
       `Are you sure you want to logout${currentSession ? ` ${currentSession.name}` : ''}?`,
@@ -39,7 +44,7 @@ export default function TabLayout() {
           style: 'destructive',
           onPress: async () => {
             try {
-              console.log('=== USING COMPLETE LOGOUT UTILITY ===');
+              console.log('=== STARTING LOGOUT PROCESS ===');
               
               // Clear React Query cache first
               queryClient.clear();
@@ -47,25 +52,27 @@ export default function TabLayout() {
               console.log('React Query cache cleared');
               
               // Use the comprehensive logout utility
+              console.log('Calling performCompleteLogout...');
               const result = await performCompleteLogout();
               
               if (result.success) {
-                console.log('Complete logout successful');
-                // Show success message after a short delay
-                setTimeout(() => {
-                  Alert.alert(
-                    'Logged Out',
-                    'You have been logged out successfully',
-                    [{ text: 'OK' }]
-                  );
-                }, 500);
+                console.log('✅ Complete logout successful');
+                // Don't show success alert as user will be redirected to login
               } else {
-                console.error('Complete logout failed:', result.error);
-                Alert.alert('Error', 'Failed to logout completely. Please try again.');
+                console.error('❌ Complete logout failed:', result.error);
+                Alert.alert(
+                  'Logout Error', 
+                  'There was an issue logging out completely. You may need to restart the app.',
+                  [{ text: 'OK' }]
+                );
               }
             } catch (error) {
-              console.error('Logout error:', error);
-              Alert.alert('Error', 'Failed to logout. Please try again.');
+              console.error('❌ Logout error:', error);
+              Alert.alert(
+                'Logout Error', 
+                'Failed to logout properly. Please restart the app if you continue to have issues.',
+                [{ text: 'OK' }]
+              );
             }
           }
         }

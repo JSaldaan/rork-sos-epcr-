@@ -29,7 +29,10 @@ export async function performCompleteLogout() {
     const sessionInfo = state.currentSession;
     console.log('Logging out user:', sessionInfo?.name || 'Unknown');
     
-    // Step 2: Clear all AsyncStorage keys (more comprehensive)
+    // Step 2: Set logging out flag to prevent multiple calls
+    usePCRStore.setState({ isLoggingOut: true });
+    
+    // Step 3: Clear all AsyncStorage keys (more comprehensive)
     const allKeys = await AsyncStorage.getAllKeys();
     const authRelatedKeys = allKeys.filter(key => 
       key.includes('session') || 
@@ -37,7 +40,9 @@ export async function performCompleteLogout() {
       key.includes('auth') ||
       key.includes('user') ||
       key.includes('PCR') ||
-      key.includes('draft')
+      key.includes('draft') ||
+      key.includes('admin') ||
+      key.includes('staff')
     );
     
     if (authRelatedKeys.length > 0) {
@@ -45,23 +50,106 @@ export async function performCompleteLogout() {
       console.log('Cleared AsyncStorage keys:', authRelatedKeys);
     }
     
-    // Step 3: Call store logout (handles state reset)
+    // Step 4: Call store logout (handles state reset)
     await state.staffLogout();
     console.log('Store logout completed');
     
-    // Step 4: Verify logout was successful
-    const newState = usePCRStore.getState();
-    if (newState.currentSession !== null || newState.isAdmin !== false) {
-      console.warn('Logout verification failed - state not properly cleared');
-      // Force state reset
-      usePCRStore.setState({
-        currentSession: null,
-        isAdmin: false,
-        isLoggingOut: false
-      });
-    }
+    // Step 5: Force complete state reset to ensure clean logout
+    usePCRStore.setState({
+      currentSession: null,
+      isAdmin: false,
+      isLoggingOut: false,
+      completedPCRs: [],
+      staffMembers: [],
+      // Reset admin data
+      patients: [],
+      encounters: [],
+      allVitals: [],
+      ecgs: [],
+      signatures: [],
+      attachments: [],
+      auditLogs: [],
+      // Reset PCR data to initial values
+      callTimeInfo: {
+        timeOfCall: '',
+        date: '',
+        arrivalOnScene: '',
+        atPatientSide: '',
+        toDestination: '',
+        atDestination: '',
+      },
+      patientInfo: {
+        firstName: '',
+        lastName: '',
+        age: '',
+        gender: '',
+        phone: '',
+        mrn: '',
+      },
+      incidentInfo: {
+        location: '',
+        chiefComplaint: '',
+        history: '',
+        assessment: '',
+        treatmentGiven: '',
+        priority: '',
+        onArrivalInfo: '',
+        provisionalDiagnosis: '',
+      },
+      vitals: [],
+      transportInfo: {
+        destination: '',
+        customDestination: '',
+        mode: '',
+        unitNumber: '',
+        departureTime: '',
+        arrivalTime: '',
+        mileage: '',
+        primaryParamedic: '',
+        secondaryParamedic: '',
+        driver: '',
+        notes: '',
+      },
+      signatureInfo: {
+        nurseSignature: '',
+        nurseCorporationId: '',
+        nurseSignaturePaths: '',
+        doctorSignature: '',
+        doctorCorporationId: '',
+        doctorSignaturePaths: '',
+        othersSignature: '',
+        othersRole: '',
+        othersSignaturePaths: '',
+      },
+      refusalInfo: {
+        patientName: '',
+        dateOfRefusal: '',
+        timeOfRefusal: '',
+        reasonForRefusal: '',
+        risksExplained: false,
+        mentalCapacity: false,
+        patientSignature: '',
+        patientSignaturePaths: '',
+        witnessName: '',
+        witnessSignature: '',
+        witnessSignaturePaths: '',
+        paramedicName: '',
+        paramedicSignature: '',
+        paramedicSignaturePaths: '',
+        additionalNotes: '',
+      },
+    });
     
-    // Step 5: Navigate to login with replace (prevents back navigation)
+    // Step 6: Verify logout was successful
+    const newState = usePCRStore.getState();
+    console.log('Post-logout state verification:', {
+      currentSession: newState.currentSession,
+      isAdmin: newState.isAdmin,
+      isLoggingOut: newState.isLoggingOut
+    });
+    
+    // Step 7: Navigate to login with replace (prevents back navigation)
+    console.log('Navigating to login screen...');
     router.replace('/login');
     console.log('Navigation to login completed');
     
