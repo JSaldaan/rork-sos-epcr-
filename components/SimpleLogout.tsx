@@ -19,117 +19,8 @@ export const SimpleLogout: React.FC<SimpleLogoutProps> = ({
   const [isLoggingOut, setIsLoggingOut] = useState<boolean>(false);
   const { currentSession } = usePCRStore();
 
-  // Emergency logout - bypasses all complex logic
-  const emergencyLogout = async () => {
-    console.log('🚨 EMERGENCY LOGOUT - Forcing immediate logout...');
-    
-    try {
-      // Step 1: Clear all storage immediately
-      await AsyncStorage.clear();
-      console.log('✅ All storage cleared');
-      
-      // Step 2: Reset store to completely empty state
-      const initialState = {
-        currentSession: null,
-        isAdmin: false,
-        isLoggingOut: false,
-        completedPCRs: [],
-        staffMembers: [],
-        patients: [],
-        encounters: [],
-        allVitals: [],
-        ecgs: [],
-        signatures: [],
-        attachments: [],
-        auditLogs: [],
-        callTimeInfo: {
-          timeOfCall: '',
-          date: '',
-          arrivalOnScene: '',
-          atPatientSide: '',
-          toDestination: '',
-          atDestination: '',
-        },
-        patientInfo: {
-          firstName: '',
-          lastName: '',
-          age: '',
-          gender: '',
-          phone: '',
-          mrn: '',
-        },
-        incidentInfo: {
-          location: '',
-          chiefComplaint: '',
-          history: '',
-          assessment: '',
-          treatmentGiven: '',
-          priority: '',
-          onArrivalInfo: '',
-          provisionalDiagnosis: '',
-        },
-        vitals: [],
-        transportInfo: {
-          destination: '',
-          customDestination: '',
-          mode: '',
-          unitNumber: '',
-          departureTime: '',
-          arrivalTime: '',
-          mileage: '',
-          primaryParamedic: '',
-          secondaryParamedic: '',
-          driver: '',
-          notes: '',
-        },
-        signatureInfo: {
-          nurseSignature: '',
-          nurseCorporationId: '',
-          nurseSignaturePaths: '',
-          doctorSignature: '',
-          doctorCorporationId: '',
-          doctorSignaturePaths: '',
-          othersSignature: '',
-          othersRole: '',
-          othersSignaturePaths: '',
-        },
-        refusalInfo: {
-          patientName: '',
-          dateOfRefusal: '',
-          timeOfRefusal: '',
-          reasonForRefusal: '',
-          risksExplained: false,
-          mentalCapacity: false,
-          patientSignature: '',
-          patientSignaturePaths: '',
-          witnessName: '',
-          witnessSignature: '',
-          witnessSignaturePaths: '',
-          paramedicName: '',
-          paramedicSignature: '',
-          paramedicSignaturePaths: '',
-          additionalNotes: '',
-        },
-      };
-      
-      usePCRStore.setState(initialState);
-      console.log('✅ Store state reset');
-      
-      // Step 3: Force navigation to login
-      router.replace('/login');
-      console.log('✅ Navigated to login');
-      
-      console.log('🎉 EMERGENCY LOGOUT COMPLETED!');
-      
-    } catch (error) {
-      console.error('❌ Emergency logout error:', error);
-      // Even if there's an error, force navigation
-      router.replace('/login');
-    }
-  };
-
   const performLogout = async () => {
-    console.log('🚀 Starting logout process...');
+    console.log('🚀 Starting clean logout process...');
     
     if (isLoggingOut) {
       console.log('Logout already in progress, skipping');
@@ -139,119 +30,28 @@ export const SimpleLogout: React.FC<SimpleLogoutProps> = ({
     setIsLoggingOut(true);
     
     try {
-      console.log('Step 1: Clearing all AsyncStorage data...');
-      // Clear all possible stored data
-      const keys = await AsyncStorage.getAllKeys();
-      console.log('Found storage keys:', keys);
-      await AsyncStorage.multiRemove(keys);
-      console.log('All AsyncStorage data cleared');
+      // Step 1: Clear all AsyncStorage data
+      console.log('Clearing all storage...');
+      await AsyncStorage.clear();
+      console.log('✅ Storage cleared');
       
-      console.log('Step 2: Resetting store state...');
-      // Get the store and call its logout method
+      // Step 2: Reset store state using the store's logout method
+      console.log('Calling store logout...');
       const store = usePCRStore.getState();
-      if (typeof store.staffLogout === 'function') {
+      if (store.staffLogout) {
         await store.staffLogout();
-        console.log('Store logout method called');
       }
+      console.log('✅ Store logout completed');
       
-      console.log('Step 3: Force reset store state...');
-      // Force complete state reset
-      usePCRStore.setState({
-        currentSession: null,
-        isAdmin: false,
-        isLoggingOut: false,
-        completedPCRs: [],
-        staffMembers: [],
-        patients: [],
-        encounters: [],
-        allVitals: [],
-        ecgs: [],
-        signatures: [],
-        attachments: [],
-        auditLogs: [],
-        callTimeInfo: {
-          timeOfCall: '',
-          date: '',
-          arrivalOnScene: '',
-          atPatientSide: '',
-          toDestination: '',
-          atDestination: '',
-        },
-        patientInfo: {
-          firstName: '',
-          lastName: '',
-          age: '',
-          gender: '',
-          phone: '',
-          mrn: '',
-        },
-        incidentInfo: {
-          location: '',
-          chiefComplaint: '',
-          history: '',
-          assessment: '',
-          treatmentGiven: '',
-          priority: '',
-          onArrivalInfo: '',
-          provisionalDiagnosis: '',
-        },
-        vitals: [],
-        transportInfo: {
-          destination: '',
-          customDestination: '',
-          mode: '',
-          unitNumber: '',
-          departureTime: '',
-          arrivalTime: '',
-          mileage: '',
-          primaryParamedic: '',
-          secondaryParamedic: '',
-          driver: '',
-          notes: '',
-        },
-        signatureInfo: {
-          nurseSignature: '',
-          nurseCorporationId: '',
-          nurseSignaturePaths: '',
-          doctorSignature: '',
-          doctorCorporationId: '',
-          doctorSignaturePaths: '',
-          othersSignature: '',
-          othersRole: '',
-          othersSignaturePaths: '',
-        },
-        refusalInfo: {
-          patientName: '',
-          dateOfRefusal: '',
-          timeOfRefusal: '',
-          reasonForRefusal: '',
-          risksExplained: false,
-          mentalCapacity: false,
-          patientSignature: '',
-          patientSignaturePaths: '',
-          witnessName: '',
-          witnessSignature: '',
-          witnessSignaturePaths: '',
-          paramedicName: '',
-          paramedicSignature: '',
-          paramedicSignaturePaths: '',
-          additionalNotes: '',
-        },
-      });
-      
-      console.log('Step 4: Waiting for state to settle...');
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      console.log('Step 5: Navigating to login screen...');
+      // Step 3: Navigate to login
+      console.log('Navigating to login...');
       router.replace('/login');
-      
-      console.log('✅ Logout completed successfully!');
+      console.log('✅ Navigation completed');
       
     } catch (error) {
       console.error('❌ Logout error:', error);
-      console.log('Falling back to emergency logout...');
-      // If normal logout fails, use emergency logout
-      await emergencyLogout();
+      // Force navigation even if there's an error
+      router.replace('/login');
     } finally {
       setIsLoggingOut(false);
     }
@@ -267,20 +67,16 @@ export const SimpleLogout: React.FC<SimpleLogoutProps> = ({
     
     Alert.alert(
       'Confirm Logout',
-      `Are you sure you want to logout ${userName}?\n\nAll unsaved data will be lost.`,
+      `Are you sure you want to logout ${userName}?`,
       [
         {
           text: 'Cancel',
           style: 'cancel',
-          onPress: () => console.log('Logout cancelled by user'),
         },
         {
           text: 'Logout',
           style: 'destructive',
-          onPress: () => {
-            console.log('User confirmed logout');
-            performLogout();
-          },
+          onPress: performLogout,
         },
       ],
       { cancelable: true }
