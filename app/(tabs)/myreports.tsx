@@ -58,8 +58,6 @@ const MyReportsScreen: React.FC = () => {
   const handleLogout = async () => {
     if (isLoggingOut) return;
     
-    setIsLoggingOut(true);
-    
     Alert.alert(
       'Logout',
       'Are you sure you want to logout?',
@@ -67,39 +65,38 @@ const MyReportsScreen: React.FC = () => {
         {
           text: 'Cancel',
           style: 'cancel',
-          onPress: () => setIsLoggingOut(false),
         },
         {
           text: 'Logout',
           style: 'destructive',
           onPress: async () => {
             try {
-              console.log('=== STARTING LOGOUT PROCESS ===');
+              console.log('=== STARTING LOGOUT PROCESS FROM MYREPORTS ===');
               console.log('Current session before logout:', currentSession);
               
-              // Call the logout function first
-              await staffLogout();
-              console.log('Staff logout completed');
+              // Use the comprehensive logout utility
+              const { performCompleteLogout } = await import('@/utils/auth');
+              const result = await performCompleteLogout();
               
-              // Clear local state
-              setMyPCRs([]);
-              setSelectedPCR(null);
-              setShowDetails(false);
-              
-              // Navigate to login screen
-              router.replace('/login');
-              
-              // Show success message after navigation
-              setTimeout(() => {
-                Alert.alert('Success', 'You have been logged out successfully');
-              }, 500);
+              if (result.success) {
+                console.log('✅ Complete logout successful from MyReports');
+                // Clear local state
+                setMyPCRs([]);
+                setSelectedPCR(null);
+                setShowDetails(false);
+              } else {
+                console.error('❌ Complete logout failed:', result.error);
+                Alert.alert(
+                  'Logout Error', 
+                  'There was an issue logging out completely. You may need to restart the app.',
+                  [{ text: 'OK' }]
+                );
+              }
               
               console.log('=== LOGOUT PROCESS COMPLETED ===');
             } catch (error) {
               console.error('Logout error:', error);
               Alert.alert('Error', 'Failed to logout. Please try again.');
-            } finally {
-              setIsLoggingOut(false);
             }
           },
         },

@@ -32,7 +32,14 @@ export async function performCompleteLogout() {
     // Step 2: Set logging out flag to prevent multiple calls
     usePCRStore.setState({ isLoggingOut: true });
     
-    // Step 3: Clear all AsyncStorage keys (more comprehensive)
+    // Step 3: IMMEDIATELY clear authentication state to prevent navigation guard conflicts
+    console.log('Clearing authentication state immediately...');
+    usePCRStore.setState({
+      currentSession: null,
+      isAdmin: false,
+    });
+    
+    // Step 4: Clear all AsyncStorage keys (more comprehensive)
     const allKeys = await AsyncStorage.getAllKeys();
     const authRelatedKeys = allKeys.filter(key => 
       key.includes('session') || 
@@ -50,11 +57,11 @@ export async function performCompleteLogout() {
       console.log('Cleared AsyncStorage keys:', authRelatedKeys);
     }
     
-    // Step 4: Call store logout (handles state reset)
+    // Step 5: Call store logout (handles remaining state reset)
     await state.staffLogout();
     console.log('Store logout completed');
     
-    // Step 5: Force complete state reset to ensure clean logout
+    // Step 6: Force complete state reset to ensure clean logout
     usePCRStore.setState({
       currentSession: null,
       isAdmin: false,
@@ -140,7 +147,7 @@ export async function performCompleteLogout() {
       },
     });
     
-    // Step 6: Verify logout was successful
+    // Step 7: Verify logout was successful
     const newState = usePCRStore.getState();
     console.log('Post-logout state verification:', {
       currentSession: newState.currentSession,
@@ -148,7 +155,10 @@ export async function performCompleteLogout() {
       isLoggingOut: newState.isLoggingOut
     });
     
-    // Step 7: Navigate to login with replace (prevents back navigation)
+    // Step 8: Wait a moment to ensure state is fully updated before navigation
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    // Step 9: Navigate to login with replace (prevents back navigation)
     console.log('Navigating to login screen...');
     router.replace('/login');
     console.log('Navigation to login completed');
@@ -163,6 +173,8 @@ export async function performCompleteLogout() {
         isAdmin: false,
         isLoggingOut: false
       });
+      // Wait before navigation to ensure state is cleared
+      await new Promise(resolve => setTimeout(resolve, 100));
       router.replace('/login');
     } catch (cleanupError) {
       console.error('Emergency cleanup failed:', cleanupError);
