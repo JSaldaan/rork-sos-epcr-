@@ -227,3 +227,5 @@ const styles = StyleSheet.create({
     left: 20,
   },
 });
+
+export default LogoutButton;
