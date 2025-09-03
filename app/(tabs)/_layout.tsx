@@ -18,11 +18,15 @@ export default function TabLayout() {
   const isSupervisorOrAdmin = isAdminUser || currentSession?.role === 'supervisor';
   const isStaffUser = !isAdminUser && !isSupervisorOrAdmin;
   
-  const HeaderLogoutButton = () => (
-    <EmergencyLogoutButton 
-      style={styles.headerLogoutButton}
-    />
-  );
+  const HeaderLogoutButton = () => {
+    console.log('🔧 HeaderLogoutButton rendering, currentSession:', currentSession);
+    return (
+      <EmergencyLogoutButton 
+        style={styles.headerLogoutButton}
+        testID="header-logout-button"
+      />
+    );
+  };
   
   // Admin users only see admin tab
   if (isAdminUser) {

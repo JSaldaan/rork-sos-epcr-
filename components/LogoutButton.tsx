@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { TouchableOpacity, Text, StyleSheet, Alert, Platform } from 'react-native';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -15,39 +15,62 @@ export const EmergencyLogoutButton: React.FC<EmergencyLogoutButtonProps> = ({
 }) => {
   const [isLoggingOut, setIsLoggingOut] = useState<boolean>(false);
   const { currentSession, staffLogout } = usePCRStore();
+  
+  // Debug logging
+  console.log('🔧 EmergencyLogoutButton render - currentSession:', currentSession);
+  console.log('🔧 EmergencyLogoutButton render - staffLogout available:', !!staffLogout);
+  
+  // Monitor session changes
+  useEffect(() => {
+    console.log('🔧 EmergencyLogoutButton: Session changed to:', currentSession);
+  }, [currentSession]);
 
   const performLogout = async () => {
-    if (isLoggingOut) return;
+    if (isLoggingOut) {
+      console.log('🚨 Logout already in progress, skipping');
+      return;
+    }
     
     setIsLoggingOut(true);
-    console.log('🚨 Starting emergency logout...');
+    console.log('🚨 =========================');
+    console.log('🚨 STARTING EMERGENCY LOGOUT');
+    console.log('🚨 =========================');
+    console.log('🚨 Current session before logout:', currentSession);
     
     try {
-      // Use the store's logout function for consistency
-      await staffLogout();
-      console.log('✅ Store logout completed');
+      // Step 1: Use the store's logout function first
+      if (staffLogout && typeof staffLogout === 'function') {
+        console.log('🚨 Step 1: Calling store staffLogout...');
+        await staffLogout();
+        console.log('✅ Step 1: Store logout completed');
+      } else {
+        console.log('⚠️ Step 1: staffLogout function not available, skipping');
+      }
       
-      // Additional cleanup for emergency logout
+      // Step 2: Clear all storage
+      console.log('🚨 Step 2: Clearing all storage...');
       await AsyncStorage.clear();
-      console.log('✅ AsyncStorage cleared');
+      console.log('✅ Step 2: AsyncStorage cleared');
       
       // Clear web storage if on web
       if (Platform.OS === 'web') {
         try {
           if (typeof localStorage !== 'undefined') {
             localStorage.clear();
+            console.log('✅ Step 2: localStorage cleared');
           }
           if (typeof sessionStorage !== 'undefined') {
             sessionStorage.clear();
+            console.log('✅ Step 2: sessionStorage cleared');
           }
-          console.log('✅ Web storage cleared');
         } catch (webError) {
-          console.log('⚠️ Web storage clear failed:', webError);
+          console.log('⚠️ Step 2: Web storage clear failed:', webError);
         }
       }
       
-      // Force reset store state
-      usePCRStore.setState({
+      // Step 3: Force reset store state
+      console.log('🚨 Step 3: Force resetting store state...');
+      const resetState = {
         currentSession: null,
         isAdmin: false,
         completedPCRs: [],
@@ -59,40 +82,74 @@ export const EmergencyLogoutButton: React.FC<EmergencyLogoutButtonProps> = ({
         signatures: [],
         attachments: [],
         auditLogs: [],
-      });
-      console.log('✅ Store state force reset');
+        isLoggingOut: false,
+      };
+      usePCRStore.setState(resetState);
+      console.log('✅ Step 3: Store state force reset');
       
-      // Navigate to login with replace to clear navigation stack
+      // Step 4: Verify state is cleared
+      const currentState = usePCRStore.getState();
+      console.log('🚨 Step 4: Verifying state after reset...');
+      console.log('🚨 Current session after reset:', currentState.currentSession);
+      console.log('🚨 Is admin after reset:', currentState.isAdmin);
+      
+      // Step 5: Small delay to ensure state propagation
+      console.log('🚨 Step 5: Waiting for state propagation...');
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+      // Step 6: Navigate to login
+      console.log('🚨 Step 6: Navigating to login...');
       router.replace('/login');
-      console.log('✅ Navigated to login');
+      console.log('✅ Step 6: Navigation completed');
+      
+      // Step 7: Final verification
+      setTimeout(() => {
+        const finalState = usePCRStore.getState();
+        console.log('🚨 Step 7: Final state verification...');
+        console.log('🚨 Final session state:', finalState.currentSession);
+        console.log('🚨 Final admin state:', finalState.isAdmin);
+        console.log('✅ EMERGENCY LOGOUT COMPLETED SUCCESSFULLY');
+      }, 500);
       
     } catch (error) {
       console.error('❌ Emergency logout error:', error);
-      // Force navigation even if there's an error
+      console.log('🚨 Attempting emergency fallback...');
+      
+      // Emergency fallback
       try {
         await AsyncStorage.clear();
         usePCRStore.setState({
           currentSession: null,
           isAdmin: false,
-          completedPCRs: [],
-          staffMembers: [],
+          isLoggingOut: false,
         });
         router.replace('/login');
-      } catch (forceError) {
-        console.error('❌ Force logout error:', forceError);
+        console.log('✅ Emergency fallback completed');
+      } catch (fallbackError) {
+        console.error('❌ Emergency fallback failed:', fallbackError);
         // Last resort - just navigate
         router.replace('/login');
+        console.log('⚠️ Last resort navigation executed');
       }
     } finally {
       setIsLoggingOut(false);
+      console.log('🚨 =========================');
+      console.log('🚨 EMERGENCY LOGOUT FINISHED');
+      console.log('🚨 =========================');
     }
   };
 
   const handleEmergencyLogout = () => {
-    if (isLoggingOut) return;
+    if (isLoggingOut) {
+      console.log('🚨 Logout already in progress, ignoring tap');
+      return;
+    }
     
     const userName = currentSession?.name || 'User';
     const userRole = currentSession?.role || 'Unknown';
+    
+    console.log('🚨 Emergency logout button pressed');
+    console.log('🚨 Current session:', { userName, userRole });
     
     Alert.alert(
       '🚨 Emergency Logout',
@@ -101,11 +158,15 @@ export const EmergencyLogoutButton: React.FC<EmergencyLogoutButtonProps> = ({
         {
           text: 'Cancel',
           style: 'cancel',
+          onPress: () => console.log('🚨 Logout cancelled by user')
         },
         {
           text: 'Emergency Logout',
           style: 'destructive',
-          onPress: performLogout,
+          onPress: () => {
+            console.log('🚨 User confirmed logout');
+            performLogout();
+          },
         },
       ],
       { cancelable: true }
@@ -114,8 +175,11 @@ export const EmergencyLogoutButton: React.FC<EmergencyLogoutButtonProps> = ({
 
   // Always show the button if there's a session, even during logout
   if (!currentSession) {
+    console.log('🔧 EmergencyLogoutButton: No session, not rendering button');
     return null;
   }
+  
+  console.log('🔧 EmergencyLogoutButton: Rendering button for session:', currentSession.name, currentSession.role);
 
   return (
     <TouchableOpacity

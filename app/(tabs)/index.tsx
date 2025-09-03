@@ -14,7 +14,7 @@ import {
 import { Clock, MapPin, User, ChevronDown, Shield } from "lucide-react-native";
 import { usePCRStore } from "@/store/pcrStore";
 import { router } from "expo-router";
-import { EmergencyLogoutButton } from "@/components/LogoutButton";
+import { EmergencyLogoutButton, DebugLogoutButton } from "@/components/LogoutButton";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -86,6 +86,8 @@ export default function NewPCRScreen() {
     submitPCR,
     currentSession,
   } = usePCRStore();
+  
+  console.log('🔧 NewPCRScreen render - currentSession:', currentSession);
   const [showDiagnosisModal, setShowDiagnosisModal] = useState<boolean>(false);
   const [showCustomDiagnosisInput, setShowCustomDiagnosisInput] = useState<boolean>(false);
   const [customDiagnosis, setCustomDiagnosis] = useState<string>("");
@@ -626,15 +628,18 @@ export default function NewPCRScreen() {
 
       <View style={styles.bottomPadding} />
       
-      {/* Emergency Logout Button */}
-      <EmergencyLogoutButton 
-        style={{
-          position: 'absolute',
-          top: 50,
-          right: 20,
-          zIndex: 1000,
-        }}
-      />
+      {/* Test Logout Buttons */}
+      <View style={{
+        position: 'absolute',
+        top: 50,
+        right: 20,
+        zIndex: 1000,
+        flexDirection: 'row',
+        gap: 10,
+      }}>
+        <DebugLogoutButton />
+        <EmergencyLogoutButton />
+      </View>
     </ScrollView>
   );
 }
