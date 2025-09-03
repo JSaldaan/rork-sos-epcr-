@@ -13,6 +13,7 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import { usePCRStore, CompletedPCR } from '../../store/pcrStore';
 import { Copy, Eye, FileText, Clock, User, Calendar, LogOut } from 'lucide-react-native';
+import { EmergencyLogoutButton } from '@/components/LogoutButton';
 import { useRouter } from 'expo-router';
 
 const MyReportsScreen: React.FC = () => {
@@ -28,7 +29,7 @@ const MyReportsScreen: React.FC = () => {
   const [showDetails, setShowDetails] = useState<boolean>(false);
   const [myPCRs, setMyPCRs] = useState<CompletedPCR[]>([]);
   const [refreshKey, setRefreshKey] = useState<number>(0);
-  const [isLoggingOut, setIsLoggingOut] = useState<boolean>(false);
+
 
   // Load PCRs when screen is focused
   useFocusEffect(
@@ -55,55 +56,7 @@ const MyReportsScreen: React.FC = () => {
     }, [currentSession, loadCompletedPCRs, getMySubmittedPCRs])
   );
 
-  const handleLogout = async () => {
-    if (isLoggingOut) return;
-    
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              console.log('=== STARTING LOGOUT PROCESS FROM MYREPORTS ===');
-              console.log('Current session before logout:', currentSession);
-              
-              // Use the comprehensive logout utility
-              const { performCompleteLogout } = await import('@/utils/auth');
-              const result = await performCompleteLogout();
-              
-              if (result.success) {
-                console.log('✅ Complete logout successful from MyReports');
-                // Clear local state
-                setMyPCRs([]);
-                setSelectedPCR(null);
-                setShowDetails(false);
-              } else {
-                console.error('❌ Complete logout failed:', result.error);
-                Alert.alert(
-                  'Logout Error', 
-                  'There was an issue logging out completely. You may need to restart the app.',
-                  [{ text: 'OK' }]
-                );
-              }
-              
-              console.log('=== LOGOUT PROCESS COMPLETED ===');
-            } catch (error) {
-              console.error('Logout error:', error);
-              Alert.alert('Error', 'Failed to logout. Please try again.');
-            }
-          },
-        },
-      ],
-      { cancelable: true }
-    );
-  };
+
 
   const formatPCRForCopy = (pcr: CompletedPCR): string => {
     return `ELECTRONIC PATIENT CARE REPORT\n` +
@@ -475,14 +428,7 @@ const MyReportsScreen: React.FC = () => {
             <Text style={styles.statsNumber}>{myPCRs.length}</Text>
             <Text style={styles.statsLabel}>Reports</Text>
           </View>
-          <Pressable
-            style={[styles.logoutButton, isLoggingOut && styles.logoutButtonDisabled]}
-            onPress={handleLogout}
-            disabled={isLoggingOut}
-          >
-            <LogOut size={20} color="#fff" />
-            <Text style={styles.logoutButtonText}>Logout</Text>
-          </Pressable>
+          <EmergencyLogoutButton style={styles.logoutButton} />
         </View>
       </View>
 

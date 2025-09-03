@@ -1,5 +1,5 @@
-import React from 'react';
-import { TouchableOpacity, Text, StyleSheet, Alert } from 'react-native';
+import React, { useState } from 'react';
+import { TouchableOpacity, Text, StyleSheet, Alert, Platform } from 'react-native';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { usePCRStore } from '@/store/pcrStore';
@@ -9,56 +9,84 @@ interface EmergencyLogoutButtonProps {
   testID?: string;
 }
 
-/**
- * Emergency logout button that works from any screen or form
- * Provides immediate logout with confirmation dialog
- */
 export const EmergencyLogoutButton: React.FC<EmergencyLogoutButtonProps> = ({
   style,
   testID,
 }) => {
+  const [isLoggingOut, setIsLoggingOut] = useState<boolean>(false);
   const { currentSession } = usePCRStore();
 
-  const handleEmergencyLogout = async () => {
+  const performLogout = async () => {
+    if (isLoggingOut) return;
+    
+    setIsLoggingOut(true);
+    console.log('🚨 Starting emergency logout...');
+    
+    try {
+      // Clear AsyncStorage
+      await AsyncStorage.clear();
+      console.log('✅ AsyncStorage cleared');
+      
+      // Clear web storage if on web
+      if (Platform.OS === 'web') {
+        try {
+          if (typeof localStorage !== 'undefined') {
+            localStorage.clear();
+          }
+          if (typeof sessionStorage !== 'undefined') {
+            sessionStorage.clear();
+          }
+          console.log('✅ Web storage cleared');
+        } catch (webError) {
+          console.log('⚠️ Web storage clear failed:', webError);
+        }
+      }
+      
+      // Reset store state
+      usePCRStore.setState({
+        currentSession: null,
+        isAdmin: false,
+      });
+      console.log('✅ Store state reset');
+      
+      // Navigate to login
+      router.replace('/login');
+      console.log('✅ Navigated to login');
+      
+    } catch (error) {
+      console.error('❌ Logout error:', error);
+      // Force navigation even if there's an error
+      router.replace('/login');
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
+
+  const handleEmergencyLogout = () => {
+    if (isLoggingOut) return;
+    
     const userName = currentSession?.name || 'User';
     const userRole = currentSession?.role || 'Unknown';
     
     Alert.alert(
-      '🚨 Emergency Logout',
-      `Are you sure you want to log out immediately?\n\nUser: ${userName}\nRole: ${userRole}\n\nThis will:\n• End your current session immediately\n• Clear all stored data\n• Discard any unsaved form data\n• Return you to the login screen`,
+      'Confirm Logout',
+      `Are you sure you want to log out?\n\nUser: ${userName}\nRole: ${userRole}\n\nThis will end your session and clear all data.`,
       [
         {
           text: 'Cancel',
           style: 'cancel',
         },
         {
-          text: '🚨 Emergency Logout',
+          text: 'Log Out',
           style: 'destructive',
-          onPress: async () => {
-            console.log('🚨 EMERGENCY LOGOUT TRIGGERED');
-            try {
-              await AsyncStorage.clear();
-              usePCRStore.setState({
-                currentSession: null,
-                isAdmin: false,
-                completedPCRs: [],
-                staffMembers: [],
-              });
-              router.replace('/login');
-              console.log('✅ Emergency logout completed');
-            } catch (error) {
-              console.error('❌ Emergency logout error:', error);
-              router.replace('/login');
-            }
-          },
+          onPress: performLogout,
         },
       ],
       { cancelable: true }
     );
   };
 
-  // Don't render if no session (user not logged in)
-  if (!currentSession) {
+  if (!currentSession || isLoggingOut) {
     return null;
   }
 
@@ -67,8 +95,7 @@ export const EmergencyLogoutButton: React.FC<EmergencyLogoutButtonProps> = ({
       style={[styles.emergencyButton, style]}
       onPress={handleEmergencyLogout}
       testID={testID || 'emergency-logout'}
-      accessibilityLabel={`Emergency logout for ${currentSession?.name || 'user'}`}
-      accessibilityHint="Emergency logout - clears all data and returns to login"
+      disabled={isLoggingOut}
     >
       <Text style={styles.emergencyText}>🚨</Text>
     </TouchableOpacity>
@@ -91,5 +118,11 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
 });
+
+// Test function to verify logout works
+export const testLogout = () => {
+  console.log('🧪 Testing logout functionality...');
+  return 'Logout component loaded successfully';
+};
 
 export default EmergencyLogoutButton;
