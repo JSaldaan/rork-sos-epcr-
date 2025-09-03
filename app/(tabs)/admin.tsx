@@ -50,7 +50,7 @@ import {
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { OfflineManagementScreen } from '@/components/OfflineManagementScreen';
-import { performCompleteLogout } from '@/utils/auth';
+import { SimpleLogout } from '@/components/SimpleLogout';
 
 type TabType = 'vault' | 'staff' | 'audit' | 'reports' | 'offline';
 type VaultSection = 'patients' | 'encounters' | 'vitals' | 'ecgs' | 'signatures' | 'attachments' | 'pcrs';
@@ -1192,33 +1192,7 @@ export default function AdminScreen() {
     }
   };
 
-  const handleLogout = async () => {
-    Alert.alert(
-      'Confirm Logout',
-      'Are you sure you want to logout? All unsaved data will be lost.',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              console.log('Admin logout initiated');
-              await addAuditLog('ADMIN_LOGOUT', 'System', currentSession?.corporationId || 'UNKNOWN', `Admin ${currentSession?.name || 'Unknown'} logged out`);
-              await performCompleteLogout();
-            } catch (error) {
-              console.error('Logout error:', error);
-              // Force logout even if audit log fails
-              await performCompleteLogout();
-            }
-          },
-        },
-      ]
-    );
-  };
+
 
   const renderVaultSection = () => {
     const data = getVaultData();
@@ -1578,15 +1552,7 @@ export default function AdminScreen() {
           </Text>
         </TouchableOpacity>
         
-        <TouchableOpacity
-          style={styles.logoutTab}
-          onPress={handleLogout}
-        >
-          <LogOut size={20} color="#FF3B30" />
-          <Text style={styles.logoutTabText}>
-            Logout
-          </Text>
-        </TouchableOpacity>
+        <SimpleLogout variant="tab" iconSize={20} />
       </View>
 
       {isLoading ? (
@@ -2325,19 +2291,5 @@ const styles = StyleSheet.create({
     color: '#d32f2f',
     fontStyle: 'italic',
   },
-  logoutTab: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    gap: 6,
-    borderLeftWidth: 1,
-    borderLeftColor: '#E5E5E5',
-  },
-  logoutTabText: {
-    fontSize: 14,
-    color: '#FF3B30',
-    fontWeight: '600',
-  },
+
 });
