@@ -29,156 +29,22 @@ export async function performCompleteLogout() {
     const sessionInfo = state.currentSession;
     console.log('Logging out user:', sessionInfo?.name || 'Unknown');
     
-    // Step 2: Set logging out flag to prevent multiple calls
-    usePCRStore.setState({ isLoggingOut: true });
+    // Step 2: Clear all AsyncStorage keys
+    const keysToRemove = Object.values(AUTH_KEYS);
+    await AsyncStorage.multiRemove(keysToRemove);
+    console.log('Cleared AsyncStorage keys:', keysToRemove);
     
-    // Step 3: IMMEDIATELY clear authentication state to prevent navigation guard conflicts
-    console.log('Clearing authentication state immediately...');
-    usePCRStore.setState({
-      currentSession: null,
-      isAdmin: false,
-    });
-    
-    // Step 4: Clear all AsyncStorage keys (more comprehensive)
-    const allKeys = await AsyncStorage.getAllKeys();
-    const authRelatedKeys = allKeys.filter(key => 
-      key.includes('session') || 
-      key.includes('token') || 
-      key.includes('auth') ||
-      key.includes('user') ||
-      key.includes('PCR') ||
-      key.includes('draft') ||
-      key.includes('admin') ||
-      key.includes('staff')
-    );
-    
-    if (authRelatedKeys.length > 0) {
-      await AsyncStorage.multiRemove(authRelatedKeys);
-      console.log('Cleared AsyncStorage keys:', authRelatedKeys);
-    }
-    
-    // Step 5: Call store logout (handles remaining state reset)
+    // Step 3: Call store logout (handles state reset)
     await state.staffLogout();
     console.log('Store logout completed');
     
-    // Step 6: Force complete state reset to ensure clean logout
-    usePCRStore.setState({
-      currentSession: null,
-      isAdmin: false,
-      isLoggingOut: false,
-      completedPCRs: [],
-      staffMembers: [],
-      // Reset admin data
-      patients: [],
-      encounters: [],
-      allVitals: [],
-      ecgs: [],
-      signatures: [],
-      attachments: [],
-      auditLogs: [],
-      // Reset PCR data to initial values
-      callTimeInfo: {
-        timeOfCall: '',
-        date: '',
-        arrivalOnScene: '',
-        atPatientSide: '',
-        toDestination: '',
-        atDestination: '',
-      },
-      patientInfo: {
-        firstName: '',
-        lastName: '',
-        age: '',
-        gender: '',
-        phone: '',
-        mrn: '',
-      },
-      incidentInfo: {
-        location: '',
-        chiefComplaint: '',
-        history: '',
-        assessment: '',
-        treatmentGiven: '',
-        priority: '',
-        onArrivalInfo: '',
-        provisionalDiagnosis: '',
-      },
-      vitals: [],
-      transportInfo: {
-        destination: '',
-        customDestination: '',
-        mode: '',
-        unitNumber: '',
-        departureTime: '',
-        arrivalTime: '',
-        mileage: '',
-        primaryParamedic: '',
-        secondaryParamedic: '',
-        driver: '',
-        notes: '',
-      },
-      signatureInfo: {
-        nurseSignature: '',
-        nurseCorporationId: '',
-        nurseSignaturePaths: '',
-        doctorSignature: '',
-        doctorCorporationId: '',
-        doctorSignaturePaths: '',
-        othersSignature: '',
-        othersRole: '',
-        othersSignaturePaths: '',
-      },
-      refusalInfo: {
-        patientName: '',
-        dateOfRefusal: '',
-        timeOfRefusal: '',
-        reasonForRefusal: '',
-        risksExplained: false,
-        mentalCapacity: false,
-        patientSignature: '',
-        patientSignaturePaths: '',
-        witnessName: '',
-        witnessSignature: '',
-        witnessSignaturePaths: '',
-        paramedicName: '',
-        paramedicSignature: '',
-        paramedicSignaturePaths: '',
-        additionalNotes: '',
-      },
-    });
-    
-    // Step 7: Verify logout was successful
-    const newState = usePCRStore.getState();
-    console.log('Post-logout state verification:', {
-      currentSession: newState.currentSession,
-      isAdmin: newState.isAdmin,
-      isLoggingOut: newState.isLoggingOut
-    });
-    
-    // Step 8: Wait a moment to ensure state is fully updated before navigation
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
-    // Step 9: Navigate to login with replace (prevents back navigation)
-    console.log('Navigating to login screen...');
+    // Step 4: Navigate to login with replace (prevents back navigation)
     router.replace('/login');
     console.log('Navigation to login completed');
     
     return { success: true };
   } catch (error) {
     console.error('Complete logout failed:', error);
-    // Force cleanup even if error occurred
-    try {
-      usePCRStore.setState({
-        currentSession: null,
-        isAdmin: false,
-        isLoggingOut: false
-      });
-      // Wait before navigation to ensure state is cleared
-      await new Promise(resolve => setTimeout(resolve, 100));
-      router.replace('/login');
-    } catch (cleanupError) {
-      console.error('Emergency cleanup failed:', cleanupError);
-    }
     return { success: false, error };
   } finally {
     console.log('=== END COMPLETE LOGOUT FLOW ===');

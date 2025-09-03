@@ -9,14 +9,10 @@ import {
   Alert,
   Modal,
   FlatList,
-  Dimensions,
 } from "react-native";
 import { Clock, MapPin, User, ChevronDown, Shield } from "lucide-react-native";
 import { usePCRStore } from "@/store/pcrStore";
 import { router } from "expo-router";
-import { EmergencyLogoutButton, DebugLogoutButton } from "@/components/LogoutButton";
-
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 const priorityOptions = ["Emergency", "Urgent", "Non-Urgent"] as const;
 
@@ -86,8 +82,6 @@ export default function NewPCRScreen() {
     submitPCR,
     currentSession,
   } = usePCRStore();
-  
-  console.log('🔧 NewPCRScreen render - currentSession:', currentSession);
   const [showDiagnosisModal, setShowDiagnosisModal] = useState<boolean>(false);
   const [showCustomDiagnosisInput, setShowCustomDiagnosisInput] = useState<boolean>(false);
   const [customDiagnosis, setCustomDiagnosis] = useState<string>("");
@@ -627,19 +621,6 @@ export default function NewPCRScreen() {
       </TouchableOpacity>
 
       <View style={styles.bottomPadding} />
-      
-      {/* Test Logout Buttons */}
-      <View style={{
-        position: 'absolute',
-        top: 50,
-        right: 20,
-        zIndex: 1000,
-        flexDirection: 'row',
-        gap: 10,
-      }}>
-        <DebugLogoutButton />
-        <EmergencyLogoutButton />
-      </View>
     </ScrollView>
   );
 }
@@ -651,8 +632,8 @@ const styles = StyleSheet.create({
   },
   section: {
     backgroundColor: "#fff",
-    margin: Math.max(12, screenWidth * 0.03),
-    padding: Math.max(16, screenWidth * 0.04),
+    margin: 16,
+    padding: 20,
     borderRadius: 12,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -663,33 +644,33 @@ const styles = StyleSheet.create({
   sectionHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: Math.max(16, screenHeight * 0.02),
+    marginBottom: 20,
   },
   sectionTitle: {
-    fontSize: Math.max(16, Math.min(18, screenWidth * 0.045)),
+    fontSize: 18,
     fontWeight: "600",
     color: "#333",
     marginLeft: 8,
   },
   label: {
-    fontSize: Math.max(12, Math.min(14, screenWidth * 0.035)),
+    fontSize: 14,
     fontWeight: "500",
     color: "#333",
-    marginBottom: Math.max(6, screenHeight * 0.01),
+    marginBottom: 8,
   },
   input: {
     borderWidth: 1,
     borderColor: "#E0E0E0",
     borderRadius: 8,
-    padding: Math.max(10, screenWidth * 0.03),
-    fontSize: Math.max(14, Math.min(16, screenWidth * 0.04)),
+    padding: 12,
+    fontSize: 16,
     backgroundColor: "#fff",
-    marginBottom: Math.max(12, screenHeight * 0.015),
-    minHeight: Math.max(44, screenHeight * 0.055),
+    marginBottom: 16,
+    minHeight: 44,
     color: "#333",
   },
   textArea: {
-    height: Math.max(80, screenHeight * 0.1),
+    height: 80,
     textAlignVertical: "top",
   },
   row: {

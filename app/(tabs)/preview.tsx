@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { usePCRStore } from "@/store/pcrStore";
-import { Send, FileText, AlertCircle, Save, CheckCircle } from "lucide-react-native";
+import { Send, FileText, AlertCircle } from "lucide-react-native";
 import { TEAMS_CONFIG, sendToTeams as sendToTeamsAPI, testLogicAppConnection, testMinimalConnection } from "@/constants/teamsConfig";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -24,14 +24,11 @@ export default function PreviewScreen() {
     refusalInfo,
     resetPCR,
     submitPCR,
-    saveCurrentPCRDraft,
-    currentSession,
   } = usePCRStore();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
+
   const [lastSubmissionResult, setLastSubmissionResult] = useState<any>(null);
-  const [lastSaveTime, setLastSaveTime] = useState<string | null>(null);
 
   const sendToTeams = async (reportData: any) => {
     // Format the data for Teams
@@ -72,27 +69,7 @@ export default function PreviewScreen() {
     return result;
   };
 
-  const handleSaveDraft = async () => {
-    setIsSaving(true);
-    try {
-      await saveCurrentPCRDraft();
-      setLastSaveTime(new Date().toISOString());
-      Alert.alert(
-        "💾 Draft Saved",
-        "Your Patient Care Report has been saved as a draft.\n\nYou can continue editing later or submit when ready.",
-        [{ text: "OK" }]
-      );
-    } catch (error) {
-      console.error('Error saving draft:', error);
-      Alert.alert(
-        "❌ Save Failed",
-        "Failed to save draft. Please try again.",
-        [{ text: "OK" }]
-      );
-    } finally {
-      setIsSaving(false);
-    }
-  };
+
 
   const handleSubmit = async () => {
     Alert.alert(
@@ -137,8 +114,7 @@ export default function PreviewScreen() {
               
               await submitPCR();
               console.log('PCR submitted to admin panel successfully');
-              console.log('PCR should now be available in My Reports and Admin Panel');
-              console.log('Current session during submission:', currentSession);
+              console.log('PCR should now be available in My Files and Admin Panel');
               console.log('=== PCR SUBMISSION COMPLETE ===');
               
               // Clear the draft since we're submitting
@@ -157,18 +133,11 @@ export default function PreviewScreen() {
 
               if (teamsResult.success) {
                 Alert.alert(
-                  "✅ Report Submitted Successfully!",
-                  `Your Patient Care Report has been submitted successfully!\n\n📋 Saved to Admin Panel\n📧 Sent to Microsoft Teams\n🔄 Logic App Response: ${teamsResult.details?.status || 'OK'}\n\n✨ You can now view your submitted report in the "My Reports" tab.`,
+                  "Success",
+                  `Report submitted successfully!\n\nSubmitted to Admin Panel and sent to Teams.\n\nLogic App Response: ${teamsResult.details?.status || 'OK'}\n\nYou can now view your submitted report in the "My Reports" tab.`,
                   [
                     {
-                      text: "View My Reports",
-                      onPress: async () => {
-                        await resetPCR();
-                        // Note: Navigation would be handled by the tab system
-                      },
-                    },
-                    {
-                      text: "Create New Report",
+                      text: "OK",
                       onPress: async () => {
                         await resetPCR();
                       },
@@ -187,17 +156,15 @@ export default function PreviewScreen() {
                 console.error('========================\n');
                 
                 Alert.alert(
-                  "⚠️ Partial Success",
-                  `✅ PCR saved to Admin Panel successfully\n❌ Failed to send to Microsoft Teams\n\n${teamsResult.error || 'Teams integration failed'}${errorDetails}\n\n📋 Your report is safely saved and can be accessed in the "My Reports" tab.\n\nWould you like to continue?`,
+                  "Teams Submission Error",
+                  `PCR submitted to Admin Panel but failed to send to Teams.\n\n${teamsResult.error || 'Failed to send to Teams'}${errorDetails}\n\nThe report is saved in Admin Panel and can be accessed in the "My Reports" tab.\n\nWould you like to continue?`,
                   [
                     {
-                      text: "View My Reports",
-                      onPress: async () => {
-                        await resetPCR();
-                      },
+                      text: "Cancel",
+                      style: "cancel",
                     },
                     {
-                      text: "Create New Report",
+                      text: "Continue",
                       onPress: async () => {
                         await resetPCR();
                       },
@@ -209,12 +176,9 @@ export default function PreviewScreen() {
               setIsSubmitting(false);
               console.error('Admin submission error:', localError);
               Alert.alert(
-                "❌ Submission Failed",
-                "Failed to submit PCR to Admin Panel. Your data is still saved as a draft.\n\nPlease check your connection and try again.",
-                [
-                  { text: "Try Again", onPress: () => handleSubmit() },
-                  { text: "Save Draft", onPress: () => handleSaveDraft() }
-                ]
+                "Submission Error",
+                "Failed to submit PCR to Admin Panel. Please try again.",
+                [{ text: "OK" }]
               );
             }
           },
@@ -411,52 +375,24 @@ export default function PreviewScreen() {
       </ScrollView>
 
       <View style={styles.submitContainer}>
-        {lastSaveTime && (
-          <View style={styles.saveStatus}>
-            <CheckCircle size={16} color="#4CAF50" />
-            <Text style={styles.saveStatusText}>
-              Draft saved at {new Date(lastSaveTime).toLocaleTimeString()}
-            </Text>
-          </View>
-        )}
-        
-        <View style={styles.buttonRow}>
-          <TouchableOpacity 
-            style={[styles.saveDraftButton, isSaving && styles.buttonDisabled]} 
-            onPress={handleSaveDraft}
-            disabled={isSaving || isSubmitting}
-          >
-            {isSaving ? (
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <ActivityIndicator size="small" color="#0066CC" />
-                <Text style={[styles.saveDraftButtonText, { marginLeft: 8 }]}>Saving...</Text>
-              </View>
-            ) : (
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Save size={18} color="#0066CC" />
-                <Text style={[styles.saveDraftButtonText, { marginLeft: 8 }]}>Save Draft</Text>
-              </View>
-            )}
-          </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={[styles.submitButton, (isSubmitting || isSaving) && styles.buttonDisabled]} 
-            onPress={handleSubmit}
-            disabled={isSubmitting || isSaving}
-          >
-            {isSubmitting ? (
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <ActivityIndicator size="small" color="#fff" />
-                <Text style={[styles.submitButtonText, { marginLeft: 8 }]}>Submitting...</Text>
-              </View>
-            ) : (
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Send size={18} color="#fff" />
-                <Text style={[styles.submitButtonText, { marginLeft: 8 }]}>Submit Report</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity 
+          style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]} 
+          onPress={handleSubmit}
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <ActivityIndicator size="small" color="#fff" />
+              <Text style={[styles.submitButtonText, { marginLeft: 8 }]}>Sending to Teams...</Text>
+            </View>
+          ) : (
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Send size={20} color="#fff" />
+              <Text style={[styles.submitButtonText, { marginLeft: 8 }]}>Submit Report</Text>
+            </View>
+          )}
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -569,7 +505,6 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   submitButton: {
-    flex: 1,
     backgroundColor: "#0066CC",
     flexDirection: "row",
     alignItems: "center",
@@ -604,43 +539,8 @@ const styles = StyleSheet.create({
   errorBanner: {
     backgroundColor: "#FFEBEE",
   },
-  buttonDisabled: {
+  submitButtonDisabled: {
     opacity: 0.7,
-  },
-  buttonRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  saveDraftButton: {
-    flex: 1,
-    backgroundColor: '#f8f9fa',
-    borderWidth: 2,
-    borderColor: '#0066CC',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 15,
-    borderRadius: 10,
-  },
-  saveDraftButtonText: {
-    color: '#0066CC',
-    fontSize: 16,
-    fontWeight: '600' as const,
-  },
-  saveStatus: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
-    padding: 8,
-    backgroundColor: '#E8F5E8',
-    borderRadius: 6,
-  },
-  saveStatusText: {
-    fontSize: 12,
-    color: '#2E7D32',
-    marginLeft: 6,
-    fontWeight: '500' as const,
   },
   ecgCaptureField: {
     marginBottom: 10,

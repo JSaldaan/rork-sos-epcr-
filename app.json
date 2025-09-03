@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "SOS ePCR ",
-    "slug": "special-operations-epcr-app",
+    "slug": "hamad-medical-corporation-epcr-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -15,21 +15,10 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "app.rork.special-operations-epcr-app",
+      "bundleIdentifier": "app.rork.hamad-medical-corporation-epcr-app",
       "infoPlist": {
         "NSCameraUsageDescription": "Allow $(PRODUCT_NAME) to access your camera",
         "NSMicrophoneUsageDescription": "Allow $(PRODUCT_NAME) to access your microphone"
-      },
-      "entitlements": {
-        "com": {
-          "apple": {
-            "developer": {
-              "networking": {
-                "wifi-info": true
-              }
-            }
-          }
-        }
       }
     },
     "android": {

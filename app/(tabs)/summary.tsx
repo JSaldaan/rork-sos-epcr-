@@ -8,16 +8,12 @@ import {
   Alert,
   TextInput,
 } from "react-native";
-import { FileText, Send, User, Activity, Truck, Clock, UserCheck, WifiOff } from "lucide-react-native";
+import { FileText, Send, User, Activity, Truck, Clock, UserCheck } from "lucide-react-native";
 import { usePCRStore } from "@/store/pcrStore";
-import { useOfflineStore } from "@/store/offlineStore";
-import { useOfflineNotifications } from "@/hooks/useOfflineNotifications";
 import SignatureModal from "@/components/SignatureModal";
 
 export default function SummaryScreen() {
   const { patientInfo, incidentInfo, vitals, transportInfo, signatureInfo, updateSignatureInfo, saveCurrentPCRDraft } = usePCRStore();
-  const { isOnline } = useOfflineStore();
-  const { showOfflineToast } = useOfflineNotifications();
   const get = usePCRStore.getState;
   const scrollViewRef = useRef<ScrollView>(null);
   const [activeSignature, setActiveSignature] = useState<string | null>(null);
@@ -118,12 +114,6 @@ export default function SummaryScreen() {
         <View style={styles.statusHeader}>
           <FileText size={24} color="#0066CC" />
           <Text style={styles.statusTitle}>PCR Completion Status</Text>
-          {!isOnline && (
-            <View style={styles.offlineIndicator}>
-              <WifiOff size={16} color="#FF9500" />
-              <Text style={styles.offlineText}>Offline</Text>
-            </View>
-          )}
         </View>
         <View style={styles.progressBar}>
           <View style={[styles.progressFill, { width: `${status.percentage}%` }]} />
@@ -428,18 +418,11 @@ export default function SummaryScreen() {
 
       <TouchableOpacity 
         style={[styles.submitButton, status.percentage < 75 && styles.submitButtonDisabled]} 
-        onPress={() => {
-          if (!isOnline) {
-            showOfflineToast('Working offline - your data will be saved locally and synced when connection is restored.');
-          }
-          handleSavePCR();
-        }}
+        onPress={handleSavePCR}
         disabled={status.percentage < 75}
       >
         <Send size={20} color="#fff" />
-        <Text style={styles.submitButtonText}>
-          {!isOnline ? '📱 Save Offline' : 'Save for Preview'}
-        </Text>
+        <Text style={styles.submitButtonText}>Save for Preview</Text>
       </TouchableOpacity>
 
       {status.percentage < 75 && (
@@ -688,19 +671,5 @@ const styles = StyleSheet.create({
     color: "#DC2626",
     fontSize: 14,
     fontWeight: "500",
-  },
-  offlineIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFF3E0',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    gap: 4,
-  },
-  offlineText: {
-    fontSize: 12,
-    color: '#FF9500',
-    fontWeight: '600',
   },
 });

@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useOfflineStore } from './offlineStore';
 
 export interface PatientInfo {
   firstName: string;
@@ -118,8 +117,6 @@ export interface StaffMember {
   status?: 'Active' | 'Inactive';
   created_at?: string;
   last_login_at?: string;
-  mobileNumber: string;
-  email?: string;
 }
 
 export interface AuthSession {
@@ -363,8 +360,6 @@ const defaultStaffMembers: StaffMember[] = [
     isActive: true,
     status: 'Active',
     created_at: new Date().toISOString(),
-    mobileNumber: '+97466960715',
-    email: 'superadmin@hospital.com',
   },
   {
     corporationId: 'ADMIN001',
@@ -374,8 +369,6 @@ const defaultStaffMembers: StaffMember[] = [
     isActive: true,
     status: 'Active',
     created_at: new Date().toISOString(),
-    mobileNumber: '+1234567891',
-    email: 'admin@hospital.com',
   },
   {
     corporationId: 'PARA001',
@@ -383,8 +376,6 @@ const defaultStaffMembers: StaffMember[] = [
     role: 'paramedic',
     department: 'Emergency Services',
     isActive: true,
-    mobileNumber: '+1234567892',
-    email: 'john.smith@hospital.com',
   },
   {
     corporationId: 'PARA002',
@@ -392,8 +383,6 @@ const defaultStaffMembers: StaffMember[] = [
     role: 'paramedic',
     department: 'Emergency Services',
     isActive: true,
-    mobileNumber: '+1234567893',
-    email: 'sarah.johnson@hospital.com',
   },
   {
     corporationId: 'NURSE001',
@@ -401,8 +390,6 @@ const defaultStaffMembers: StaffMember[] = [
     role: 'nurse',
     department: 'Emergency Department',
     isActive: true,
-    mobileNumber: '+1234567894',
-    email: 'emily.davis@hospital.com',
   },
   {
     corporationId: 'DOC001',
@@ -410,8 +397,6 @@ const defaultStaffMembers: StaffMember[] = [
     role: 'doctor',
     department: 'Emergency Medicine',
     isActive: true,
-    mobileNumber: '+1234567895',
-    email: 'michael.brown@hospital.com',
   },
   {
     corporationId: 'SUP001',
@@ -419,8 +404,6 @@ const defaultStaffMembers: StaffMember[] = [
     role: 'supervisor',
     department: 'Operations',
     isActive: true,
-    mobileNumber: '+1234567896',
-    email: 'lisa.wilson@hospital.com',
   },
 ];
 
@@ -540,12 +523,6 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
       throw new Error('No active session found. Please login first.');
     }
     
-    // Check if offline and queue action
-    const offlineStore = useOfflineStore.getState();
-    if (!offlineStore.isOnline) {
-      console.log('📱 Offline mode: Queuing PCR submission for later sync');
-    }
-    
     const completedPCR: CompletedPCR = {
       id: Date.now().toString(),
       submittedAt: new Date().toISOString(),
@@ -567,17 +544,6 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
 
     // Store comprehensive admin data when PCR is submitted
     await get().storeComprehensiveAdminData(completedPCR);
-    
-    // Add to offline queue if not online
-    const offlineStoreState = useOfflineStore.getState();
-    if (!offlineStoreState.isOnline) {
-      await offlineStoreState.addPendingAction({
-        type: 'SUBMIT_PCR',
-        data: completedPCR,
-        maxRetries: 3,
-      });
-      console.log('📱 PCR queued for sync when online');
-    }
 
     console.log('=== SUBMITTING PCR ===');
     console.log('Current session:', currentSession);
@@ -680,17 +646,6 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
     const updatedPCRs = state.completedPCRs.filter(pcr => pcr.id !== id);
     await AsyncStorage.setItem('completedPCRs', JSON.stringify(updatedPCRs));
     set({ completedPCRs: updatedPCRs });
-    
-    // Add to offline queue if not online
-    const offlineStore = useOfflineStore.getState();
-    if (!offlineStore.isOnline) {
-      await offlineStore.addPendingAction({
-        type: 'DELETE_PCR',
-        data: { id },
-        maxRetries: 3,
-      });
-    }
-    
     console.log('PCR deleted:', id);
   },
 
@@ -1048,46 +1003,21 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
     console.log('=== GET MY SUBMITTED PCRs ===');
     console.log('Current session:', currentSession);
     console.log('Total PCRs in state:', state.completedPCRs.length);
-    console.log('All PCRs in state:', state.completedPCRs.map(pcr => ({
-      id: pcr.id,
-      patient: `${pcr.patientInfo.firstName} ${pcr.patientInfo.lastName}`,
-      submittedBy: pcr.submittedBy ? pcr.submittedBy.corporationId : 'NO_SUBMITTER',
-      submittedAt: pcr.submittedAt
-    })));
     
     if (!currentSession) {
       console.log('No current session, returning empty array');
       return [];
     }
     
-    // More flexible filtering - check both corporationId and staffId
-    const myPCRs = state.completedPCRs.filter(pcr => {
-      if (!pcr.submittedBy) {
-        console.log('PCR without submittedBy field:', pcr.id);
-        return false;
-      }
-      
-      const isMyPCR = pcr.submittedBy.corporationId === currentSession.corporationId ||
-                      pcr.submittedBy.staffId === currentSession.staffId ||
-                      pcr.submittedBy.staffId === currentSession.corporationId;
-      
-      console.log(`PCR ${pcr.id} match check:`, {
-        pcrSubmitter: pcr.submittedBy.corporationId,
-        pcrStaffId: pcr.submittedBy.staffId,
-        currentCorp: currentSession.corporationId,
-        currentStaff: currentSession.staffId,
-        isMatch: isMyPCR
-      });
-      
-      return isMyPCR;
-    });
+    const myPCRs = state.completedPCRs.filter(pcr => 
+      pcr.submittedBy && pcr.submittedBy.corporationId === currentSession.corporationId
+    );
     
     console.log('My PCRs found:', myPCRs.length);
     console.log('My PCRs details:', myPCRs.map(pcr => ({
       id: pcr.id,
       patient: `${pcr.patientInfo.firstName} ${pcr.patientInfo.lastName}`,
-      submittedBy: pcr.submittedBy.corporationId,
-      submittedAt: pcr.submittedAt
+      submittedBy: pcr.submittedBy.corporationId
     })));
     console.log('=== END GET MY SUBMITTED PCRs ===');
     
@@ -1104,17 +1034,6 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
     const updatedStaffMembers = [...state.staffMembers, newStaff];
     await AsyncStorage.setItem('staffMembers', JSON.stringify(updatedStaffMembers));
     set({ staffMembers: updatedStaffMembers });
-    
-    // Add to offline queue if not online
-    const offlineStore = useOfflineStore.getState();
-    if (!offlineStore.isOnline) {
-      await offlineStore.addPendingAction({
-        type: 'ADD_STAFF',
-        data: newStaff,
-        maxRetries: 3,
-      });
-    }
-    
     console.log('Staff member added:', newStaff.name);
   },
 
@@ -1126,17 +1045,6 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
     
     await AsyncStorage.setItem('staffMembers', JSON.stringify(updatedStaffMembers));
     set({ staffMembers: updatedStaffMembers });
-    
-    // Add to offline queue if not online
-    const offlineStore = useOfflineStore.getState();
-    if (!offlineStore.isOnline) {
-      await offlineStore.addPendingAction({
-        type: 'UPDATE_STAFF',
-        data: { corporationId, updates },
-        maxRetries: 3,
-      });
-    }
-    
     console.log('Staff member updated:', corporationId);
   },
 
@@ -1494,7 +1402,7 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
     
     // Log the comprehensive data storage
     await get().addAuditLog('STORE_COMPREHENSIVE_DATA', 'PCR', pcr.id, 
-      `Stored complete admin data: Patient, Encounter, ${vitalRecords.length} Vitals, ${ecgRecords.length} ECGs, ${signatureRecords.length} Signatures, ${attachmentRecords.length} Attachments`);
+      `Stored comprehensive admin data: Patient, Encounter, ${vitalRecords.length} Vitals, ${ecgRecords.length} ECGs, ${signatureRecords.length} Signatures, ${attachmentRecords.length} Attachments`);
   },
 
   generateComprehensiveReport: async (pcrId: string): Promise<string> => {
@@ -1600,7 +1508,7 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
         report += `${index + 1}. Captured: ${ecg.captured_at}\n`;
         report += `   Rhythm: ${ecg.rhythm_label}\n`;
         report += `   Notes: ${ecg.notes}\n`;
-        report += `   ECG Available: ${ecg.image_ecg ? 'Yes - Ready for printing' : 'No'}\n`;
+        report += `   Image Reference: ${ecg.image_ecg}\n`;
       });
     } else {
       const ecgVitals = pcr.vitals.filter(v => v.ecgCapture);
@@ -1608,7 +1516,7 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
         ecgVitals.forEach((vital, index) => {
           report += `${index + 1}. Captured: ${vital.ecgCaptureTimestamp}\n`;
           report += `   Associated with vitals at: ${vital.timestamp}\n`;
-          report += `   ECG Available: Ready for printing\n`;
+          report += `   Reference: ${vital.ecgCapture}\n`;
         });
       } else {
         report += `No ECG recordings captured\n`;
@@ -1622,9 +1530,6 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
       ? pcr.transportInfo.customDestination 
       : pcr.transportInfo.destination;
     report += `Destination: ${finalDestination}\n`;
-    if (pcr.transportInfo.destination === "Other" && pcr.transportInfo.customDestination) {
-      report += `Custom Destination: ${pcr.transportInfo.customDestination}\n`;
-    }
     report += `Mode: ${pcr.transportInfo.mode}\n`;
     report += `Unit Number: ${pcr.transportInfo.unitNumber}\n`;
     report += `Departure Time: ${pcr.transportInfo.departureTime}\n`;
@@ -1641,20 +1546,20 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
       signatures.forEach((sig, index) => {
         report += `${index + 1}. ${sig.signer_role}: ${sig.signer_name}\n`;
         report += `   Signed at: ${sig.signed_at}\n`;
-        report += `   Signature Available: ${sig.signature_image ? 'Yes - Ready for printing' : 'No'}\n`;
+        report += `   Signature Reference: ${sig.signature_image}\n`;
       });
     } else {
       if (pcr.signatureInfo.nurseSignaturePaths) {
         report += `• Nurse: ${pcr.signatureInfo.nurseSignature} (${pcr.signatureInfo.nurseCorporationId})\n`;
-        report += `  Signature Available: Ready for printing\n`;
+        report += `  Signature Reference: ${pcr.signatureInfo.nurseSignaturePaths}\n`;
       }
       if (pcr.signatureInfo.doctorSignaturePaths) {
         report += `• Doctor: ${pcr.signatureInfo.doctorSignature} (${pcr.signatureInfo.doctorCorporationId})\n`;
-        report += `  Signature Available: Ready for printing\n`;
+        report += `  Signature Reference: ${pcr.signatureInfo.doctorSignaturePaths}\n`;
       }
       if (pcr.signatureInfo.othersSignaturePaths) {
         report += `• ${pcr.signatureInfo.othersRole}: ${pcr.signatureInfo.othersSignature}\n`;
-        report += `  Signature Available: Ready for printing\n`;
+        report += `  Signature Reference: ${pcr.signatureInfo.othersSignaturePaths}\n`;
       }
     }
     report += `\n`;
@@ -1686,7 +1591,7 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
       attachments.forEach((att, index) => {
         report += `${index + 1}. ${att.label}\n`;
         report += `   Uploaded: ${att.uploaded_at}\n`;
-        report += `   File ID: ${att.attachment_id}\n`;
+        report += `   File Reference: ${att.attachment_id}\n`;
       });
     } else {
       report += `No additional attachments\n`;
@@ -1698,12 +1603,7 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
     report += `Generated by: RORK Admin System\n`;
     report += `Generation Time: ${new Date().toLocaleString()}\n`;
     report += `Report ID: ${Date.now()}\n`;
-    report += `Data Access: All available data included for direct printing\n`;
-    report += `\n[DIRECT ACCESS NOTICE]\n`;
-    report += `Super Admin has direct access to all patient care documentation.\n`;
-    report += `All signatures and ECG captures are immediately accessible for printing.\n`;
-    report += `Complete medical evidence available without digital verification requirements.\n`;
-    report += `All patient care evidence is directly printable and accessible.\n`;
+    report += `Data Integrity: All available data included\n`;
     
     return report;
   },
@@ -1725,8 +1625,7 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
     exportData += `Total Signatures: ${state.signatures.length}\n`;
     exportData += `Total Attachments: ${state.attachments.length}\n`;
     exportData += `Total Staff Members: ${state.staffMembers.length}\n`;
-    exportData += `Total Audit Logs: ${state.auditLogs.length}\n`;
-    exportData += `\nDirect Access: All signatures and ECG captures available for immediate printing\n\n`;
+    exportData += `Total Audit Logs: ${state.auditLogs.length}\n\n`;
     
     // All PCRs with comprehensive data
     exportData += `[ALL PATIENT CARE REPORTS]\n`;
@@ -1758,7 +1657,6 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
     
     exportData += `[END OF EXPORT]\n`;
     exportData += `Export completed at: ${new Date().toLocaleString()}\n`;
-    exportData += `Super Admin Direct Access: All medical evidence immediately available for printing\n`;
     
     return exportData;
   },

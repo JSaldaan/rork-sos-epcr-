@@ -4,7 +4,6 @@ import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { usePCRStore } from "@/store/pcrStore";
-import { useOfflineStore } from "@/store/offlineStore";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
@@ -27,8 +26,6 @@ function RootLayoutNav() {
   const segments = useSegments();
   const router = useRouter();
   const [isAppReady, setIsAppReady] = React.useState(false);
-  
-
   
   useEffect(() => {
     // Wait for app initialization to complete
@@ -87,19 +84,15 @@ function RootLayoutNav() {
     }
     
     // If authenticated but on login page, redirect based on role
-    // Add a small delay to prevent conflicts with logout navigation
     if (isAuthenticated && isOnLoginPage) {
-      const redirectTimer = setTimeout(() => {
-        if (isAdminUser) {
-          console.log('Admin user authenticated, redirecting to admin tab');
-          router.replace('/(tabs)/admin');
-        } else {
-          console.log('Staff user authenticated, redirecting to staff tabs');
-          router.replace('/(tabs)');
-        }
-      }, 100);
-      
-      return () => clearTimeout(redirectTimer);
+      if (isAdminUser) {
+        console.log('Admin user authenticated, redirecting to admin tab');
+        router.replace('/(tabs)/admin');
+      } else {
+        console.log('Staff user authenticated, redirecting to staff tabs');
+        router.replace('/(tabs)');
+      }
+      return;
     }
     
     // Role-based access control for tabs
@@ -126,14 +119,12 @@ function RootLayoutNav() {
     <Stack screenOptions={{ headerBackTitle: "Back" }}>
       <Stack.Screen name="login" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-
     </Stack>
   );
 }
 
 function AppInitializer() {
   const { loadCurrentPCRDraft, initializeStaffDatabase, loadCompletedPCRs } = usePCRStore();
-  const { initialize: initializeOfflineStore } = useOfflineStore();
   const [hasInitialized, setHasInitialized] = React.useState(false);
   
   useEffect(() => {
@@ -141,11 +132,7 @@ function AppInitializer() {
       try {
         console.log('=== APP INITIALIZATION ===');
         
-        // Initialize offline store first
-        await initializeOfflineStore();
-        console.log('Offline store initialized');
-        
-        // Initialize staff database
+        // Initialize staff database first
         await initializeStaffDatabase();
         console.log('Staff database initialized');
         
@@ -178,7 +165,7 @@ function AppInitializer() {
     if (!hasInitialized) {
       initializeApp();
     }
-  }, [loadCurrentPCRDraft, initializeStaffDatabase, loadCompletedPCRs, initializeOfflineStore, hasInitialized]);
+  }, [loadCurrentPCRDraft, initializeStaffDatabase, loadCompletedPCRs, hasInitialized]);
   
   return <RootLayoutNav />;
 }

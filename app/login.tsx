@@ -6,15 +6,11 @@ import {
   Pressable,
   StyleSheet,
   SafeAreaView,
-  Dimensions,
-  ScrollView,
 } from 'react-native';
 import { router } from 'expo-router';
 import { usePCRStore } from '@/store/pcrStore';
 import { Shield, Users } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 const LoginScreen: React.FC = () => {
   const {
@@ -27,8 +23,6 @@ const LoginScreen: React.FC = () => {
   const [loginError, setLoginError] = useState<string>('');
   const [loginMode, setLoginMode] = useState<'staff' | 'admin'>('staff');
   const [isLoading, setIsLoading] = useState<boolean>(false);
-
-
 
   // Don't auto-redirect if user is already logged in
   // Let them stay on login page and manually navigate to tabs if they want
@@ -44,9 +38,20 @@ const LoginScreen: React.FC = () => {
     setLoginError('');
     
     try {
-      // Validate the corporation ID and login directly
+      // First validate the corporation ID to check role
+      await usePCRStore.getState().loadStaffMembers();
+      const staff = await usePCRStore.getState().validateCorporationId(corporationId.trim().toUpperCase());
+      
+      if (staff && (staff.role === 'SuperAdmin' || staff.role === 'Admin')) {
+        setLoginError('Admin and Super Admin accounts must use Admin Only login');
+        setIsLoading(false);
+        return;
+      }
+      
       const success = await staffLogin(corporationId.trim().toUpperCase());
       if (success) {
+        setCorporationId('');
+        setLoginError('');
         console.log('Staff login successful, redirecting to tabs');
         router.replace('/(tabs)');
       } else {
@@ -72,7 +77,9 @@ const LoginScreen: React.FC = () => {
     try {
       // Check if it's the system admin password
       if (password === 'admin123') {
-        if (adminLogin('admin123')) {
+        if (adminLogin(password)) {
+          setPassword('');
+          setLoginError('');
           console.log('System admin login successful, redirecting to tabs');
           router.replace('/(tabs)');
         } else {
@@ -80,10 +87,19 @@ const LoginScreen: React.FC = () => {
         }
       } else {
         // Check if it's a staff member with admin/super admin role using corporation ID as password
-        const success = await staffLogin(password.trim().toUpperCase());
-        if (success) {
-          console.log('Admin staff login successful, redirecting to tabs');
-          router.replace('/(tabs)');
+        await usePCRStore.getState().loadStaffMembers();
+        const staff = await usePCRStore.getState().validateCorporationId(password.trim().toUpperCase());
+        
+        if (staff && (staff.role === 'SuperAdmin' || staff.role === 'Admin')) {
+          const success = await staffLogin(password.trim().toUpperCase());
+          if (success) {
+            setPassword('');
+            setLoginError('');
+            console.log('Admin staff login successful, redirecting to tabs');
+            router.replace('/(tabs)');
+          } else {
+            setLoginError('Admin login failed');
+          }
         } else {
           setLoginError('Invalid admin credentials. Use system password or admin Corporation ID');
         }
@@ -104,15 +120,8 @@ const LoginScreen: React.FC = () => {
     }
   };
 
-
-
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView 
-        contentContainerStyle={styles.scrollContainer}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
       <View style={styles.loginContainer}>
         <View style={styles.loginHeader}>
           <Shield size={48} color="#0066CC" />
@@ -130,7 +139,7 @@ const LoginScreen: React.FC = () => {
               setCorporationId('');
             }}
           >
-            <Users size={screenWidth < 400 ? 18 : 20} color={loginMode === 'staff' ? '#fff' : '#0066CC'} />
+            <Users size={20} color={loginMode === 'staff' ? '#fff' : '#0066CC'} />
             <Text style={[styles.modeButtonText, loginMode === 'staff' && styles.modeButtonTextActive]}>
               Staff Access
             </Text>
@@ -145,7 +154,7 @@ const LoginScreen: React.FC = () => {
               setCorporationId('');
             }}
           >
-            <Shield size={screenWidth < 400 ? 18 : 20} color={loginMode === 'admin' ? '#fff' : '#DC2626'} />
+            <Shield size={20} color={loginMode === 'admin' ? '#fff' : '#DC2626'} />
             <Text style={[styles.modeButtonText, loginMode === 'admin' && styles.modeButtonTextActive, loginMode === 'admin' && styles.adminModeText]}>
               Admin Only
             </Text>
@@ -247,8 +256,7 @@ const LoginScreen: React.FC = () => {
           </View>
         )}
         
-
-        
+        {/* Debug button to clear all data - remove in production */}
         <Pressable
           style={styles.debugButton}
           onPress={async () => {
@@ -279,7 +287,6 @@ const LoginScreen: React.FC = () => {
           <Text style={styles.debugButtonText}>🔧 Clear All Data (Debug)</Text>
         </Pressable>
       </View>
-      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -289,42 +296,37 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f6f7',
   },
-  scrollContainer: {
-    flexGrow: 1,
-    minHeight: screenHeight,
-  },
   loginContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: Math.max(16, screenWidth * 0.04),
-    minHeight: screenHeight - 100,
+    padding: 24,
   },
   loginHeader: {
     alignItems: 'center',
     marginBottom: 32,
   },
   loginTitle: {
-    fontSize: Math.min(28, screenWidth * 0.07),
+    fontSize: 28,
     fontWeight: 'bold',
     color: '#0066CC',
     marginTop: 16,
     marginBottom: 8,
   },
   loginSubtitle: {
-    fontSize: Math.min(16, screenWidth * 0.04),
+    fontSize: 16,
     color: '#6b7280',
     textAlign: 'center',
-    marginBottom: Math.min(32, screenHeight * 0.04),
+    marginBottom: 32,
   },
   loginModeContainer: {
     flexDirection: 'row',
-    marginBottom: Math.min(24, screenHeight * 0.03),
+    marginBottom: 24,
     borderRadius: 8,
     backgroundColor: '#f3f4f6',
     padding: 4,
     width: '100%',
-    maxWidth: Math.min(400, screenWidth * 0.9),
+    maxWidth: 400,
   },
   modeButton: {
     flex: 1,
@@ -343,7 +345,7 @@ const styles = StyleSheet.create({
   },
   modeButtonText: {
     marginLeft: 6,
-    fontSize: Math.max(10, Math.min(12, screenWidth * 0.03)),
+    fontSize: 12,
     fontWeight: '600',
     color: '#0066CC',
   },
@@ -355,8 +357,8 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     width: '100%',
-    maxWidth: Math.min(400, screenWidth * 0.9),
-    marginBottom: Math.min(16, screenHeight * 0.02),
+    maxWidth: 400,
+    marginBottom: 16,
   },
   inputLabel: {
     fontSize: 16,
@@ -368,12 +370,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#d1d5db',
     borderRadius: 8,
-    paddingHorizontal: Math.min(16, screenWidth * 0.04),
-    paddingVertical: Math.min(12, screenHeight * 0.015),
-    fontSize: Math.min(16, screenWidth * 0.04),
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 16,
     backgroundColor: '#fff',
     marginBottom: 8,
-    minHeight: Math.max(44, screenHeight * 0.055),
+    minHeight: 44,
     color: '#374151',
   },
   inputHint: {
@@ -391,12 +393,12 @@ const styles = StyleSheet.create({
   },
   loginButton: {
     width: '100%',
-    maxWidth: Math.min(400, screenWidth * 0.9),
+    maxWidth: 400,
     backgroundColor: '#0066CC',
-    paddingVertical: Math.min(12, screenHeight * 0.015),
+    paddingVertical: 12,
     borderRadius: 8,
     alignItems: 'center',
-    marginBottom: Math.min(24, screenHeight * 0.03),
+    marginBottom: 24,
   },
   loginButtonDisabled: {
     backgroundColor: '#9ca3af',
@@ -408,13 +410,12 @@ const styles = StyleSheet.create({
   },
   demoContainer: {
     backgroundColor: '#f9fafb',
-    padding: Math.min(16, screenWidth * 0.04),
+    padding: 16,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#e5e7eb',
     width: '100%',
-    maxWidth: Math.min(400, screenWidth * 0.9),
-    marginBottom: Math.min(16, screenHeight * 0.02),
+    maxWidth: 400,
   },
   demoTitle: {
     fontSize: 14,
@@ -453,13 +454,12 @@ const styles = StyleSheet.create({
   },
   adminHintContainer: {
     backgroundColor: '#fef2f2',
-    padding: Math.min(16, screenWidth * 0.04),
+    padding: 16,
     borderRadius: 8,
     borderLeftWidth: 4,
     borderLeftColor: '#DC2626',
     width: '100%',
-    maxWidth: Math.min(400, screenWidth * 0.9),
-    marginBottom: Math.min(16, screenHeight * 0.02),
+    maxWidth: 400,
   },
   adminHintTitle: {
     fontSize: 14,
@@ -503,8 +503,6 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     textAlign: 'center',
   },
-  
-
 
 });
 
