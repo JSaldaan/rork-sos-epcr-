@@ -3,7 +3,6 @@ import { Alert, Platform } from 'react-native';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { usePCRStore } from '@/store/pcrStore';
-import { useOfflineStore } from '@/store/offlineStore';
 
 interface LogoutOptions {
   showConfirmation?: boolean;
@@ -19,7 +18,6 @@ interface LogoutOptions {
 export const useLogout = () => {
   const [isLoggingOut, setIsLoggingOut] = useState<boolean>(false);
   const { currentSession, staffLogout } = usePCRStore();
-  const offlineStore = useOfflineStore();
 
   /**
    * Complete logout process that clears all data and redirects to login
@@ -72,10 +70,16 @@ export const useLogout = () => {
       }
       console.log('✅ Store logout method completed');
       
-      // Step 4: Clear offline store data
-      if (offlineStore && typeof offlineStore.clearOfflineData === 'function') {
-        await offlineStore.clearOfflineData();
-        console.log('✅ Offline store data cleared');
+      // Step 4: Clear offline store data (optional)
+      try {
+        const { useOfflineStore } = await import('@/store/offlineStore');
+        const offlineStore = useOfflineStore.getState();
+        if (offlineStore && typeof offlineStore.clearOfflineData === 'function') {
+          await offlineStore.clearOfflineData();
+          console.log('✅ Offline store data cleared');
+        }
+      } catch (error) {
+        console.log('⚠️ Could not clear offline store data:', error);
       }
       
       // Step 5: Navigate to login
@@ -113,7 +117,7 @@ export const useLogout = () => {
       setIsLoggingOut(false);
       console.log('🏁 Logout process finished');
     }
-  }, [isLoggingOut, offlineStore, staffLogout]);
+  }, [isLoggingOut, staffLogout]);
 
   /**
    * Main logout function with confirmation dialog
@@ -190,34 +194,4 @@ export const useLogout = () => {
     isLoggedIn,
     currentSession,
   };
-};
-
-/**
- * Global logout function that can be called from anywhere
- */
-let globalLogoutInstance: ReturnType<typeof useLogout> | null = null;
-
-export const setGlobalLogoutInstance = (instance: ReturnType<typeof useLogout>) => {
-  globalLogoutInstance = instance;
-};
-
-export const getGlobalLogout = () => {
-  if (!globalLogoutInstance) {
-    console.warn('Global logout instance not set. Make sure to call setGlobalLogoutInstance in your root component.');
-    return null;
-  }
-  return globalLogoutInstance;
-};
-
-/**
- * Emergency logout from anywhere
- */
-export const emergencyLogoutFromAnywhere = (reason: string = 'Emergency logout') => {
-  const globalLogout = getGlobalLogout();
-  if (globalLogout) {
-    globalLogout.emergencyLogout(reason);
-  } else {
-    console.error('Cannot perform emergency logout: Global logout instance not available');
-    router.replace('/login');
-  }
 };

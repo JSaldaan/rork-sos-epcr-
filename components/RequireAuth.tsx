@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { router, useSegments } from 'expo-router';
 import { usePCRStore } from '@/store/pcrStore';
-import { emergencyLogoutFromAnywhere } from '@/hooks/useGlobalLogout';
+import { useLogout } from '@/hooks/useLogout';
 
 interface RequireAuthProps {
   children: React.ReactNode;
@@ -25,6 +25,7 @@ export const RequireAuth: React.FC<RequireAuthProps> = ({
 }) => {
   const { currentSession, isAdmin } = usePCRStore();
   const segments = useSegments();
+  const { emergencyLogout } = useLogout();
 
   useEffect(() => {
     const checkAuth = () => {
@@ -43,14 +44,14 @@ export const RequireAuth: React.FC<RequireAuthProps> = ({
       // Check super admin requirement
       if (requireSuperAdmin && currentSession.role !== 'SuperAdmin') {
         console.log('❌ Super admin access required, current role:', currentSession.role);
-        emergencyLogoutFromAnywhere('Insufficient privileges - Super Admin required');
+        emergencyLogout('Insufficient privileges - Super Admin required');
         return;
       }
 
       // Check admin requirement
       if (requireAdmin && !isAdmin && currentSession.role !== 'Admin' && currentSession.role !== 'SuperAdmin') {
         console.log('❌ Admin access required, current role:', currentSession.role);
-        emergencyLogoutFromAnywhere('Insufficient privileges - Admin required');
+        emergencyLogout('Insufficient privileges - Admin required');
         return;
       }
 
@@ -59,7 +60,7 @@ export const RequireAuth: React.FC<RequireAuthProps> = ({
         const hasAllowedRole = allowedRoles.includes(currentSession.role);
         if (!hasAllowedRole) {
           console.log('❌ Role not allowed, current role:', currentSession.role, 'allowed:', allowedRoles);
-          emergencyLogoutFromAnywhere(`Insufficient privileges - Required roles: ${allowedRoles.join(', ')}`);
+          emergencyLogout(`Insufficient privileges - Required roles: ${allowedRoles.join(', ')}`);
           return;
         }
       }
@@ -71,7 +72,7 @@ export const RequireAuth: React.FC<RequireAuthProps> = ({
     const timeoutId = setTimeout(checkAuth, 100);
     
     return () => clearTimeout(timeoutId);
-  }, [currentSession, isAdmin, segments, redirectTo, allowedRoles, requireAdmin, requireSuperAdmin]);
+  }, [currentSession, isAdmin, segments, redirectTo, allowedRoles, requireAdmin, requireSuperAdmin, emergencyLogout]);
 
   // Don't render children if not authenticated
   if (!currentSession) {
