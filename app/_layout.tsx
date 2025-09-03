@@ -5,6 +5,7 @@ import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { usePCRStore } from "@/store/pcrStore";
 import { useOfflineStore } from "@/store/offlineStore";
+import { useGlobalLogout, setGlobalLogoutInstance, registerGlobalLogoutAction } from "@/hooks/useGlobalLogout";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
@@ -27,6 +28,16 @@ function RootLayoutNav() {
   const segments = useSegments();
   const router = useRouter();
   const [isAppReady, setIsAppReady] = React.useState(false);
+  
+  // Initialize global logout system
+  const globalLogout = useGlobalLogout();
+  
+  useEffect(() => {
+    // Set global logout instance for app-wide access
+    setGlobalLogoutInstance(globalLogout);
+    registerGlobalLogoutAction();
+    console.log('🔐 Global logout system initialized');
+  }, [globalLogout]);
   
   useEffect(() => {
     // Wait for app initialization to complete
@@ -124,6 +135,15 @@ function RootLayoutNav() {
     <Stack screenOptions={{ headerBackTitle: "Back" }}>
       <Stack.Screen name="login" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen 
+        name="logout-demo" 
+        options={{ 
+          title: "Logout System Demo",
+          presentation: "modal",
+          headerStyle: { backgroundColor: '#0066CC' },
+          headerTintColor: '#fff'
+        }} 
+      />
     </Stack>
   );
 }
