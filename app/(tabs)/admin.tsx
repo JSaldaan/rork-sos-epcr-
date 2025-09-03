@@ -1016,8 +1016,8 @@ export default function AdminScreen() {
     // Check super admin privilege for comprehensive reports with signatures and ECG
     if (isComprehensive && !isSuperAdmin) {
       Alert.alert(
-        'Privilege Required', 
-        'Only Super Admin has the highest privilege to download complete patient care reports with signatures and ECG captures for printing.',
+        'Super Admin Privilege Required', 
+        'Only Super Admin has the highest privilege to download complete patient care reports with all signatures and ECG captures embedded for printing. This includes:\n\n• All electronic signatures (Nurse, Doctor, Patient/Guardian)\n• All ECG recordings and captures\n• Complete medical evidence chain\n• Full patient data without restrictions',
         [{ text: 'OK' }]
       );
       return;
@@ -1026,7 +1026,7 @@ export default function AdminScreen() {
     try {
       const html = generateProfessionalHTML(selectedPCR, isComprehensive);
       const fileName = isComprehensive 
-        ? `SUPERADMIN_COMPLETE_PCR_${selectedPCR.id}_${new Date().toISOString().split('T')[0]}.pdf`
+        ? `SUPERADMIN_PRINTABLE_COMPLETE_PCR_${selectedPCR.id}_${new Date().toISOString().split('T')[0]}.pdf`
         : `PCR_${selectedPCR.id}_${new Date().toISOString().split('T')[0]}.pdf`;
       
       const { uri } = await Print.printToFileAsync({ 
@@ -1045,24 +1045,24 @@ export default function AdminScreen() {
       if (await Sharing.isAvailableAsync()) {
         await Sharing.shareAsync(uri, {
           mimeType: 'application/pdf',
-          dialogTitle: `Share ${fileName}`,
+          dialogTitle: isComprehensive ? `Super Admin Complete Report - ${fileName}` : `Share ${fileName}`,
           UTI: 'com.adobe.pdf',
         });
       } else {
         Alert.alert(
-          'Success', 
+          'PDF Generated Successfully', 
           isComprehensive 
-            ? 'Complete investigation PDF with signatures and ECG captures generated successfully for Super Admin printing'
+            ? `🚨 SUPER ADMIN COMPLETE REPORT READY FOR PRINTING 🚨\n\nGenerated: ${fileName}\n\nThis PDF contains:\n• All electronic signatures embedded and visible\n• All ECG captures embedded and printable\n• Complete patient medical evidence\n• Full investigation-ready documentation\n\nReady for printing with all signatures and ECG visible on paper.`
             : 'Professional PDF report generated successfully'
         );
       }
       
       await addAuditLog(
-        isComprehensive ? 'EXPORT_SUPERADMIN_COMPLETE_PDF' : 'EXPORT_PDF', 
+        isComprehensive ? 'EXPORT_SUPERADMIN_PRINTABLE_COMPLETE_PDF' : 'EXPORT_PDF', 
         'PCR', 
         selectedPCR.id, 
         isComprehensive 
-          ? `Super Admin exported complete PDF with signatures and ECG captures for printing`
+          ? `Super Admin exported complete printable PDF with all signatures and ECG captures embedded for physical printing`
           : `Exported ${isComprehensive ? 'comprehensive' : 'standard'} PDF report`
       );
     } catch (error) {
@@ -1304,7 +1304,7 @@ export default function AdminScreen() {
                         }}
                       >
                         <FileText size={14} color="#d32f2f" />
-                        <Text style={[styles.actionButtonText, { color: '#d32f2f', fontWeight: 'bold' }]}>🚨 Super Admin</Text>
+                        <Text style={[styles.actionButtonText, { color: '#d32f2f', fontWeight: 'bold' }]}>🚨 Print Complete</Text>
                       </TouchableOpacity>
                     )}
                   </View>
@@ -1338,7 +1338,19 @@ export default function AdminScreen() {
               {isSuperAdmin && (
                 <TouchableOpacity style={[styles.bulkActionButton, styles.comprehensiveButton]} onPress={handleExportAllData}>
                   <Download size={16} color="#fff" />
-                  <Text style={styles.bulkActionButtonText}>Super Admin Export</Text>
+                  <Text style={styles.bulkActionButtonText}>Complete System Export</Text>
+                </TouchableOpacity>
+              )}
+              {isSuperAdmin && (
+                <TouchableOpacity style={[styles.bulkActionButton, { backgroundColor: '#ff6b35' }]} onPress={() => {
+                  Alert.alert(
+                    '🚨 Super Admin Signature & ECG Access',
+                    'COMPLETE MEDICAL EVIDENCE ACCESS:\n\n📋 SIGNATURES AVAILABLE:\n• Electronic nurse signatures with timestamps\n• Doctor signatures with verification\n• Patient/Guardian consent signatures\n• Digital signature chain of custody\n\n⚡ ECG CAPTURES AVAILABLE:\n• All ECG recordings from vital signs\n• High-resolution ECG strips\n• Rhythm analysis and clinical notes\n• Multiple ECG captures per patient\n\n🖨️ PRINTING CAPABILITIES:\n• All signatures embedded in PDF\n• All ECG images printable at full resolution\n• Professional medical report format\n• Complete evidence documentation\n\n🔒 SUPER ADMIN PRIVILEGE:\nOnly Super Admin role has complete access to download and print all patient signatures and ECG captures without restrictions.',
+                    [{ text: 'Understood' }]
+                  );
+                }}>
+                  <FileText size={16} color="#fff" />
+                  <Text style={styles.bulkActionButtonText}>📋 Evidence Guide</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -1491,7 +1503,7 @@ export default function AdminScreen() {
         <View style={styles.superAdminBanner}>
           <Shield size={16} color="#d32f2f" />
           <Text style={styles.superAdminText}>🚨 SUPER ADMIN - HIGHEST PRIVILEGE ACCESS</Text>
-          <Text style={styles.superAdminSubtext}>Complete access to all patient reports, signatures & ECG captures</Text>
+          <Text style={styles.superAdminSubtext}>Complete access to all patient reports, signatures & ECG captures for printing</Text>
         </View>
       )}
       
@@ -1708,7 +1720,20 @@ export default function AdminScreen() {
               {isSuperAdmin && (
                 <TouchableOpacity style={[styles.reportActionButton, { borderColor: '#d32f2f', backgroundColor: '#ffebee' }]} onPress={() => handleExportPDF(true)}>
                   <FileText size={20} color="#d32f2f" />
-                  <Text style={[styles.reportActionText, { color: '#d32f2f', fontWeight: 'bold' }]}>🚨 Super Admin Complete PDF with Signatures & ECG</Text>
+                  <Text style={[styles.reportActionText, { color: '#d32f2f', fontWeight: 'bold' }]}>🚨 Super Admin Complete Printable PDF</Text>
+                </TouchableOpacity>
+              )}
+              
+              {isSuperAdmin && (
+                <TouchableOpacity style={[styles.reportActionButton, { borderColor: '#ff6b35', backgroundColor: '#fff3e0' }]} onPress={() => {
+                  Alert.alert(
+                    '🚨 Super Admin Printing Guide',
+                    'COMPLETE SIGNATURES & ECG PRINTING INSTRUCTIONS:\n\n✅ SIGNATURES:\n• All electronic signatures are embedded in PDF\n• Nurse, Doctor, and Patient/Guardian signatures visible\n• Digital signature verification included\n• Timestamps and IDs preserved\n\n✅ ECG CAPTURES:\n• All ECG recordings embedded as images\n• High-resolution ECG strips printable\n• Rhythm analysis and timestamps included\n• Multiple ECG captures per case supported\n\n✅ PRINTING READY:\n• PDF optimized for A4/Letter paper\n• All images scale properly for printing\n• Professional medical report format\n• Chain of custody documentation\n\n🔒 HIGHEST PRIVILEGE ACCESS:\nSuper Admin can print complete medical evidence with all signatures and ECG captures visible on paper.',
+                    [{ text: 'Understood' }]
+                  );
+                }}>
+                  <FileText size={20} color="#ff6b35" />
+                  <Text style={[styles.reportActionText, { color: '#ff6b35', fontWeight: 'bold' }]}>📋 Printing Instructions</Text>
                 </TouchableOpacity>
               )}
             </View>
