@@ -51,6 +51,7 @@ import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { OfflineManagementScreen } from '@/components/OfflineManagementScreen';
 import { SimpleLogout } from '@/components/SimpleLogout';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type TabType = 'vault' | 'staff' | 'audit' | 'reports' | 'offline';
 type VaultSection = 'patients' | 'encounters' | 'vitals' | 'ecgs' | 'signatures' | 'attachments' | 'pcrs';
@@ -1553,6 +1554,29 @@ export default function AdminScreen() {
         </TouchableOpacity>
         
         <SimpleLogout variant="tab" iconSize={20} />
+        
+        <TouchableOpacity
+          style={styles.emergencyLogoutButton}
+          onPress={async () => {
+            console.log('🚨 EMERGENCY LOGOUT TRIGGERED FROM ADMIN');
+            try {
+              await AsyncStorage.clear();
+              usePCRStore.setState({
+                currentSession: null,
+                isAdmin: false,
+                completedPCRs: [],
+                staffMembers: [],
+              });
+              router.replace('/login');
+              console.log('✅ Emergency logout completed');
+            } catch (error) {
+              console.error('❌ Emergency logout error:', error);
+              router.replace('/login');
+            }
+          }}
+        >
+          <Text style={styles.emergencyLogoutText}>🚨</Text>
+        </TouchableOpacity>
       </View>
 
       {isLoading ? (
@@ -2290,6 +2314,19 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#d32f2f',
     fontStyle: 'italic',
+  },
+  emergencyLogoutButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: '#FF3B30',
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 8,
+  },
+  emergencyLogoutText: {
+    fontSize: 16,
+    color: '#fff',
   },
 
 });
