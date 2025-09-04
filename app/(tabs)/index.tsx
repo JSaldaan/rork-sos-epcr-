@@ -220,6 +220,12 @@ export default function NewPCRScreen() {
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      {/* Offline Status Component */}
+      <OfflineStatus 
+        showDetails={showOfflineDetails} 
+        onToggleDetails={() => setShowOfflineDetails(!showOfflineDetails)} 
+      />
+      
       <View style={styles.headerSection}>
         <Text style={styles.headerTitle}>New Patient Care Report</Text>
         <Text style={styles.headerSubtitle}>Enter patient and call information</Text>

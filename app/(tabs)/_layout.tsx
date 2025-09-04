@@ -5,11 +5,15 @@ import { Pressable, Alert, StyleSheet, ActivityIndicator, View } from "react-nat
 import { usePCRStore } from "../../store/pcrStore";
 import { useQueryClient } from "@tanstack/react-query";
 import { performCompleteLogout } from "../../utils/auth";
+import { useOfflineInitialization } from "../../hooks/useOfflineInitialization";
 
 export default function TabLayout() {
   const { currentSession, staffLogout, isLoggingOut } = usePCRStore();
   const queryClient = useQueryClient();
   const [isProcessingLogout, setIsProcessingLogout] = useState<boolean>(false);
+  
+  // Initialize offline capabilities
+  useOfflineInitialization();
   
   // Determine user access level
   const isAdminUser = currentSession?.role === 'admin' || 

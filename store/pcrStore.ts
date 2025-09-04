@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { submitPCROffline, updateStaffOffline, performAdminActionOffline } from '@/utils/offlineManager';
 
 export interface PatientInfo {
   firstName: string;
@@ -544,10 +545,7 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
       status: 'submitted',
     };
 
-    // Store comprehensive admin data when PCR is submitted
-    await get().storeComprehensiveAdminData(completedPCR);
-
-    console.log('=== SUBMITTING PCR ===');
+    console.log('=== SUBMITTING PCR (OFFLINE CAPABLE) ===');
     console.log('Current session:', currentSession);
     console.log('New PCR:', {
       id: completedPCR.id,
@@ -556,7 +554,7 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
       submittedBy: completedPCR.submittedBy
     });
     
-    // Load existing PCRs first to ensure we don't overwrite
+    // Store locally first (immediate)
     let existingPCRs: CompletedPCR[] = [];
     try {
       const stored = await AsyncStorage.getItem('completedPCRs');
@@ -574,7 +572,18 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
     // Update state immediately
     set({ completedPCRs: updatedPCRs });
     
-    console.log('PCR submitted and saved. Total PCRs now:', updatedPCRs.length);
+    // Store comprehensive admin data locally
+    await get().storeComprehensiveAdminData(completedPCR);
+    
+    // Queue for offline sync (will sync when online)
+    try {
+      const queueId = await submitPCROffline(completedPCR);
+      console.log('PCR queued for offline sync:', queueId);
+    } catch (error) {
+      console.error('Failed to queue PCR for offline sync:', error);
+    }
+    
+    console.log('PCR submitted and saved locally. Total PCRs now:', updatedPCRs.length);
     console.log('All PCRs:', updatedPCRs.map(pcr => ({ 
       id: pcr.id, 
       patient: `${pcr.patientInfo.firstName} ${pcr.patientInfo.lastName}`, 
@@ -1049,9 +1058,18 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
       staff.corporationId === corporationId ? { ...staff, ...updates } : staff
     );
     
+    // Update locally first
     await AsyncStorage.setItem('staffMembers', JSON.stringify(updatedStaffMembers));
     set({ staffMembers: updatedStaffMembers });
-    console.log('Staff member updated:', corporationId);
+    
+    // Queue for offline sync
+    try {
+      await updateStaffOffline(corporationId, updates);
+      console.log('Staff member updated and queued for sync:', corporationId);
+    } catch (error) {
+      console.error('Failed to queue staff update for sync:', error);
+      console.log('Staff member updated locally only:', corporationId);
+    }
   },
 
   deleteStaffMember: async (corporationId: string) => {
@@ -1217,10 +1235,20 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
       const updatedStaffMembers = state.staffMembers.map(staff => 
         staff.corporationId === corporationId ? { ...staff, role: newRole as any } : staff
       );
+      
+      // Update locally first
       await AsyncStorage.setItem('staffMembers', JSON.stringify(updatedStaffMembers));
       set({ staffMembers: updatedStaffMembers });
       await get().addAuditLog('UPDATE_STAFF_ROLE', 'Staff', corporationId, `Updated role to ${newRole}`);
-      console.log('Staff role updated successfully:', corporationId, 'to', newRole);
+      
+      // Queue for offline sync
+      try {
+        await performAdminActionOffline('UPDATE_STAFF_ROLE', { corporationId, newRole });
+        console.log('Staff role updated and queued for sync:', corporationId, 'to', newRole);
+      } catch (error) {
+        console.error('Failed to queue staff role update for sync:', error);
+        console.log('Staff role updated locally only:', corporationId, 'to', newRole);
+      }
     } catch (error) {
       console.error('Error updating staff role:', error);
       throw error;
@@ -1233,10 +1261,20 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
       const updatedStaffMembers = state.staffMembers.map(staff => 
         staff.corporationId === corporationId ? { ...staff, isActive: false, status: 'Inactive' as const } : staff
       );
+      
+      // Update locally first
       await AsyncStorage.setItem('staffMembers', JSON.stringify(updatedStaffMembers));
       set({ staffMembers: updatedStaffMembers });
       await get().addAuditLog('DEACTIVATE_STAFF', 'Staff', corporationId, `Deactivated staff member`);
-      console.log('Staff deactivated successfully:', corporationId);
+      
+      // Queue for offline sync
+      try {
+        await performAdminActionOffline('DEACTIVATE_STAFF', { corporationId });
+        console.log('Staff deactivated and queued for sync:', corporationId);
+      } catch (error) {
+        console.error('Failed to queue staff deactivation for sync:', error);
+        console.log('Staff deactivated locally only:', corporationId);
+      }
     } catch (error) {
       console.error('Error deactivating staff:', error);
       throw error;
@@ -1249,10 +1287,20 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
       const updatedStaffMembers = state.staffMembers.map(staff => 
         staff.corporationId === corporationId ? { ...staff, isActive: true, status: 'Active' as const } : staff
       );
+      
+      // Update locally first
       await AsyncStorage.setItem('staffMembers', JSON.stringify(updatedStaffMembers));
       set({ staffMembers: updatedStaffMembers });
       await get().addAuditLog('REACTIVATE_STAFF', 'Staff', corporationId, `Reactivated staff member`);
-      console.log('Staff reactivated successfully:', corporationId);
+      
+      // Queue for offline sync
+      try {
+        await performAdminActionOffline('REACTIVATE_STAFF', { corporationId });
+        console.log('Staff reactivated and queued for sync:', corporationId);
+      } catch (error) {
+        console.error('Failed to queue staff reactivation for sync:', error);
+        console.log('Staff reactivated locally only:', corporationId);
+      }
     } catch (error) {
       console.error('Error reactivating staff:', error);
       throw error;

@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import { usePCRStore, CompletedPCR, StaffMember, Patient, Encounter, Vitals, ECG, Signature, Attachment, AuditLog } from '../../store/pcrStore';
 import { router } from 'expo-router';
+import OfflineStatus from '../../components/OfflineStatus';
 import { 
   Shield, 
   Users, 
@@ -99,6 +100,7 @@ export default function AdminScreen() {
   const [selectedPCR, setSelectedPCR] = useState<CompletedPCR | null>(null);
   const [anonymizeReport, setAnonymizeReport] = useState(false);
   const [reportFormat, setReportFormat] = useState<'full' | 'summary'>('full');
+  const [showOfflineDetails, setShowOfflineDetails] = useState(false);
   
   // Staff form state
   const [newStaff, setNewStaff] = useState({
@@ -1597,6 +1599,12 @@ export default function AdminScreen() {
 
   return (
     <View style={styles.container}>
+      {/* Offline Status Component */}
+      <OfflineStatus 
+        showDetails={showOfflineDetails} 
+        onToggleDetails={() => setShowOfflineDetails(!showOfflineDetails)} 
+      />
+      
       <View style={styles.tabBar}>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'vault' && styles.tabActive]}
