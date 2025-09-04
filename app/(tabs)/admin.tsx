@@ -483,6 +483,8 @@ export default function AdminScreen() {
             display: block !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
+            object-fit: contain !important;
+            background: white !important;
           }
           
           .ecg-image {
@@ -494,6 +496,8 @@ export default function AdminScreen() {
             display: block !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
+            object-fit: contain !important;
+            background: white !important;
           }
           
 
@@ -554,10 +558,18 @@ export default function AdminScreen() {
               opacity: 1 !important;
               visibility: visible !important;
               display: block !important;
+              filter: none !important;
+              transform: none !important;
+              max-width: none !important;
+              width: auto !important;
+              height: auto !important;
             }
             img {
               print-color-adjust: exact !important;
               -webkit-print-color-adjust: exact !important;
+              opacity: 1 !important;
+              visibility: visible !important;
+              display: block !important;
             }
           }
         </style>
@@ -741,8 +753,8 @@ export default function AdminScreen() {
               <div><strong>Rhythm Analysis:</strong> ${ecg.rhythm_label}</div>
               <div><strong>Clinical Notes:</strong> ${ecg.notes}</div>
               ${ecg.image_ecg ? `
-                <div style="margin: 10px 0;">
-                  <img src="${ecg.image_ecg.startsWith('data:image') ? ecg.image_ecg : `data:image/png;base64,${ecg.image_ecg}`}" class="ecg-image" alt="ECG Recording ${index + 1}" style="max-width: 100%; height: auto; border: 1px solid #ccc; display: block;" />
+                <div style="margin: 10px 0; border: 1px solid #ccc; padding: 10px; background: white; text-align: center;">
+                  <img src="${ecg.image_ecg.startsWith('data:image') ? ecg.image_ecg : `data:image/png;base64,${ecg.image_ecg}`}" class="ecg-image" alt="ECG Recording ${index + 1}" style="max-width: 100%; height: auto; display: block; margin: 0 auto; object-fit: contain;" />
                 </div>
               ` : `
                 <div style="font-size: 9pt; color: #666; margin: 5px 0; font-style: italic;">
@@ -761,8 +773,8 @@ export default function AdminScreen() {
               <div><strong>Captured:</strong> ${vital.ecgCaptureTimestamp || vital.timestamp}</div>
               <div><strong>Associated Vitals:</strong> HR: ${vital.heartRate}, BP: ${vital.bloodPressureSystolic}/${vital.bloodPressureDiastolic}</div>
               ${vital.ecgCapture ? `
-                <div style="margin: 10px 0;">
-                  <img src="${vital.ecgCapture.startsWith('data:image') ? vital.ecgCapture : `data:image/png;base64,${vital.ecgCapture}`}" class="ecg-image" alt="ECG from Vitals ${index + 1}" style="max-width: 100%; height: auto; border: 1px solid #ccc; display: block;" />
+                <div style="margin: 10px 0; border: 1px solid #ccc; padding: 10px; background: white; text-align: center;">
+                  <img src="${vital.ecgCapture.startsWith('data:image') ? vital.ecgCapture : `data:image/png;base64,${vital.ecgCapture}`}" class="ecg-image" alt="ECG from Vitals ${index + 1}" style="max-width: 100%; height: auto; display: block; margin: 0 auto; object-fit: contain;" />
                 </div>
               ` : `
                 <div style="font-size: 9pt; color: #666; margin: 5px 0; font-style: italic;">
@@ -888,7 +900,9 @@ export default function AdminScreen() {
             <div class="signature-box">
               <div class="signature-label">NURSE/PROVIDER</div>
               ${pcr.signatureInfo.nurseSignaturePaths ? `
-                <img src="${pcr.signatureInfo.nurseSignaturePaths.startsWith('data:image') ? pcr.signatureInfo.nurseSignaturePaths : `data:image/png;base64,${pcr.signatureInfo.nurseSignaturePaths}`}" class="signature-image" alt="Nurse Signature" style="max-width: 200px; max-height: 60px; border: 1px solid #ccc; margin: 5px 0; display: block;" />
+                <div style="margin: 5px 0; border: 1px solid #ccc; padding: 5px; background: white; min-height: 60px; display: flex; align-items: center; justify-content: center;">
+                  <img src="${pcr.signatureInfo.nurseSignaturePaths.startsWith('data:image') ? pcr.signatureInfo.nurseSignaturePaths : `data:image/png;base64,${pcr.signatureInfo.nurseSignaturePaths}`}" class="signature-image" alt="Nurse Signature" style="max-width: 180px; max-height: 50px; display: block; object-fit: contain;" />
+                </div>
               ` : '<div class="signature-line"></div>'}
               <div class="signature-info">
                 Name: ${anonymizeReport ? 'CONFIDENTIAL' : (pcr.signatureInfo.nurseSignature || 'Not signed')}<br/>
@@ -901,7 +915,9 @@ export default function AdminScreen() {
             <div class="signature-box">
               <div class="signature-label">PHYSICIAN</div>
               ${pcr.signatureInfo.doctorSignaturePaths ? `
-                <img src="${pcr.signatureInfo.doctorSignaturePaths.startsWith('data:image') ? pcr.signatureInfo.doctorSignaturePaths : `data:image/png;base64,${pcr.signatureInfo.doctorSignaturePaths}`}" class="signature-image" alt="Doctor Signature" style="max-width: 200px; max-height: 60px; border: 1px solid #ccc; margin: 5px 0; display: block;" />
+                <div style="margin: 5px 0; border: 1px solid #ccc; padding: 5px; background: white; min-height: 60px; display: flex; align-items: center; justify-content: center;">
+                  <img src="${pcr.signatureInfo.doctorSignaturePaths.startsWith('data:image') ? pcr.signatureInfo.doctorSignaturePaths : `data:image/png;base64,${pcr.signatureInfo.doctorSignaturePaths}`}" class="signature-image" alt="Doctor Signature" style="max-width: 180px; max-height: 50px; display: block; object-fit: contain;" />
+                </div>
               ` : '<div class="signature-line"></div>'}
               <div class="signature-info">
                 Name: ${anonymizeReport ? 'CONFIDENTIAL' : (pcr.signatureInfo.doctorSignature || 'Not signed')}<br/>
@@ -914,7 +930,9 @@ export default function AdminScreen() {
             <div class="signature-box">
               <div class="signature-label">${pcr.signatureInfo.othersRole || 'PATIENT/GUARDIAN'}</div>
               ${pcr.signatureInfo.othersSignaturePaths ? `
-                <img src="${pcr.signatureInfo.othersSignaturePaths.startsWith('data:image') ? pcr.signatureInfo.othersSignaturePaths : `data:image/png;base64,${pcr.signatureInfo.othersSignaturePaths}`}" class="signature-image" alt="${pcr.signatureInfo.othersRole || 'Patient'} Signature" style="max-width: 200px; max-height: 60px; border: 1px solid #ccc; margin: 5px 0; display: block;" />
+                <div style="margin: 5px 0; border: 1px solid #ccc; padding: 5px; background: white; min-height: 60px; display: flex; align-items: center; justify-content: center;">
+                  <img src="${pcr.signatureInfo.othersSignaturePaths.startsWith('data:image') ? pcr.signatureInfo.othersSignaturePaths : `data:image/png;base64,${pcr.signatureInfo.othersSignaturePaths}`}" class="signature-image" alt="${pcr.signatureInfo.othersRole || 'Patient'} Signature" style="max-width: 180px; max-height: 50px; display: block; object-fit: contain;" />
+                </div>
               ` : '<div class="signature-line"></div>'}
               <div class="signature-info">
                 Name: ${anonymizeReport ? 'CONFIDENTIAL' : (pcr.signatureInfo.othersSignature || 'Not signed')}<br/>
@@ -932,7 +950,9 @@ export default function AdminScreen() {
               <div class="signature-box" style="margin: 10px 0; display: inline-block; width: 300px;">
                 <div class="signature-label">${sig.signer_role.toUpperCase()}</div>
                 ${sig.signature_image ? `
-                  <img src="${sig.signature_image.startsWith('data:image') ? sig.signature_image : `data:image/png;base64,${sig.signature_image}`}" class="signature-image" alt="${sig.signer_role} Signature" style="max-width: 200px; max-height: 60px; border: 1px solid #ccc; margin: 5px 0; display: block;" />
+                  <div style="margin: 5px 0; border: 1px solid #ccc; padding: 5px; background: white; min-height: 60px; display: flex; align-items: center; justify-content: center;">
+                    <img src="${sig.signature_image.startsWith('data:image') ? sig.signature_image : `data:image/png;base64,${sig.signature_image}`}" class="signature-image" alt="${sig.signer_role} Signature" style="max-width: 180px; max-height: 50px; display: block; object-fit: contain;" />
+                  </div>
                 ` : '<div class="signature-line"></div>'}
                 <div class="signature-info">
                   Name: ${anonymizeReport ? 'CONFIDENTIAL' : sig.signer_name}<br/>
@@ -958,7 +978,10 @@ export default function AdminScreen() {
             <div style="margin-top: 10px; padding: 10px; background-color: #f0f7ff; border: 1px solid #0066cc;">
               <strong>📋 DOCUMENT NOTICE:</strong> This document contains digitally captured signatures and ECG recordings embedded as base64 images. 
               All timestamps are system-generated and stored securely. Original digital files are preserved in the source system 
-              for reference and can be printed on any device without restrictions. Images are optimized for printing.
+              for reference and can be printed on any device without restrictions. Images are optimized for printing and display.
+              <br/><br/>
+              <strong>🖨️ PRINTING INSTRUCTIONS:</strong> All signatures and ECG images are embedded directly in this PDF and will print 
+              on any device without restrictions. If images appear blank, ensure your PDF viewer has image rendering enabled.
             </div>
           </div>
         </div>
@@ -978,7 +1001,8 @@ export default function AdminScreen() {
             <strong>✅ PRINTABLE DOCUMENT - NO RESTRICTIONS</strong><br/>
             This report contains embedded electronic signatures and ECG recordings.<br/>
             All digital content including signatures and ECG images can be printed on any device without restrictions.<br/>
-            Images are embedded as base64 data for maximum compatibility.
+            Images are embedded as base64 data for maximum compatibility and are optimized for both screen and print display.<br/>
+            <strong>Total Images:</strong> ${(pcr.vitals.filter(v => v.ecgCapture).length + relatedECGs.length)} ECG recordings, ${(relatedSignatures.length + [pcr.signatureInfo.nurseSignaturePaths, pcr.signatureInfo.doctorSignaturePaths, pcr.signatureInfo.othersSignaturePaths].filter(Boolean).length)} electronic signatures
           </div>
         </div>
       </body>
