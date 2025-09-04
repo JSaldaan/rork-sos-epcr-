@@ -13,6 +13,7 @@ import {
 import { Clock, MapPin, User, ChevronDown, Shield } from "lucide-react-native";
 import { usePCRStore } from "@/store/pcrStore";
 import { router } from "expo-router";
+import { OfflineStatus } from "@/components/OfflineStatus";
 
 const priorityOptions = ["Emergency", "Urgent", "Non-Urgent"] as const;
 
@@ -88,6 +89,7 @@ export default function NewPCRScreen() {
   const [showOthersInput, setShowOthersInput] = useState<boolean>(false);
   const [showAdminLogin, setShowAdminLogin] = useState<boolean>(false);
   const [adminPassword, setAdminPassword] = useState<string>('');
+  const [showOfflineDetails, setShowOfflineDetails] = useState<boolean>(false);
 
   const { saveCurrentPCRDraft, saveTabDataWithNotification } = usePCRStore();
   
