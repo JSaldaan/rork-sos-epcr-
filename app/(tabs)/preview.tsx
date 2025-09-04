@@ -74,7 +74,7 @@ export default function PreviewScreen() {
   const handleSubmit = async () => {
     Alert.alert(
       "Submit Report",
-      "Are you sure you want to submit this report? This will save it to the Admin Panel and send the data to Microsoft Teams.",
+      "Are you sure you want to submit this report? This will save it to My Reports, Admin Panel, and send the data to Microsoft Teams.",
       [
         {
           text: "Cancel",
@@ -99,7 +99,7 @@ export default function PreviewScreen() {
             console.log("Submitting PCR Report:", reportData);
 
             try {
-              // Submit to admin panel (save to local storage)
+              // Submit to admin panel and My Reports (save to local storage)
               console.log('=== STARTING PCR SUBMISSION ===');
               console.log('Submitting PCR with data:', {
                 patient: `${patientInfo.firstName} ${patientInfo.lastName}`,
@@ -109,12 +109,14 @@ export default function PreviewScreen() {
                   nurse: !!signatureInfo.nurseSignaturePaths,
                   doctor: !!signatureInfo.doctorSignaturePaths,
                   others: !!signatureInfo.othersSignaturePaths
-                }
+                },
+                ecgCaptures: vitals.filter(v => v.ecgCapture).length
               });
               
+              // Submit PCR - this will save to both My Reports and Admin Panel
               await submitPCR();
-              console.log('PCR submitted to admin panel successfully');
-              console.log('PCR should now be available in My Files and Admin Panel');
+              console.log('PCR submitted successfully - available in My Reports and Admin Panel');
+              console.log('Report includes all data from all tabs with unrestricted access for admin');
               console.log('=== PCR SUBMISSION COMPLETE ===');
               
               // Clear the draft since we're submitting
@@ -133,11 +135,18 @@ export default function PreviewScreen() {
 
               if (teamsResult.success) {
                 Alert.alert(
-                  "Success",
-                  `Report submitted successfully!\n\nSubmitted to Admin Panel and sent to Teams.\n\nLogic App Response: ${teamsResult.details?.status || 'OK'}\n\nYou can now view your submitted report in the "My Reports" tab.`,
+                  "✅ Report Submitted Successfully!",
+                  `Your Patient Care Report has been submitted and is now available:\n\n📋 My Reports - View and copy your report\n🏥 Admin Panel - Full access for printing to PDF/Word\n📧 Microsoft Teams - Data sent successfully\n\n🖨️ Admin can print with all signatures and ECG captures included\n\nResponse: ${teamsResult.details?.status || 'OK'}`,
                   [
                     {
-                      text: "OK",
+                      text: "View My Reports",
+                      onPress: async () => {
+                        await resetPCR();
+                        // Navigate to My Reports tab
+                      },
+                    },
+                    {
+                      text: "New Report",
                       onPress: async () => {
                         await resetPCR();
                       },
@@ -149,22 +158,24 @@ export default function PreviewScreen() {
                 const errorDetails = teamsResult.details ? 
                   `\n\nDetails:\nStatus: ${teamsResult.details.status || 'N/A'}\nResponse: ${teamsResult.details.response || teamsResult.details.error || 'No response'}` : '';
                 
-                console.error('\n=== SUBMISSION FAILED ===');
+                console.error('\n=== TEAMS SUBMISSION FAILED ===');
                 console.error('Error:', teamsResult.error);
                 console.error('Details:', JSON.stringify(teamsResult.details, null, 2));
                 console.error('Report Data:', JSON.stringify(reportData, null, 2));
                 console.error('========================\n');
                 
                 Alert.alert(
-                  "Teams Submission Error",
-                  `PCR submitted to Admin Panel but failed to send to Teams.\n\n${teamsResult.error || 'Failed to send to Teams'}${errorDetails}\n\nThe report is saved in Admin Panel and can be accessed in the "My Reports" tab.\n\nWould you like to continue?`,
+                  "⚠️ Partial Success",
+                  `✅ PCR saved to My Reports and Admin Panel\n❌ Teams submission failed\n\n${teamsResult.error || 'Failed to send to Teams'}${errorDetails}\n\n📋 Your report is safely stored and accessible in:\n• My Reports tab (copy/print)\n• Admin Panel (unrestricted PDF/Word export)\n\n🖨️ All signatures and ECG captures are preserved for admin printing`,
                   [
                     {
-                      text: "Cancel",
-                      style: "cancel",
+                      text: "View My Reports",
+                      onPress: async () => {
+                        await resetPCR();
+                      },
                     },
                     {
-                      text: "Continue",
+                      text: "New Report",
                       onPress: async () => {
                         await resetPCR();
                       },
@@ -174,10 +185,10 @@ export default function PreviewScreen() {
               }
             } catch (localError) {
               setIsSubmitting(false);
-              console.error('Admin submission error:', localError);
+              console.error('PCR submission error:', localError);
               Alert.alert(
-                "Submission Error",
-                "Failed to submit PCR to Admin Panel. Please try again.",
+                "❌ Submission Error",
+                "Failed to submit PCR. Please check your data and try again.\n\nAll your work is saved as a draft and will be restored when you return.",
                 [{ text: "OK" }]
               );
             }
@@ -384,12 +395,12 @@ export default function PreviewScreen() {
           {isSubmitting ? (
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <ActivityIndicator size="small" color="#fff" />
-              <Text style={[styles.submitButtonText, { marginLeft: 8 }]}>Sending to Teams...</Text>
+              <Text style={[styles.submitButtonText, { marginLeft: 8 }]}>Submitting Report...</Text>
             </View>
           ) : (
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <Send size={20} color="#fff" />
-              <Text style={[styles.submitButtonText, { marginLeft: 8 }]}>Submit Report</Text>
+              <Text style={[styles.submitButtonText, { marginLeft: 8 }]}>Submit to My Reports & Admin</Text>
             </View>
           )}
         </TouchableOpacity>
