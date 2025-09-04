@@ -136,7 +136,7 @@ export default function PreviewScreen() {
               if (teamsResult.success) {
                 Alert.alert(
                   "✅ Report Submitted Successfully!",
-                  `Your Patient Care Report has been submitted and is now available:\n\n📋 My Reports - View and copy your report\n🏥 Admin Panel - Full access for printing to PDF/Word\n📧 Microsoft Teams - Data sent successfully\n\n🖨️ Admin can print with all signatures and ECG captures included\n\nResponse: ${teamsResult.details?.status || 'OK'}`,
+                  `Your Patient Care Report has been submitted and is now available:\n\n📋 My Reports - View and copy your report\n🏥 Admin Panel - Full access for printing to PDF/Word\n📧 Microsoft Teams - Data sent successfully\n\n🖨️ All signatures and ECG captures can be printed without restrictions\n\nResponse: ${teamsResult.details?.status || 'OK'}`,
                   [
                     {
                       text: "View My Reports",
@@ -309,7 +309,7 @@ export default function PreviewScreen() {
         {renderSection(
           "Transport Information",
           <View>
-            {renderField("Destination", transportInfo.destination)}
+            {renderField("Destination", transportInfo.destination === "Other" && transportInfo.customDestination ? transportInfo.customDestination : transportInfo.destination)}
             {renderField("Mode", transportInfo.mode)}
             {renderField("Unit Number", transportInfo.unitNumber)}
             {renderField("Departure Time", transportInfo.departureTime)}

@@ -490,31 +490,7 @@ export default function AdminScreen() {
             page-break-inside: avoid;
           }
           
-          .evidence-section {
-            margin: 20px 0;
-            padding: 15px;
-            border: 2px solid #d32f2f;
-            background-color: #fff3e0;
-            page-break-inside: avoid;
-          }
-          
-          .evidence-title {
-            color: #d32f2f;
-            font-weight: bold;
-            font-size: 14pt;
-            margin-bottom: 10px;
-            text-transform: uppercase;
-          }
-          
-          .police-notice {
-            background-color: #ffebee;
-            border: 2px solid #f44336;
-            padding: 15px;
-            margin: 20px 0;
-            text-align: center;
-            font-weight: bold;
-            color: #d32f2f;
-          }
+
           
           .signature-info {
             font-size: 8pt;
@@ -735,12 +711,8 @@ export default function AdminScreen() {
         </div>
         
         ${(pcr.vitals.some(v => v.ecgCapture) || relatedECGs.length > 0) ? `
-        <div class="evidence-section">
-          <div class="evidence-title">⚡ Electronic ECG Evidence</div>
-          <div class="police-notice">
-            🚨 POLICE INVESTIGATION EVIDENCE 🚨<br/>
-            Electronic ECG recordings captured during patient care
-          </div>
+        <div class="section">
+          <div class="section-title">ECG Recordings</div>
           
           ${relatedECGs.length > 0 ? relatedECGs.map((ecg, index) => `
             <div class="ecg-section">
@@ -758,7 +730,7 @@ export default function AdminScreen() {
                 </div>
               `}
               <div style="font-size: 8pt; color: #999; margin-top: 5px;">
-                Evidence ID: ${ecg.ecg_id} | Chain of Custody: Digital signature verified
+                Recording ID: ${ecg.ecg_id} | Timestamp: ${ecg.captured_at}
               </div>
             </div>
           `).join('') : ''}
@@ -778,7 +750,7 @@ export default function AdminScreen() {
                 </div>
               `}
               <div style="font-size: 8pt; color: #999; margin-top: 5px;">
-                Evidence ID: ECG_VIT_${pcr.id}_${index} | Timestamp: ${vital.timestamp}
+                Recording ID: ECG_VIT_${pcr.id}_${index} | Timestamp: ${vital.timestamp}
               </div>
             </div>
           `).join('')}
@@ -792,7 +764,7 @@ export default function AdminScreen() {
             <div>
               <div class="info-item">
                 <span class="info-label">Destination:</span>
-                <span class="info-value">${pcr.transportInfo.destination || 'Not specified'}</span>
+                <span class="info-value">${pcr.transportInfo.destination === "Other" && pcr.transportInfo.customDestination ? pcr.transportInfo.customDestination : (pcr.transportInfo.destination || 'Not specified')}</span>
               </div>
               <div class="info-item">
                 <span class="info-label">Transport Mode:</span>
@@ -888,13 +860,9 @@ export default function AdminScreen() {
         </div>
         ` : ''}
         
-        <!-- Electronic Signatures Evidence Section -->
-        <div class="evidence-section">
-          <div class="evidence-title">✍️ Electronic Signature Evidence</div>
-          <div class="police-notice">
-            🚨 POLICE INVESTIGATION EVIDENCE 🚨<br/>
-            Digital signatures captured with timestamp verification
-          </div>
+        <!-- Electronic Signatures Section -->
+        <div class="section">
+          <div class="section-title">Electronic Signatures</div>
           
           <div class="signature-grid">
             <div class="signature-box">
@@ -906,7 +874,7 @@ export default function AdminScreen() {
                 Name: ${anonymizeReport ? 'CONFIDENTIAL' : (pcr.signatureInfo.nurseSignature || 'Not signed')}<br/>
                 ID: ${anonymizeReport ? 'XXXXX' : (pcr.signatureInfo.nurseCorporationId || 'N/A')}<br/>
                 Date: ${pcr.submittedAt ? new Date(pcr.submittedAt).toLocaleDateString() : 'N/A'}<br/>
-                <span style="font-size: 8pt; color: #999;">Digital Evidence ID: SIG_${pcr.id}_NURSE</span>
+                <span style="font-size: 8pt; color: #999;">Signature ID: SIG_${pcr.id}_NURSE</span>
               </div>
             </div>
             
@@ -919,7 +887,7 @@ export default function AdminScreen() {
                 Name: ${anonymizeReport ? 'CONFIDENTIAL' : (pcr.signatureInfo.doctorSignature || 'Not signed')}<br/>
                 ID: ${anonymizeReport ? 'XXXXX' : (pcr.signatureInfo.doctorCorporationId || 'N/A')}<br/>
                 Date: ${pcr.submittedAt ? new Date(pcr.submittedAt).toLocaleDateString() : 'N/A'}<br/>
-                <span style="font-size: 8pt; color: #999;">Digital Evidence ID: SIG_${pcr.id}_DOCTOR</span>
+                <span style="font-size: 8pt; color: #999;">Signature ID: SIG_${pcr.id}_DOCTOR</span>
               </div>
             </div>
             
@@ -932,7 +900,7 @@ export default function AdminScreen() {
                 Name: ${anonymizeReport ? 'CONFIDENTIAL' : (pcr.signatureInfo.othersSignature || 'Not signed')}<br/>
                 Role: ${pcr.signatureInfo.othersRole || 'N/A'}<br/>
                 Date: ${pcr.submittedAt ? new Date(pcr.submittedAt).toLocaleDateString() : 'N/A'}<br/>
-                <span style="font-size: 8pt; color: #999;">Digital Evidence ID: SIG_${pcr.id}_OTHER</span>
+                <span style="font-size: 8pt; color: #999;">Signature ID: SIG_${pcr.id}_OTHER</span>
               </div>
             </div>
           </div>
@@ -949,7 +917,7 @@ export default function AdminScreen() {
                 <div class="signature-info">
                   Name: ${anonymizeReport ? 'CONFIDENTIAL' : sig.signer_name}<br/>
                   Signed: ${new Date(sig.signed_at).toLocaleString()}<br/>
-                  <span style="font-size: 8pt; color: #999;">Evidence ID: ${sig.signature_id}</span>
+                  <span style="font-size: 8pt; color: #999;">Signature ID: ${sig.signature_id}</span>
                 </div>
               </div>
             `).join('')}
@@ -957,20 +925,20 @@ export default function AdminScreen() {
           ` : ''}
         </div>
         
-        <!-- Chain of Custody Section -->
-        <div class="evidence-section">
-          <div class="evidence-title">🔒 Digital Chain of Custody</div>
+        <!-- Document Information Section -->
+        <div class="section">
+          <div class="section-title">Document Information</div>
           <div style="font-size: 10pt; line-height: 1.4;">
             <div><strong>Original Creation:</strong> ${pcr.submittedAt}</div>
-            <div><strong>System Timestamp:</strong> ${new Date().toISOString()}</div>
-            <div><strong>Digital Integrity:</strong> All signatures and ECGs stored with cryptographic timestamps</div>
-            <div><strong>Access Log:</strong> Report generated by authorized admin user</div>
-            <div><strong>Evidence Preservation:</strong> Original digital files maintained in secure system</div>
+            <div><strong>Report Generated:</strong> ${new Date().toISOString()}</div>
+            <div><strong>Digital Storage:</strong> All signatures and ECGs stored with timestamps</div>
+            <div><strong>Generated By:</strong> Authorized admin user</div>
+            <div><strong>Data Preservation:</strong> Original digital files maintained in system</div>
             <div><strong>Authentication:</strong> Electronic signatures verified against staff database</div>
-            <div style="margin-top: 10px; padding: 10px; background-color: #fff3e0; border: 1px solid #ff9800;">
-              <strong>⚠️ LEGAL NOTICE:</strong> This document contains digitally captured evidence including electronic signatures and ECG recordings. 
-              All timestamps are system-generated and cryptographically secured. Original digital files are preserved in the source system 
-              and can be independently verified for legal proceedings.
+            <div style="margin-top: 10px; padding: 10px; background-color: #f0f7ff; border: 1px solid #0066cc;">
+              <strong>📋 DOCUMENT NOTICE:</strong> This document contains digitally captured signatures and ECG recordings. 
+              All timestamps are system-generated and stored securely. Original digital files are preserved in the source system 
+              for reference and can be printed without restrictions.
             </div>
           </div>
         </div>
@@ -981,15 +949,15 @@ export default function AdminScreen() {
           <div><strong>Submitted By:</strong> ${pcr.submittedBy.name} (${pcr.submittedBy.corporationId}) - ${pcr.submittedBy.role}</div>
           <div><strong>Submission Date:</strong> ${new Date(pcr.submittedAt).toLocaleString()}</div>
           <div><strong>Report Generated:</strong> ${new Date().toLocaleString()}</div>
-          <div><strong>Evidence Count:</strong> ${(pcr.vitals.filter(v => v.ecgCapture).length + relatedECGs.length)} ECG recordings, ${(relatedSignatures.length + [pcr.signatureInfo.nurseSignaturePaths, pcr.signatureInfo.doctorSignaturePaths, pcr.signatureInfo.othersSignaturePaths].filter(Boolean).length)} electronic signatures</div>
+          <div><strong>Content Summary:</strong> ${(pcr.vitals.filter(v => v.ecgCapture).length + relatedECGs.length)} ECG recordings, ${(relatedSignatures.length + [pcr.signatureInfo.nurseSignaturePaths, pcr.signatureInfo.doctorSignaturePaths, pcr.signatureInfo.othersSignaturePaths].filter(Boolean).length)} electronic signatures</div>
           <div style="margin-top: 10px; font-size: 8pt; color: #666;">
-            This document contains confidential patient information protected by HIPAA and digital evidence suitable for legal proceedings.<br/>
-            Unauthorized disclosure is prohibited by law. Digital signatures and ECG images are embedded for police investigation purposes.
+            This document contains confidential patient information protected by HIPAA.<br/>
+            Unauthorized disclosure is prohibited by law. Digital signatures and ECG images are embedded and can be printed on any device.
           </div>
-          <div style="margin-top: 10px; padding: 8px; background-color: #ffebee; border: 1px solid #f44336; font-size: 8pt;">
-            <strong>🚨 POLICE INVESTIGATION DOCUMENT 🚨</strong><br/>
-            This report contains embedded electronic evidence including digital signatures and ECG recordings.<br/>
-            All digital evidence maintains chain of custody and can be independently verified.
+          <div style="margin-top: 10px; padding: 8px; background-color: #e8f5e8; border: 1px solid #4caf50; font-size: 8pt;">
+            <strong>✅ PRINTABLE DOCUMENT</strong><br/>
+            This report contains embedded electronic signatures and ECG recordings.<br/>
+            All digital content can be printed without restrictions on any compatible device.
           </div>
         </div>
       </body>
@@ -1608,9 +1576,9 @@ export default function AdminScreen() {
                 <Text style={styles.reportActionText}>Export Standard PDF</Text>
               </TouchableOpacity>
               
-              <TouchableOpacity style={[styles.reportActionButton, { borderColor: '#d32f2f', backgroundColor: '#ffebee' }]} onPress={() => handleExportPDF(true)}>
-                <FileText size={20} color="#d32f2f" />
-                <Text style={[styles.reportActionText, { color: '#d32f2f', fontWeight: 'bold' }]}>🚨 Police Investigation PDF</Text>
+              <TouchableOpacity style={[styles.reportActionButton, { borderColor: '#28a745', backgroundColor: '#e8f5e8' }]} onPress={() => handleExportPDF(true)}>
+                <FileText size={20} color="#28a745" />
+                <Text style={[styles.reportActionText, { color: '#28a745', fontWeight: 'bold' }]}>📋 Complete Report PDF</Text>
               </TouchableOpacity>
             </View>
 
