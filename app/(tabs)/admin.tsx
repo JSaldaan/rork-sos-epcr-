@@ -307,6 +307,32 @@ export default function AdminScreen() {
     }
   };
 
+  // Function to convert SVG path data to base64 image
+  const convertSvgPathToBase64 = (svgPaths: string, width: number = 300, height: number = 100): string => {
+    if (!svgPaths) return '';
+    
+    try {
+      // Create SVG string from path data
+      const pathElements = svgPaths.split('|').filter(p => p).map(path => 
+        `<path d="${path}" stroke="#000" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`
+      ).join('');
+      
+      const svgString = `
+        <svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
+          <rect width="100%" height="100%" fill="white"/>
+          ${pathElements}
+        </svg>
+      `;
+      
+      // Convert to base64
+      const base64 = btoa(unescape(encodeURIComponent(svgString)));
+      return `data:image/svg+xml;base64,${base64}`;
+    } catch (error) {
+      console.error('Error converting SVG path to base64:', error);
+      return '';
+    }
+  };
+
   const generateProfessionalHTML = (pcr: CompletedPCR, isComprehensive: boolean = false) => {
     const patientName = anonymizeReport ? 'CONFIDENTIAL PATIENT' : `${pcr.patientInfo.firstName} ${pcr.patientInfo.lastName}`;
     const patientMRN = anonymizeReport ? 'XXXXX' : pcr.patientInfo.mrn;
@@ -316,6 +342,11 @@ export default function AdminScreen() {
     const encounterId = `ENC_${pcr.id}`;
     const relatedECGs = ecgs.filter(e => e.encounter_id === encounterId);
     const relatedSignatures = signatures.filter(s => s.encounter_id === encounterId);
+    
+    // Convert signature paths to base64 images
+    const nurseSignatureImage = convertSvgPathToBase64(pcr.signatureInfo.nurseSignaturePaths);
+    const doctorSignatureImage = convertSvgPathToBase64(pcr.signatureInfo.doctorSignaturePaths);
+    const othersSignatureImage = convertSvgPathToBase64(pcr.signatureInfo.othersSignaturePaths);
     
     return `
       <!DOCTYPE html>
@@ -774,7 +805,7 @@ export default function AdminScreen() {
               <div><strong>Associated Vitals:</strong> HR: ${vital.heartRate}, BP: ${vital.bloodPressureSystolic}/${vital.bloodPressureDiastolic}</div>
               ${vital.ecgCapture ? `
                 <div style="margin: 10px 0; border: 1px solid #ccc; padding: 10px; background: white; text-align: center;">
-                  <img src="${vital.ecgCapture.startsWith('data:image') ? vital.ecgCapture : `data:image/png;base64,${vital.ecgCapture}`}" class="ecg-image" alt="ECG from Vitals ${index + 1}" style="max-width: 100%; height: auto; display: block; margin: 0 auto; object-fit: contain;" />
+                  <img src="${vital.ecgCapture.startsWith('data:image') ? vital.ecgCapture : `data:image/png;base64,${vital.ecgCapture}`}" class="ecg-image" alt="ECG from Vitals ${index + 1}" style="max-width: 100%; height: auto; display: block; margin: 0 auto; object-fit: contain; -webkit-print-color-adjust: exact; print-color-adjust: exact;" />
                 </div>
               ` : `
                 <div style="font-size: 9pt; color: #666; margin: 5px 0; font-style: italic;">
@@ -899,9 +930,9 @@ export default function AdminScreen() {
           <div class="signature-grid">
             <div class="signature-box">
               <div class="signature-label">NURSE/PROVIDER</div>
-              ${pcr.signatureInfo.nurseSignaturePaths ? `
+              ${nurseSignatureImage ? `
                 <div style="margin: 5px 0; border: 1px solid #ccc; padding: 5px; background: white; min-height: 60px; display: flex; align-items: center; justify-content: center;">
-                  <img src="${pcr.signatureInfo.nurseSignaturePaths.startsWith('data:image') ? pcr.signatureInfo.nurseSignaturePaths : `data:image/png;base64,${pcr.signatureInfo.nurseSignaturePaths}`}" class="signature-image" alt="Nurse Signature" style="max-width: 180px; max-height: 50px; display: block; object-fit: contain;" />
+                  <img src="${nurseSignatureImage}" class="signature-image" alt="Nurse Signature" style="max-width: 180px; max-height: 50px; display: block; object-fit: contain; -webkit-print-color-adjust: exact; print-color-adjust: exact;" />
                 </div>
               ` : '<div class="signature-line"></div>'}
               <div class="signature-info">
@@ -914,9 +945,9 @@ export default function AdminScreen() {
             
             <div class="signature-box">
               <div class="signature-label">PHYSICIAN</div>
-              ${pcr.signatureInfo.doctorSignaturePaths ? `
+              ${doctorSignatureImage ? `
                 <div style="margin: 5px 0; border: 1px solid #ccc; padding: 5px; background: white; min-height: 60px; display: flex; align-items: center; justify-content: center;">
-                  <img src="${pcr.signatureInfo.doctorSignaturePaths.startsWith('data:image') ? pcr.signatureInfo.doctorSignaturePaths : `data:image/png;base64,${pcr.signatureInfo.doctorSignaturePaths}`}" class="signature-image" alt="Doctor Signature" style="max-width: 180px; max-height: 50px; display: block; object-fit: contain;" />
+                  <img src="${doctorSignatureImage}" class="signature-image" alt="Doctor Signature" style="max-width: 180px; max-height: 50px; display: block; object-fit: contain; -webkit-print-color-adjust: exact; print-color-adjust: exact;" />
                 </div>
               ` : '<div class="signature-line"></div>'}
               <div class="signature-info">
@@ -929,9 +960,9 @@ export default function AdminScreen() {
             
             <div class="signature-box">
               <div class="signature-label">${pcr.signatureInfo.othersRole || 'PATIENT/GUARDIAN'}</div>
-              ${pcr.signatureInfo.othersSignaturePaths ? `
+              ${othersSignatureImage ? `
                 <div style="margin: 5px 0; border: 1px solid #ccc; padding: 5px; background: white; min-height: 60px; display: flex; align-items: center; justify-content: center;">
-                  <img src="${pcr.signatureInfo.othersSignaturePaths.startsWith('data:image') ? pcr.signatureInfo.othersSignaturePaths : `data:image/png;base64,${pcr.signatureInfo.othersSignaturePaths}`}" class="signature-image" alt="${pcr.signatureInfo.othersRole || 'Patient'} Signature" style="max-width: 180px; max-height: 50px; display: block; object-fit: contain;" />
+                  <img src="${othersSignatureImage}" class="signature-image" alt="${pcr.signatureInfo.othersRole || 'Patient'} Signature" style="max-width: 180px; max-height: 50px; display: block; object-fit: contain; -webkit-print-color-adjust: exact; print-color-adjust: exact;" />
                 </div>
               ` : '<div class="signature-line"></div>'}
               <div class="signature-info">
