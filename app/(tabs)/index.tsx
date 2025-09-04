@@ -89,7 +89,7 @@ export default function NewPCRScreen() {
   const [showAdminLogin, setShowAdminLogin] = useState<boolean>(false);
   const [adminPassword, setAdminPassword] = useState<string>('');
 
-  const { saveCurrentPCRDraft } = usePCRStore();
+  const { saveCurrentPCRDraft, saveTabDataWithNotification } = usePCRStore();
   
   // Route guard: Admin users should not access this screen
   const isAdminUser = currentSession?.role === 'admin' || 
@@ -118,6 +118,45 @@ export default function NewPCRScreen() {
       Alert.alert("Error", "Failed to save patient information. Please try again.");
     }
   }, [patientInfo.firstName, patientInfo.lastName, saveCurrentPCRDraft]);
+
+  const handleSaveTab = useCallback(async () => {
+    try {
+      await saveTabDataWithNotification('Patient Info');
+      Alert.alert("Success", "Patient information saved successfully!");
+    } catch (error) {
+      Alert.alert("Error", "Failed to save patient information. Please try again.");
+    }
+  }, [saveTabDataWithNotification]);
+
+  const handleSubmitReport = useCallback(async () => {
+    if (!patientInfo.firstName || !patientInfo.lastName) {
+      Alert.alert("Incomplete Data", "Please enter patient's first and last name before submitting.");
+      return;
+    }
+    
+    Alert.alert(
+      "Submit Patient Report",
+      "Are you sure you want to submit this patient information report?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Submit",
+          style: "default",
+          onPress: async () => {
+            try {
+              await saveTabDataWithNotification('Patient Info');
+              Alert.alert(
+                "Patient Report Submitted",
+                "Your patient information has been submitted successfully! Continue to other tabs to complete the full PCR."
+              );
+            } catch (error) {
+              Alert.alert("Error", "Failed to submit patient report. Please try again.");
+            }
+          }
+        }
+      ]
+    );
+  }, [patientInfo.firstName, patientInfo.lastName, saveTabDataWithNotification]);
 
   const handleCallTimeChange = useCallback((field: keyof typeof callTimeInfo) => 
     (text: string) => updateCallTimeInfo({ [field]: text }), [updateCallTimeInfo]);
@@ -616,9 +655,15 @@ export default function NewPCRScreen() {
         </View>
       </Modal>
 
-      <TouchableOpacity style={styles.saveButton} onPress={handleSavePatient}>
-        <Text style={styles.saveButtonText}>Save Patient Information</Text>
-      </TouchableOpacity>
+      <View style={styles.actionButtons}>
+        <TouchableOpacity style={styles.saveButton} onPress={handleSaveTab}>
+          <Text style={styles.saveButtonText}>Save Patient Data</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity style={styles.submitButton} onPress={handleSubmitReport}>
+          <Text style={styles.submitButtonText}>Submit Report</Text>
+        </TouchableOpacity>
+      </View>
 
       <View style={styles.bottomPadding} />
     </ScrollView>
@@ -736,14 +781,31 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "500",
   },
-  saveButton: {
-    backgroundColor: "#28A745",
+  actionButtons: {
+    flexDirection: "row",
     margin: 16,
+    gap: 12,
+  },
+  saveButton: {
+    flex: 1,
+    backgroundColor: "#28A745",
     padding: 16,
     borderRadius: 8,
     alignItems: "center",
   },
   saveButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  submitButton: {
+    flex: 1,
+    backgroundColor: "#0066CC",
+    padding: 16,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  submitButtonText: {
     color: "#fff",
     fontSize: 16,
     fontWeight: "600",

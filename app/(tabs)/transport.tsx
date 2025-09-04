@@ -14,7 +14,7 @@ import { Truck, MapPin, Users, FileText, ChevronDown, Check } from "lucide-react
 import { usePCRStore } from "@/store/pcrStore";
 
 export default function TransportScreen() {
-  const { transportInfo, updateTransportInfo, saveTransportData } = usePCRStore();
+  const { transportInfo, updateTransportInfo, saveTransportData, saveTabDataWithNotification } = usePCRStore();
   const [showHospitalDropdown, setShowHospitalDropdown] = useState<boolean>(false);
 
   const handleSaveTransport = useCallback(async () => {
@@ -37,6 +37,50 @@ export default function TransportScreen() {
       Alert.alert("Error", "Failed to save transport information");
     }
   }, [transportInfo.destination, transportInfo.customDestination, saveTransportData]);
+
+  const handleSaveTab = useCallback(async () => {
+    try {
+      await saveTabDataWithNotification('Transport');
+      Alert.alert("Success", "Transport data saved successfully!");
+    } catch (error) {
+      Alert.alert("Error", "Failed to save transport data. Please try again.");
+    }
+  }, [saveTabDataWithNotification]);
+
+  const handleSubmitReport = useCallback(async () => {
+    if (!transportInfo.destination) {
+      Alert.alert("Incomplete Data", "Please select a destination hospital before submitting.");
+      return;
+    }
+    
+    if (transportInfo.destination === "Other" && !transportInfo.customDestination.trim()) {
+      Alert.alert("Incomplete Data", "Please enter the name of the destination hospital.");
+      return;
+    }
+    
+    Alert.alert(
+      "Submit Report",
+      "Are you sure you want to submit this transport report?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Submit",
+          style: "default",
+          onPress: async () => {
+            try {
+              await saveTabDataWithNotification('Transport');
+              Alert.alert(
+                "Report Submitted",
+                "Your transport report has been submitted successfully! Go to Preview tab to submit the complete PCR."
+              );
+            } catch (error) {
+              Alert.alert("Error", "Failed to submit report. Please try again.");
+            }
+          }
+        }
+      ]
+    );
+  }, [transportInfo.destination, transportInfo.customDestination, saveTabDataWithNotification]);
 
   const hospitals = useMemo(() => [
     "Hamad General Hospital",
@@ -187,11 +231,17 @@ export default function TransportScreen() {
         />
       </View>
 
-      <TouchableOpacity style={styles.saveButton} onPress={handleSaveTransport}>
-        <Text style={styles.saveButtonText}>Save Transport Information</Text>
-      </TouchableOpacity>
+      <View style={styles.actionButtons}>
+        <TouchableOpacity style={styles.saveButton} onPress={handleSaveTab}>
+          <Text style={styles.saveButtonText}>Save Transport Data</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity style={styles.submitButton} onPress={handleSubmitReport}>
+          <Text style={styles.submitButtonText}>Submit Report</Text>
+        </TouchableOpacity>
+      </View>
 
-        <View style={styles.bottomPadding} />
+      <View style={styles.bottomPadding} />
       </ScrollView>
 
       <Modal
@@ -320,14 +370,31 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "500",
   },
-  saveButton: {
-    backgroundColor: "#28A745",
+  actionButtons: {
+    flexDirection: "row",
     margin: 16,
+    gap: 12,
+  },
+  saveButton: {
+    flex: 1,
+    backgroundColor: "#28A745",
     padding: 16,
     borderRadius: 8,
     alignItems: "center",
   },
   saveButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  submitButton: {
+    flex: 1,
+    backgroundColor: "#0066CC",
+    padding: 16,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  submitButtonText: {
     color: "#fff",
     fontSize: 16,
     fontWeight: "600",

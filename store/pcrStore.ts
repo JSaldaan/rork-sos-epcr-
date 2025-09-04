@@ -258,6 +258,8 @@ interface PCRStore {
   saveRefusalData: () => Promise<void>;
   addECGCapture: (ecgData: string) => void;
   updateVitalWithECG: (vitalIndex: number, ecgData: string) => void;
+  submitReportWithNotification: () => Promise<void>;
+  saveTabDataWithNotification: (tabName: string) => Promise<void>;
   // Admin functions
   loadAdminData: () => Promise<void>;
   addAuditLog: (action: string, targetType: string, targetId: string, details: string) => Promise<void>;
@@ -977,6 +979,10 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
       };
       set({ vitals: updatedVitals });
       console.log('ECG capture added to most recent vital signs');
+      // Auto-save after ECG capture
+      setTimeout(() => {
+        get().saveCurrentPCRDraft().catch(console.error);
+      }, 500);
     } else {
       console.log('No vital signs available to attach ECG capture');
     }
@@ -1659,6 +1665,28 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
     exportData += `Export completed at: ${new Date().toLocaleString()}\n`;
     
     return exportData;
+  },
+
+  submitReportWithNotification: async () => {
+    try {
+      await get().submitPCR();
+      console.log('PCR submitted successfully with notification');
+      return Promise.resolve();
+    } catch (error) {
+      console.error('Error submitting PCR:', error);
+      throw error;
+    }
+  },
+
+  saveTabDataWithNotification: async (tabName: string) => {
+    try {
+      await get().saveCurrentPCRDraft();
+      console.log(`${tabName} data saved successfully with notification`);
+      return Promise.resolve();
+    } catch (error) {
+      console.error(`Error saving ${tabName} data:`, error);
+      throw error;
+    }
   },
 
 }));

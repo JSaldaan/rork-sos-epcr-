@@ -15,7 +15,7 @@ import { AlertTriangle, FileX, Check } from "lucide-react-native";
 import SignatureModal from "@/components/SignatureModal";
 
 export default function RefusalForm() {
-  const { refusalInfo, updateRefusalInfo, patientInfo, saveRefusalData } = usePCRStore();
+  const { refusalInfo, updateRefusalInfo, patientInfo, saveRefusalData, saveTabDataWithNotification } = usePCRStore();
   const [activeSignature, setActiveSignature] = useState<string | null>(null);
 
   const handleSaveSignature = (field: string, signature: string) => {
@@ -90,6 +90,44 @@ export default function RefusalForm() {
         Alert.alert("Error", "Failed to save refusal form");
       }
     }
+  };
+
+  const handleSaveTab = async () => {
+    try {
+      await saveTabDataWithNotification('Refusal');
+      Alert.alert("Success", "Refusal data saved successfully!");
+    } catch (error) {
+      Alert.alert("Error", "Failed to save refusal data. Please try again.");
+    }
+  };
+
+  const handleSubmitReport = async () => {
+    if (!validateForm()) {
+      return;
+    }
+    
+    Alert.alert(
+      "Submit Refusal Report",
+      "Are you sure you want to submit this refusal report?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Submit",
+          style: "default",
+          onPress: async () => {
+            try {
+              await saveTabDataWithNotification('Refusal');
+              Alert.alert(
+                "Refusal Report Submitted",
+                "Your refusal report has been submitted successfully!"
+              );
+            } catch (error) {
+              Alert.alert("Error", "Failed to submit refusal report. Please try again.");
+            }
+          }
+        }
+      ]
+    );
   };
 
   React.useEffect(() => {
@@ -303,10 +341,16 @@ export default function RefusalForm() {
         </View>
       </View>
 
-      <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-        <Check size={20} color="#fff" />
-        <Text style={styles.submitButtonText}>Save Refusal Form</Text>
-      </TouchableOpacity>
+      <View style={styles.actionButtons}>
+        <TouchableOpacity style={styles.saveButton} onPress={handleSaveTab}>
+          <Text style={styles.saveButtonText}>Save Refusal Data</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity style={styles.submitButton} onPress={handleSubmitReport}>
+          <Check size={20} color="#fff" />
+          <Text style={styles.submitButtonText}>Submit Report</Text>
+        </TouchableOpacity>
+      </View>
 
       {activeSignature && (
         <SignatureModal
@@ -483,12 +527,34 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "500",
   },
+  actionButtons: {
+    flexDirection: "row",
+    margin: 20,
+    marginTop: 0,
+    gap: 12,
+  },
+  saveButton: {
+    flex: 1,
+    backgroundColor: "#28A745",
+    padding: 18,
+    borderRadius: 12,
+    alignItems: "center",
+    shadowColor: "#28A745",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  saveButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+  },
   submitButton: {
+    flex: 1,
     flexDirection: "row",
     backgroundColor: "#0066CC",
     padding: 18,
-    margin: 20,
-    marginTop: 0,
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",

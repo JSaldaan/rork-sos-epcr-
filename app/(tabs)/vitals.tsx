@@ -14,7 +14,7 @@ import { usePCRStore } from "@/store/pcrStore";
 import { CameraView, useCameraPermissions } from 'expo-camera';
 
 export default function VitalsScreen() {
-  const { vitals, addVitalSigns, saveVitalsData, addECGCapture } = usePCRStore();
+  const { vitals, addVitalSigns, saveVitalsData, addECGCapture, saveTabDataWithNotification } = usePCRStore();
   const [currentVitals, setCurrentVitals] = useState({
     bloodPressureSystolic: "",
     bloodPressureDiastolic: "",
@@ -97,19 +97,58 @@ export default function VitalsScreen() {
     
     if (vitals.length > 0) {
       addECGCapture(ecgData);
+      setShowCamera(false); // Exit camera immediately after capture
       Alert.alert(
         "ECG Captured",
-        "ECG recording has been captured and saved with the most recent vital signs.",
-        [{ text: "OK", onPress: () => setShowCamera(false) }]
+        "ECG recording has been captured and saved with the most recent vital signs."
       );
     } else {
+      setShowCamera(false); // Exit camera
       Alert.alert(
         "No Vital Signs",
-        "Please record vital signs first before capturing ECG.",
-        [{ text: "OK", onPress: () => setShowCamera(false) }]
+        "Please record vital signs first before capturing ECG."
       );
     }
   }, [vitals.length, addECGCapture]);
+
+  const handleSaveTab = useCallback(async () => {
+    try {
+      await saveTabDataWithNotification('Vitals');
+      Alert.alert("Success", "Vitals data saved successfully!");
+    } catch (error) {
+      Alert.alert("Error", "Failed to save vitals data. Please try again.");
+    }
+  }, [saveTabDataWithNotification]);
+
+  const handleSubmitReport = useCallback(async () => {
+    if (vitals.length === 0) {
+      Alert.alert("No Data", "Please record at least one set of vital signs before submitting.");
+      return;
+    }
+    
+    Alert.alert(
+      "Submit Report",
+      "Are you sure you want to submit this report? This action cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Submit",
+          style: "default",
+          onPress: async () => {
+            try {
+              await saveTabDataWithNotification('Vitals');
+              Alert.alert(
+                "Report Submitted",
+                "Your vitals report has been submitted successfully! Go to Preview tab to submit the complete PCR."
+              );
+            } catch (error) {
+              Alert.alert("Error", "Failed to submit report. Please try again.");
+            }
+          }
+        }
+      ]
+    );
+  }, [vitals.length, saveTabDataWithNotification]);
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -213,7 +252,7 @@ export default function VitalsScreen() {
 
         <TouchableOpacity style={styles.addButton} onPress={handleAddVitals}>
           <Plus size={20} color="#fff" />
-          <Text style={styles.addButtonText}>Save Vitals</Text>
+          <Text style={styles.addButtonText}>Add Vitals</Text>
         </TouchableOpacity>
       </View>
 
@@ -222,9 +261,20 @@ export default function VitalsScreen() {
           <View style={styles.sectionHeader}>
             <Clock size={20} color="#0066CC" />
             <Text style={styles.sectionTitle}>Vital Signs History</Text>
-            <TouchableOpacity style={styles.ecgButton} onPress={handleECGCapture}>
-              <Camera size={16} color="#0066CC" />
-              <Text style={styles.ecgButtonText}>ECG Capture</Text>
+            <TouchableOpacity 
+              style={[
+                styles.ecgButton,
+                vitals.some(v => v.ecgCapture) && styles.ecgButtonCaptured
+              ]} 
+              onPress={handleECGCapture}
+            >
+              <Camera size={16} color={vitals.some(v => v.ecgCapture) ? "#28A745" : "#0066CC"} />
+              <Text style={[
+                styles.ecgButtonText,
+                vitals.some(v => v.ecgCapture) && styles.ecgButtonTextCaptured
+              ]}>
+                {vitals.some(v => v.ecgCapture) ? "ECG Captured" : "ECG Capture"}
+              </Text>
             </TouchableOpacity>
           </View>
 
@@ -283,12 +333,23 @@ export default function VitalsScreen() {
                   <Text style={styles.ecgTimestamp}>
                     {vital.ecgCaptureTimestamp ? new Date(vital.ecgCaptureTimestamp).toLocaleTimeString() : 'N/A'}
                   </Text>
+                  <Text style={styles.ecgReference}>Ref: {vital.ecgCapture?.substring(0, 20)}...</Text>
                 </View>
               )}
             </View>
           ))}
         </View>
       )}
+
+      <View style={styles.actionButtons}>
+        <TouchableOpacity style={styles.saveButton} onPress={handleSaveTab}>
+          <Text style={styles.saveButtonText}>Save Vitals Data</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity style={styles.submitButton} onPress={handleSubmitReport}>
+          <Text style={styles.submitButtonText}>Submit Report</Text>
+        </TouchableOpacity>
+      </View>
 
       <View style={styles.bottomPadding} />
       
@@ -426,6 +487,42 @@ const styles = StyleSheet.create({
   bottomPadding: {
     height: 20,
   },
+  actionButtons: {
+    flexDirection: "row",
+    margin: 16,
+    gap: 12,
+  },
+  saveButton: {
+    flex: 1,
+    backgroundColor: "#28A745",
+    padding: 16,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  saveButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  submitButton: {
+    flex: 1,
+    backgroundColor: "#0066CC",
+    padding: 16,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  submitButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  ecgButtonCaptured: {
+    backgroundColor: "#E8F5E8",
+    borderColor: "#28A745",
+  },
+  ecgButtonTextCaptured: {
+    color: "#28A745",
+  },
   ecgButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -515,5 +612,11 @@ const styles = StyleSheet.create({
     color: "#4CAF50",
     fontSize: 10,
     marginTop: 2,
+  },
+  ecgReference: {
+    color: "#666",
+    fontSize: 9,
+    marginTop: 2,
+    fontFamily: "monospace",
   },
 });

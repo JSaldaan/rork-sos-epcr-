@@ -13,7 +13,7 @@ import { usePCRStore } from "@/store/pcrStore";
 import SignatureModal from "@/components/SignatureModal";
 
 export default function SummaryScreen() {
-  const { patientInfo, incidentInfo, vitals, transportInfo, signatureInfo, updateSignatureInfo, saveCurrentPCRDraft } = usePCRStore();
+  const { patientInfo, incidentInfo, vitals, transportInfo, signatureInfo, updateSignatureInfo, saveCurrentPCRDraft, saveTabDataWithNotification, submitReportWithNotification } = usePCRStore();
   const get = usePCRStore.getState;
   const scrollViewRef = useRef<ScrollView>(null);
   const [activeSignature, setActiveSignature] = useState<string | null>(null);
@@ -70,13 +70,6 @@ export default function SummaryScreen() {
     );
   }, [patientInfo.firstName, patientInfo.lastName]);
 
-  const formatTime = useCallback((timestamp: string) => {
-    return new Date(timestamp).toLocaleTimeString([], { 
-      hour: '2-digit', 
-      minute: '2-digit' 
-    });
-  }, []);
-
   const status = useMemo(() => {
     let completed = 0;
     const total = 5;
@@ -103,6 +96,52 @@ export default function SummaryScreen() {
     signatureInfo.othersSignature,
     signatureInfo.othersSignaturePaths
   ]);
+
+  const handleSaveTab = useCallback(async () => {
+    try {
+      await saveTabDataWithNotification('Summary');
+      Alert.alert("Success", "Summary data saved successfully!");
+    } catch (error) {
+      Alert.alert("Error", "Failed to save summary data. Please try again.");
+    }
+  }, [saveTabDataWithNotification]);
+
+  const handleSubmitReport = useCallback(async () => {
+    if (status.percentage < 75) {
+      Alert.alert("Incomplete Report", "Please complete at least 75% of the form before submitting.");
+      return;
+    }
+    
+    Alert.alert(
+      "Submit Complete Report",
+      "Are you sure you want to submit this complete PCR report? This action cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Submit Report",
+          style: "default",
+          onPress: async () => {
+            try {
+              await submitReportWithNotification();
+              Alert.alert(
+                "Report Submitted Successfully!",
+                "Your complete PCR report has been submitted to the admin system. You can view it in the Preview tab."
+              );
+            } catch (error) {
+              Alert.alert("Error", "Failed to submit report. Please try again.");
+            }
+          }
+        }
+      ]
+    );
+  }, [status.percentage, submitReportWithNotification]);
+
+  const formatTime = useCallback((timestamp: string) => {
+    return new Date(timestamp).toLocaleTimeString([], { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
+  }, []);
 
   return (
     <ScrollView 
@@ -416,18 +455,24 @@ export default function SummaryScreen() {
         </View>
       </View>
 
-      <TouchableOpacity 
-        style={[styles.submitButton, status.percentage < 75 && styles.submitButtonDisabled]} 
-        onPress={handleSavePCR}
-        disabled={status.percentage < 75}
-      >
-        <Send size={20} color="#fff" />
-        <Text style={styles.submitButtonText}>Save for Preview</Text>
-      </TouchableOpacity>
+      <View style={styles.actionButtons}>
+        <TouchableOpacity style={styles.saveButton} onPress={handleSaveTab}>
+          <Text style={styles.saveButtonText}>Save Summary Data</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={[styles.submitButton, status.percentage < 75 && styles.submitButtonDisabled]} 
+          onPress={handleSubmitReport}
+          disabled={status.percentage < 75}
+        >
+          <Send size={20} color="#fff" />
+          <Text style={styles.submitButtonText}>Submit Complete Report</Text>
+        </TouchableOpacity>
+      </View>
 
       {status.percentage < 75 && (
         <Text style={styles.warningText}>
-          Complete at least 75% of the form to save
+          Complete at least 75% of the form to submit the complete report
         </Text>
       )}
 
@@ -577,12 +622,29 @@ const styles = StyleSheet.create({
     marginRight: 16,
     marginBottom: 4,
   },
+  actionButtons: {
+    flexDirection: "row",
+    margin: 16,
+    gap: 12,
+  },
+  saveButton: {
+    flex: 1,
+    backgroundColor: "#28A745",
+    padding: 16,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  saveButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+  },
   submitButton: {
+    flex: 1,
     backgroundColor: "#0066CC",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    margin: 16,
     padding: 16,
     borderRadius: 8,
   },
