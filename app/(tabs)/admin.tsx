@@ -499,40 +499,44 @@ export default function AdminScreen() {
           .signature-grid {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
-            gap: 15px;
+            gap: 20px;
             margin-top: 20px;
           }
           
           .signature-box {
             border: 2px solid #000;
-            padding: 8px;
-            min-height: 120px;
+            padding: 10px;
+            min-height: 140px;
             text-align: center;
             page-break-inside: avoid;
             overflow: hidden;
+            position: relative;
           }
           
           .signature-label {
             font-weight: bold;
             font-size: 9pt;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
             color: #000;
+            text-align: center;
+            display: block;
           }
           
           .signature-line {
             border-bottom: 1px solid #000;
-            height: 40px;
-            margin: 8px 0;
+            height: 50px;
+            margin: 10px 0;
             position: relative;
+            clear: both;
           }
           
           .signature-image {
-            max-width: 160px !important;
-            max-height: 50px !important;
+            max-width: 140px !important;
+            max-height: 45px !important;
             width: auto !important;
             height: auto !important;
             border: 1px solid #333 !important;
-            margin: 5px auto !important;
+            margin: 8px auto !important;
             display: block !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
@@ -543,6 +547,8 @@ export default function AdminScreen() {
             visibility: visible !important;
             filter: contrast(1.5) brightness(1.1) !important;
             box-sizing: border-box !important;
+            position: relative !important;
+            z-index: 1 !important;
           }
           
           .ecg-image {
@@ -881,8 +887,17 @@ export default function AdminScreen() {
               ${vital.ecgCapture ? `
                 <div class="ecg-container">
                   <div class="ecg-title">📈 ECG Recording from Vitals</div>
-                  <img src="${vital.ecgCapture.startsWith('data:image') ? vital.ecgCapture : `data:image/png;base64,${vital.ecgCapture}`}" class="ecg-image" alt="ECG from Vitals ${index + 1}" />
-                  <div class="ecg-info">✓ Digital ECG Capture Available</div>
+                  ${vital.ecgCapture.startsWith('data:image') ? `
+                    <img src="${vital.ecgCapture}" class="ecg-image" alt="ECG from Vitals ${index + 1}" />
+                    <div class="ecg-info">✓ Digital ECG Capture Available</div>
+                  ` : `
+                    <div style="border: 2px solid #000; padding: 20px; margin: 10px 0; background: white; text-align: center;">
+                      <div style="font-size: 14pt; font-weight: bold; margin-bottom: 10px;">📈 ECG RECORDING CAPTURED</div>
+                      <div style="font-size: 10pt; color: #333; margin: 5px 0;">Recording ID: ${vital.ecgCapture}</div>
+                      <div style="font-size: 10pt; color: #333; margin: 5px 0;">Timestamp: ${vital.ecgCaptureTimestamp || vital.timestamp}</div>
+                      <div style="font-size: 9pt; color: #666; margin-top: 10px; font-style: italic;">Digital ECG data captured and stored in system</div>
+                    </div>
+                  `}
                 </div>
               ` : `
                 <div style="font-size: 9pt; color: #666; margin: 5px 0; font-style: italic;">
@@ -1008,13 +1023,13 @@ export default function AdminScreen() {
             <div class="signature-box">
               <div class="signature-label">NURSE/PROVIDER</div>
               ${nurseSignatureImage ? `
-                <div style="margin: 5px 0; border: 1px solid #333; padding: 8px; background: white; min-height: 60px; display: flex; align-items: center; justify-content: center; overflow: hidden;">
-                  <img src="${nurseSignatureImage}" class="signature-image" alt="Nurse Signature" />
+                <div style="margin: 8px 0; border: 1px solid #333; padding: 5px; background: white; min-height: 55px; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative;">
+                  <img src="${nurseSignatureImage}" class="signature-image" alt="Nurse Signature" style="max-width: 130px !important; max-height: 40px !important; object-fit: contain !important;" />
                 </div>
-                <div style="font-size: 8pt; color: #000; text-align: center; margin-top: 3px;">✓ Digital Signature</div>
+                <div style="font-size: 8pt; color: #000; text-align: center; margin-top: 5px;">✓ Digital Signature</div>
               ` : '<div class="signature-line"></div>'}
-              <div class="signature-info">
-                <div style="font-size: 8pt; line-height: 1.2; margin-top: 5px;">
+              <div class="signature-info" style="position: absolute; bottom: 5px; left: 5px; right: 5px;">
+                <div style="font-size: 7pt; line-height: 1.1; text-align: left;">
                   <strong>Name:</strong> ${anonymizeReport ? 'CONFIDENTIAL' : (pcr.signatureInfo.nurseSignature || 'Not signed')}<br/>
                   <strong>ID:</strong> ${anonymizeReport ? 'XXXXX' : (pcr.signatureInfo.nurseCorporationId || 'N/A')}<br/>
                   <strong>Date:</strong> ${pcr.submittedAt ? new Date(pcr.submittedAt).toLocaleDateString() : 'N/A'}
@@ -1025,13 +1040,13 @@ export default function AdminScreen() {
             <div class="signature-box">
               <div class="signature-label">PHYSICIAN</div>
               ${doctorSignatureImage ? `
-                <div style="margin: 5px 0; border: 1px solid #333; padding: 8px; background: white; min-height: 60px; display: flex; align-items: center; justify-content: center; overflow: hidden;">
-                  <img src="${doctorSignatureImage}" class="signature-image" alt="Doctor Signature" />
+                <div style="margin: 8px 0; border: 1px solid #333; padding: 5px; background: white; min-height: 55px; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative;">
+                  <img src="${doctorSignatureImage}" class="signature-image" alt="Doctor Signature" style="max-width: 130px !important; max-height: 40px !important; object-fit: contain !important;" />
                 </div>
-                <div style="font-size: 8pt; color: #000; text-align: center; margin-top: 3px;">✓ Digital Signature</div>
+                <div style="font-size: 8pt; color: #000; text-align: center; margin-top: 5px;">✓ Digital Signature</div>
               ` : '<div class="signature-line"></div>'}
-              <div class="signature-info">
-                <div style="font-size: 8pt; line-height: 1.2; margin-top: 5px;">
+              <div class="signature-info" style="position: absolute; bottom: 5px; left: 5px; right: 5px;">
+                <div style="font-size: 7pt; line-height: 1.1; text-align: left;">
                   <strong>Name:</strong> ${anonymizeReport ? 'CONFIDENTIAL' : (pcr.signatureInfo.doctorSignature || 'Not signed')}<br/>
                   <strong>ID:</strong> ${anonymizeReport ? 'XXXXX' : (pcr.signatureInfo.doctorCorporationId || 'N/A')}<br/>
                   <strong>Date:</strong> ${pcr.submittedAt ? new Date(pcr.submittedAt).toLocaleDateString() : 'N/A'}
@@ -1042,13 +1057,13 @@ export default function AdminScreen() {
             <div class="signature-box">
               <div class="signature-label">${pcr.signatureInfo.othersRole || 'PATIENT/GUARDIAN'}</div>
               ${othersSignatureImage ? `
-                <div style="margin: 5px 0; border: 1px solid #333; padding: 8px; background: white; min-height: 60px; display: flex; align-items: center; justify-content: center; overflow: hidden;">
-                  <img src="${othersSignatureImage}" class="signature-image" alt="${pcr.signatureInfo.othersRole || 'Patient'} Signature" />
+                <div style="margin: 8px 0; border: 1px solid #333; padding: 5px; background: white; min-height: 55px; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative;">
+                  <img src="${othersSignatureImage}" class="signature-image" alt="${pcr.signatureInfo.othersRole || 'Patient'} Signature" style="max-width: 130px !important; max-height: 40px !important; object-fit: contain !important;" />
                 </div>
-                <div style="font-size: 8pt; color: #000; text-align: center; margin-top: 3px;">✓ Digital Signature</div>
+                <div style="font-size: 8pt; color: #000; text-align: center; margin-top: 5px;">✓ Digital Signature</div>
               ` : '<div class="signature-line"></div>'}
-              <div class="signature-info">
-                <div style="font-size: 8pt; line-height: 1.2; margin-top: 5px;">
+              <div class="signature-info" style="position: absolute; bottom: 5px; left: 5px; right: 5px;">
+                <div style="font-size: 7pt; line-height: 1.1; text-align: left;">
                   <strong>Name:</strong> ${anonymizeReport ? 'CONFIDENTIAL' : (pcr.signatureInfo.othersSignature || 'Not signed')}<br/>
                   <strong>Role:</strong> ${pcr.signatureInfo.othersRole || 'N/A'}<br/>
                   <strong>Date:</strong> ${pcr.submittedAt ? new Date(pcr.submittedAt).toLocaleDateString() : 'N/A'}

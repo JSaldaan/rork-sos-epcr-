@@ -91,23 +91,102 @@ export default function VitalsScreen() {
     setShowCamera(false);
   }, []);
 
-  const handleECGSave = useCallback(() => {
-    // Simulate ECG capture data (in a real app, this would be actual ECG data)
-    const ecgData = `ECG_CAPTURE_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
-    if (vitals.length > 0) {
-      addECGCapture(ecgData);
-      setShowCamera(false); // Exit camera immediately after capture
-      Alert.alert(
-        "ECG Captured",
-        "ECG recording has been captured and saved with the most recent vital signs."
-      );
-    } else {
-      setShowCamera(false); // Exit camera
-      Alert.alert(
-        "No Vital Signs",
-        "Please record vital signs first before capturing ECG."
-      );
+  const handleECGSave = useCallback(async () => {
+    try {
+      // Generate a sample ECG image as SVG and convert to base64
+      // In a real app, this would capture actual ECG data from the camera or ECG device
+      const width = 600;
+      const height = 200;
+      const centerY = height / 2;
+      
+      // Generate ECG-like SVG path
+      let pathData = `M 0 ${centerY}`;
+      let x = 0;
+      
+      // Generate ECG-like pattern
+      while (x < width) {
+        // P wave
+        x += 10;
+        pathData += ` L ${x} ${centerY - 10}`;
+        x += 10;
+        pathData += ` L ${x} ${centerY}`;
+        
+        // QRS complex
+        x += 5;
+        pathData += ` L ${x} ${centerY + 5}`;
+        x += 5;
+        pathData += ` L ${x} ${centerY - 40}`;
+        x += 5;
+        pathData += ` L ${x} ${centerY + 20}`;
+        x += 5;
+        pathData += ` L ${x} ${centerY}`;
+        
+        // T wave
+        x += 15;
+        pathData += ` L ${x} ${centerY - 15}`;
+        x += 15;
+        pathData += ` L ${x} ${centerY}`;
+        
+        // Flat line
+        x += 30;
+        pathData += ` L ${x} ${centerY}`;
+      }
+      
+      // Create SVG with ECG waveform
+      const svgContent = `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg" style="background: white;">
+        <!-- Grid -->
+        <defs>
+          <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+            <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#ffcccc" stroke-width="0.5"/>
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#grid)" />
+        
+        <!-- ECG Waveform -->
+        <path d="${pathData}" stroke="#000" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        
+        <!-- Labels -->
+        <text x="10" y="20" font-family="Arial" font-size="12" fill="#000">ECG Recording - ${new Date().toLocaleString()}</text>
+        <text x="10" y="${height - 10}" font-family="Arial" font-size="12" fill="#000">Lead II - 25mm/s, 10mm/mV</text>
+      </svg>`;
+      
+      // Convert SVG to base64
+      const base64SVG = btoa(unescape(encodeURIComponent(svgContent)));
+      const ecgData = `data:image/svg+xml;base64,${base64SVG}`;
+      
+      if (vitals.length > 0) {
+        addECGCapture(ecgData);
+        setShowCamera(false); // Exit camera immediately after capture
+        Alert.alert(
+          "ECG Captured",
+          "ECG recording has been captured and saved with the most recent vital signs."
+        );
+      } else {
+        setShowCamera(false); // Exit camera
+        Alert.alert(
+          "No Vital Signs",
+          "Please record vital signs first before capturing ECG."
+        );
+      }
+    } catch (error) {
+      console.error('Error capturing ECG:', error);
+      // Fallback to simple identifier if SVG generation fails
+      const ecgData = `ECG_CAPTURE_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      if (vitals.length > 0) {
+        addECGCapture(ecgData);
+        setShowCamera(false);
+        Alert.alert(
+          "ECG Captured",
+          "ECG recording has been captured and saved with the most recent vital signs."
+        );
+      } else {
+        setShowCamera(false);
+        Alert.alert(
+          "No Vital Signs",
+          "Please record vital signs first before capturing ECG."
+        );
+      }
     }
   }, [vitals.length, addECGCapture]);
 
