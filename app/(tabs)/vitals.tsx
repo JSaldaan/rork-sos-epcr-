@@ -9,8 +9,8 @@ import {
   Alert,
   Platform,
 } from "react-native";
-import { ResponsiveContainer, ResponsiveRow } from '@/components/ResponsiveLayout';
-import { spacing, isTablet } from '@/utils/responsive';
+import { ResponsiveContainer } from '@/components/ResponsiveLayout';
+import { isTablet } from '@/utils/responsive';
 import { Activity, Clock, Plus, Camera } from "lucide-react-native";
 import { usePCRStore } from "@/store/pcrStore";
 import { CameraView, useCameraPermissions } from 'expo-camera';
@@ -292,97 +292,93 @@ export default function VitalsScreen() {
           <Text style={styles.sectionTitle}>Record Vital Signs</Text>
         </View>
 
-        <ResponsiveRow gap={spacing.md} wrap={isTablet()}>
-          <View style={[styles.inputContainer, isTablet() && styles.tabletInput]}>
-            <Text style={styles.label}>Systolic BP</Text>
-            <TextInput
-              style={styles.input}
-              value={currentVitals.bloodPressureSystolic}
-              onChangeText={(text) => setCurrentVitals(prev => ({ ...prev, bloodPressureSystolic: text }))}
-              placeholder="120"
-              keyboardType="numeric"
-            />
+        <View style={styles.twoColumnContainer}>
+          <View style={styles.column}>
+            <View style={[styles.inputContainer, isTablet() && styles.tabletInput]}>
+              <Text style={styles.label}>Systolic BP</Text>
+              <TextInput
+                style={styles.input}
+                value={currentVitals.bloodPressureSystolic}
+                onChangeText={(text) => setCurrentVitals(prev => ({ ...prev, bloodPressureSystolic: text }))}
+                placeholder="120"
+                keyboardType="numeric"
+              />
+            </View>
+            <View style={[styles.inputContainer, isTablet() && styles.tabletInput]}>
+              <Text style={styles.label}>Heart Rate (bpm)</Text>
+              <TextInput
+                style={styles.input}
+                value={currentVitals.heartRate}
+                onChangeText={(text) => setCurrentVitals(prev => ({ ...prev, heartRate: text }))}
+                placeholder="72"
+                keyboardType="numeric"
+              />
+            </View>
+            <View style={[styles.inputContainer, isTablet() && styles.tabletInput]}>
+              <Text style={styles.label}>O2 Saturation (%)</Text>
+              <TextInput
+                style={styles.input}
+                value={currentVitals.oxygenSaturation}
+                onChangeText={(text) => setCurrentVitals(prev => ({ ...prev, oxygenSaturation: text }))}
+                placeholder="98"
+                keyboardType="numeric"
+              />
+            </View>
+            <View style={[styles.inputContainer, isTablet() && styles.tabletInput]}>
+              <Text style={styles.label}>Blood Glucose</Text>
+              <TextInput
+                style={styles.input}
+                value={currentVitals.bloodGlucose}
+                onChangeText={(text) => setCurrentVitals(prev => ({ ...prev, bloodGlucose: text }))}
+                placeholder="5.5"
+                keyboardType="numeric"
+              />
+            </View>
           </View>
-          <View style={[styles.inputContainer, isTablet() && styles.tabletInput]}>
-            <Text style={styles.label}>Diastolic BP</Text>
-            <TextInput
-              style={styles.input}
-              value={currentVitals.bloodPressureDiastolic}
-              onChangeText={(text) => setCurrentVitals(prev => ({ ...prev, bloodPressureDiastolic: text }))}
-              placeholder="80"
-              keyboardType="numeric"
-            />
+          
+          <View style={styles.column}>
+            <View style={[styles.inputContainer, isTablet() && styles.tabletInput]}>
+              <Text style={styles.label}>Diastolic BP</Text>
+              <TextInput
+                style={styles.input}
+                value={currentVitals.bloodPressureDiastolic}
+                onChangeText={(text) => setCurrentVitals(prev => ({ ...prev, bloodPressureDiastolic: text }))}
+                placeholder="80"
+                keyboardType="numeric"
+              />
+            </View>
+            <View style={[styles.inputContainer, isTablet() && styles.tabletInput]}>
+              <Text style={styles.label}>Respiratory Rate</Text>
+              <TextInput
+                style={styles.input}
+                value={currentVitals.respiratoryRate}
+                onChangeText={(text) => setCurrentVitals(prev => ({ ...prev, respiratoryRate: text }))}
+                placeholder="16"
+                keyboardType="numeric"
+              />
+            </View>
+            <View style={[styles.inputContainer, isTablet() && styles.tabletInput]}>
+              <Text style={styles.label}>Temperature (°C)</Text>
+              <TextInput
+                style={styles.input}
+                value={currentVitals.temperature}
+                onChangeText={(text) => setCurrentVitals(prev => ({ ...prev, temperature: text }))}
+                placeholder="36.5"
+                keyboardType="numeric"
+              />
+            </View>
+            <View style={[styles.inputContainer, isTablet() && styles.tabletInput]}>
+              <Text style={styles.label}>Pain Scale (0-10)</Text>
+              <TextInput
+                style={styles.input}
+                value={currentVitals.painScale}
+                onChangeText={(text) => setCurrentVitals(prev => ({ ...prev, painScale: text }))}
+                placeholder="0"
+                keyboardType="numeric"
+              />
+            </View>
           </View>
-        </ResponsiveRow>
-
-        <ResponsiveRow gap={spacing.md} wrap={isTablet()}>
-          <View style={[styles.inputContainer, isTablet() && styles.tabletInput]}>
-            <Text style={styles.label}>Heart Rate (bpm)</Text>
-            <TextInput
-              style={styles.input}
-              value={currentVitals.heartRate}
-              onChangeText={(text) => setCurrentVitals(prev => ({ ...prev, heartRate: text }))}
-              placeholder="72"
-              keyboardType="numeric"
-            />
-          </View>
-          <View style={[styles.inputContainer, isTablet() && styles.tabletInput]}>
-            <Text style={styles.label}>Respiratory Rate</Text>
-            <TextInput
-              style={styles.input}
-              value={currentVitals.respiratoryRate}
-              onChangeText={(text) => setCurrentVitals(prev => ({ ...prev, respiratoryRate: text }))}
-              placeholder="16"
-              keyboardType="numeric"
-            />
-          </View>
-        </ResponsiveRow>
-
-        <ResponsiveRow gap={spacing.md} wrap={isTablet()}>
-          <View style={[styles.inputContainer, isTablet() && styles.tabletInput]}>
-            <Text style={styles.label}>O2 Saturation (%)</Text>
-            <TextInput
-              style={styles.input}
-              value={currentVitals.oxygenSaturation}
-              onChangeText={(text) => setCurrentVitals(prev => ({ ...prev, oxygenSaturation: text }))}
-              placeholder="98"
-              keyboardType="numeric"
-            />
-          </View>
-          <View style={[styles.inputContainer, isTablet() && styles.tabletInput]}>
-            <Text style={styles.label}>Temperature (°C)</Text>
-            <TextInput
-              style={styles.input}
-              value={currentVitals.temperature}
-              onChangeText={(text) => setCurrentVitals(prev => ({ ...prev, temperature: text }))}
-              placeholder="36.5"
-              keyboardType="numeric"
-            />
-          </View>
-        </ResponsiveRow>
-
-        <ResponsiveRow gap={spacing.md} wrap={isTablet()}>
-          <View style={[styles.inputContainer, isTablet() && styles.tabletInput]}>
-            <Text style={styles.label}>Blood Glucose</Text>
-            <TextInput
-              style={styles.input}
-              value={currentVitals.bloodGlucose}
-              onChangeText={(text) => setCurrentVitals(prev => ({ ...prev, bloodGlucose: text }))}
-              placeholder="5.5"
-              keyboardType="numeric"
-            />
-          </View>
-          <View style={[styles.inputContainer, isTablet() && styles.tabletInput]}>
-            <Text style={styles.label}>Pain Scale (0-10)</Text>
-            <TextInput
-              style={styles.input}
-              value={currentVitals.painScale}
-              onChangeText={(text) => setCurrentVitals(prev => ({ ...prev, painScale: text }))}
-              placeholder="0"
-              keyboardType="numeric"
-            />
-          </View>
-        </ResponsiveRow>
+        </View>
 
         <TouchableOpacity style={styles.addButton} onPress={handleAddVitals}>
           <Plus size={20} color="#fff" />
@@ -761,5 +757,12 @@ const styles = StyleSheet.create({
   tabletInput: {
     minWidth: 200,
     maxWidth: 300,
+  },
+  twoColumnContainer: {
+    flexDirection: "row",
+    gap: 16,
+  },
+  column: {
+    flex: 1,
   },
 });

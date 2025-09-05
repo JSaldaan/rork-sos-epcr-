@@ -242,68 +242,67 @@ export default function NewPCRScreen() {
           <Text style={styles.sectionTitle}>Call Time Information</Text>
         </View>
         
-        <ResponsiveRow gap={spacing.md} wrap={isTablet()}>
-          <View style={[styles.inputContainer, isTablet() && styles.tabletInput]}>
-            <Text style={styles.label}>Time of Call</Text>
-            <TextInput
-              style={styles.input}
-              value={callTimeInfo.timeOfCall}
-              onChangeText={handleCallTimeChange('timeOfCall')}
-              placeholder="HH:MM"
-            />
+        <View style={styles.twoColumnContainer}>
+          <View style={styles.column}>
+            <View style={[styles.inputContainer, isTablet() && styles.tabletInput]}>
+              <Text style={styles.label}>Time of Call</Text>
+              <TextInput
+                style={styles.input}
+                value={callTimeInfo.timeOfCall}
+                onChangeText={handleCallTimeChange('timeOfCall')}
+                placeholder="HH:MM"
+              />
+            </View>
+            <View style={[styles.inputContainer, isTablet() && styles.tabletInput]}>
+              <Text style={styles.label}>Arrival on Scene</Text>
+              <TextInput
+                style={styles.input}
+                value={callTimeInfo.arrivalOnScene}
+                onChangeText={handleCallTimeChange('arrivalOnScene')}
+                placeholder="HH:MM"
+              />
+            </View>
+            <View style={[styles.inputContainer, isTablet() && styles.tabletInput]}>
+              <Text style={styles.label}>To Destination</Text>
+              <TextInput
+                style={styles.input}
+                value={callTimeInfo.toDestination}
+                onChangeText={handleCallTimeChange('toDestination')}
+                placeholder="HH:MM"
+              />
+            </View>
           </View>
-          <View style={[styles.inputContainer, isTablet() && styles.tabletInput]}>
-            <Text style={styles.label}>Date</Text>
-            <TextInput
-              style={styles.input}
-              value={callTimeInfo.date}
-              onChangeText={handleCallTimeChange('date')}
-              placeholder="DD/MM/YYYY"
-            />
+          
+          <View style={styles.column}>
+            <View style={[styles.inputContainer, isTablet() && styles.tabletInput]}>
+              <Text style={styles.label}>Date</Text>
+              <TextInput
+                style={styles.input}
+                value={callTimeInfo.date}
+                onChangeText={handleCallTimeChange('date')}
+                placeholder="DD/MM/YYYY"
+              />
+            </View>
+            <View style={[styles.inputContainer, isTablet() && styles.tabletInput]}>
+              <Text style={styles.label}>At Patient Side</Text>
+              <TextInput
+                style={styles.input}
+                value={callTimeInfo.atPatientSide}
+                onChangeText={handleCallTimeChange('atPatientSide')}
+                placeholder="HH:MM"
+              />
+            </View>
+            <View style={[styles.inputContainer, isTablet() && styles.tabletInput]}>
+              <Text style={styles.label}>At Destination</Text>
+              <TextInput
+                style={styles.input}
+                value={callTimeInfo.atDestination}
+                onChangeText={handleCallTimeChange('atDestination')}
+                placeholder="HH:MM"
+              />
+            </View>
           </View>
-        </ResponsiveRow>
-
-        <ResponsiveRow gap={spacing.md} wrap={isTablet()}>
-          <View style={[styles.inputContainer, isTablet() && styles.tabletInput]}>
-            <Text style={styles.label}>Arrival on Scene</Text>
-            <TextInput
-              style={styles.input}
-              value={callTimeInfo.arrivalOnScene}
-              onChangeText={handleCallTimeChange('arrivalOnScene')}
-              placeholder="HH:MM"
-            />
-          </View>
-          <View style={[styles.inputContainer, isTablet() && styles.tabletInput]}>
-            <Text style={styles.label}>At Patient Side</Text>
-            <TextInput
-              style={styles.input}
-              value={callTimeInfo.atPatientSide}
-              onChangeText={handleCallTimeChange('atPatientSide')}
-              placeholder="HH:MM"
-            />
-          </View>
-        </ResponsiveRow>
-
-        <ResponsiveRow gap={spacing.md} wrap={isTablet()}>
-          <View style={[styles.inputContainer, isTablet() && styles.tabletInput]}>
-            <Text style={styles.label}>To Destination</Text>
-            <TextInput
-              style={styles.input}
-              value={callTimeInfo.toDestination}
-              onChangeText={handleCallTimeChange('toDestination')}
-              placeholder="HH:MM"
-            />
-          </View>
-          <View style={[styles.inputContainer, isTablet() && styles.tabletInput]}>
-            <Text style={styles.label}>At Destination</Text>
-            <TextInput
-              style={styles.input}
-              value={callTimeInfo.atDestination}
-              onChangeText={handleCallTimeChange('atDestination')}
-              placeholder="HH:MM"
-            />
-          </View>
-        </ResponsiveRow>
+        </View>
       </View>
 
       <View style={styles.section}>
@@ -1080,5 +1079,12 @@ const styles = StyleSheet.create({
   tabletInput: {
     minWidth: 200,
     maxWidth: 300,
+  },
+  twoColumnContainer: {
+    flexDirection: "row",
+    gap: 16,
+  },
+  column: {
+    flex: 1,
   },
 });
