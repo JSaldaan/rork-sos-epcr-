@@ -11,8 +11,9 @@ import {
 } from "react-native";
 import { ResponsiveContainer } from '@/components/ResponsiveLayout';
 import { isTablet } from '@/utils/responsive';
-import { Activity, Clock, Plus, Camera } from "lucide-react-native";
+import { Activity, Clock, Plus, Camera, Mic } from "lucide-react-native";
 import { usePCRStore } from "@/store/pcrStore";
+import { VoiceNotesModal } from "@/components/VoiceNotesModal";
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import {
   InputValidator,
@@ -34,6 +35,7 @@ export default function VitalsScreen() {
   });
   const [showCamera, setShowCamera] = useState(false);
   const [permission, requestPermission] = useCameraPermissions();
+  const [showVoiceNotes, setShowVoiceNotes] = useState(false);
 
   const initialVitals = useMemo(() => ({
     bloodPressureSystolic: "",
@@ -472,12 +474,20 @@ export default function VitalsScreen() {
       )}
 
       <View style={styles.actionButtons}>
+        <TouchableOpacity 
+          style={styles.voiceButton} 
+          onPress={() => setShowVoiceNotes(true)}
+        >
+          <Mic size={16} color="#fff" />
+          <Text style={styles.voiceButtonText}>Voice Notes</Text>
+        </TouchableOpacity>
+        
         <TouchableOpacity style={styles.saveButton} onPress={handleSaveTab}>
-          <Text style={styles.saveButtonText}>Save Vitals Data</Text>
+          <Text style={styles.saveButtonText}>Save Data</Text>
         </TouchableOpacity>
         
         <TouchableOpacity style={styles.submitButton} onPress={handleSubmitReport}>
-          <Text style={styles.submitButtonText}>Submit Report</Text>
+          <Text style={styles.submitButtonText}>Submit</Text>
         </TouchableOpacity>
       </View>
 
@@ -501,6 +511,17 @@ export default function VitalsScreen() {
         </View>
         )}
       </ScrollView>
+      
+      <VoiceNotesModal
+        visible={showVoiceNotes}
+        onClose={() => setShowVoiceNotes(false)}
+        onTranscriptionComplete={(transcription, analysis) => {
+          console.log('Voice note transcribed in vitals:', transcription);
+          if (analysis) {
+            console.log('AI analysis in vitals:', analysis);
+          }
+        }}
+      />
     </ResponsiveContainer>
   );
 }
@@ -646,6 +667,20 @@ const styles = StyleSheet.create({
   submitButtonText: {
     color: "#fff",
     fontSize: 16,
+    fontWeight: "600",
+  },
+  voiceButton: {
+    backgroundColor: "#8B5CF6",
+    paddingHorizontal: 12,
+    paddingVertical: 16,
+    borderRadius: 8,
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 6,
+  },
+  voiceButtonText: {
+    color: "#fff",
+    fontSize: 14,
     fontWeight: "600",
   },
   ecgButtonCaptured: {

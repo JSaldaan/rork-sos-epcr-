@@ -10,12 +10,14 @@ import {
   Modal,
   FlatList,
 } from "react-native";
-import { Truck, MapPin, Users, FileText, ChevronDown, Check } from "lucide-react-native";
+import { Truck, MapPin, Users, FileText, ChevronDown, Check, Mic } from "lucide-react-native";
 import { usePCRStore } from "@/store/pcrStore";
+import { VoiceNotesModal } from "@/components/VoiceNotesModal";
 
 export default function TransportScreen() {
   const { transportInfo, updateTransportInfo, saveTransportData, saveTabDataWithNotification } = usePCRStore();
   const [showHospitalDropdown, setShowHospitalDropdown] = useState<boolean>(false);
+  const [showVoiceNotes, setShowVoiceNotes] = useState<boolean>(false);
 
   const handleSaveTransport = useCallback(async () => {
     if (!transportInfo.destination) {
@@ -231,12 +233,20 @@ export default function TransportScreen() {
       </View>
 
       <View style={styles.actionButtons}>
+        <TouchableOpacity 
+          style={styles.voiceButton} 
+          onPress={() => setShowVoiceNotes(true)}
+        >
+          <Mic size={16} color="#fff" />
+          <Text style={styles.voiceButtonText}>Voice Notes</Text>
+        </TouchableOpacity>
+        
         <TouchableOpacity style={styles.saveButton} onPress={handleSaveTab}>
-          <Text style={styles.saveButtonText}>Save Transport Data</Text>
+          <Text style={styles.saveButtonText}>Save Data</Text>
         </TouchableOpacity>
         
         <TouchableOpacity style={styles.submitButton} onPress={handleSubmitReport}>
-          <Text style={styles.submitButtonText}>Submit Report</Text>
+          <Text style={styles.submitButtonText}>Submit</Text>
         </TouchableOpacity>
       </View>
 
@@ -277,6 +287,17 @@ export default function TransportScreen() {
           </View>
         </TouchableOpacity>
       </Modal>
+      
+      <VoiceNotesModal
+        visible={showVoiceNotes}
+        onClose={() => setShowVoiceNotes(false)}
+        onTranscriptionComplete={(transcription, analysis) => {
+          console.log('Voice note transcribed in transport:', transcription);
+          if (analysis) {
+            console.log('AI analysis in transport:', analysis);
+          }
+        }}
+      />
     </ScrollView>
   );
 }
@@ -462,5 +483,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
     flex: 1,
+  },
+  voiceButton: {
+    backgroundColor: "#8B5CF6",
+    paddingHorizontal: 12,
+    paddingVertical: 16,
+    borderRadius: 8,
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 6,
+  },
+  voiceButtonText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "600",
   },
 });
