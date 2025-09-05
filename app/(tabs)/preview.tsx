@@ -198,12 +198,16 @@ export default function PreviewScreen() {
     );
   };
 
-  const renderSection = (title: string, content: React.ReactNode) => (
-    <View style={styles.section}>
-      <Text style={styles.sectionTitle}>{title}</Text>
-      <View style={styles.sectionContent}>{content}</View>
-    </View>
-  );
+  const renderSection = (title: string, content: React.ReactNode) => {
+    return (
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>{title}</Text>
+        <View style={styles.sectionContent}>
+          {React.isValidElement(content) ? content : <Text>{String(content)}</Text>}
+        </View>
+      </View>
+    );
+  };
 
   const renderField = (label: string, value: string | undefined) => {
     if (!value || value === "" || value === "undefined") return null;
@@ -236,7 +240,7 @@ export default function PreviewScreen() {
             <View style={[styles.warningBanner, lastSubmissionResult.success ? styles.successBanner : styles.errorBanner]}>
               <AlertCircle size={16} color={lastSubmissionResult.success ? "#4CAF50" : "#F44336"} />
               <Text style={[styles.warningText, { color: lastSubmissionResult.success ? "#2E7D32" : "#C62828", marginLeft: 5 }]}>
-                Last submission: {lastSubmissionResult.success ? 'Success' : 'Failed'} - {lastSubmissionResult.details?.status || 'No status'}
+                {`Last submission: ${lastSubmissionResult.success ? 'Success' : 'Failed'} - ${lastSubmissionResult.details?.status || 'No status'}`}
               </Text>
             </View>
           )}
