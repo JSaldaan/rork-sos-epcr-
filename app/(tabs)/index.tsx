@@ -12,10 +12,11 @@ import {
 } from "react-native";
 import { ResponsiveContainer, ResponsiveRow } from '@/components/ResponsiveLayout';
 import { spacing, isTablet } from '@/utils/responsive';
-import { Clock, MapPin, User, ChevronDown, Shield } from "lucide-react-native";
+import { Clock, MapPin, User, ChevronDown, Shield, Mic } from "lucide-react-native";
 import { usePCRStore } from "@/store/pcrStore";
 import { router } from "expo-router";
 import { OfflineStatus } from "@/components/OfflineStatus";
+import { VoiceNotesModal } from "@/components/VoiceNotesModal";
 
 const priorityOptions = ["Emergency", "Urgent", "Non-Urgent"] as const;
 
@@ -92,6 +93,7 @@ export default function NewPCRScreen() {
   const [showAdminLogin, setShowAdminLogin] = useState<boolean>(false);
   const [adminPassword, setAdminPassword] = useState<string>('');
   const [showOfflineDetails, setShowOfflineDetails] = useState<boolean>(false);
+  const [showVoiceNotes, setShowVoiceNotes] = useState<boolean>(false);
 
   const { saveTabDataWithNotification } = usePCRStore();
   
@@ -662,17 +664,36 @@ export default function NewPCRScreen() {
       </Modal>
 
       <View style={styles.actionButtons}>
+        <TouchableOpacity 
+          style={styles.voiceButton} 
+          onPress={() => setShowVoiceNotes(true)}
+        >
+          <Mic size={20} color="#fff" />
+          <Text style={styles.voiceButtonText}>Voice Notes</Text>
+        </TouchableOpacity>
+        
         <TouchableOpacity style={styles.saveButton} onPress={handleSaveTab}>
-          <Text style={styles.saveButtonText}>Save Patient Data</Text>
+          <Text style={styles.saveButtonText}>Save Data</Text>
         </TouchableOpacity>
         
         <TouchableOpacity style={styles.submitButton} onPress={handleSubmitReport}>
-          <Text style={styles.submitButtonText}>Submit Report</Text>
+          <Text style={styles.submitButtonText}>Submit</Text>
         </TouchableOpacity>
       </View>
 
         <View style={styles.bottomPadding} />
       </ScrollView>
+      
+      <VoiceNotesModal
+        visible={showVoiceNotes}
+        onClose={() => setShowVoiceNotes(false)}
+        onTranscriptionComplete={(transcription, analysis) => {
+          console.log('Voice note transcribed:', transcription);
+          if (analysis) {
+            console.log('AI analysis:', analysis);
+          }
+        }}
+      />
     </ResponsiveContainer>
   );
 }
@@ -791,30 +812,44 @@ const styles = StyleSheet.create({
   actionButtons: {
     flexDirection: "row",
     margin: 16,
-    gap: 12,
+    gap: 8,
+  },
+  voiceButton: {
+    backgroundColor: "#8B5CF6",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 6,
+  },
+  voiceButtonText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "600",
   },
   saveButton: {
     flex: 1,
     backgroundColor: "#28A745",
-    padding: 16,
+    padding: 12,
     borderRadius: 8,
     alignItems: "center",
   },
   saveButtonText: {
     color: "#fff",
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "600",
   },
   submitButton: {
     flex: 1,
     backgroundColor: "#0066CC",
-    padding: 16,
+    padding: 12,
     borderRadius: 8,
     alignItems: "center",
   },
   submitButtonText: {
     color: "#fff",
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "600",
   },
   bottomPadding: {
