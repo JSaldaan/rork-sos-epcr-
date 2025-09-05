@@ -20,6 +20,8 @@ import {
   MalwareProtection,
 } from '@/utils/security';
 import { SecurityDashboard } from '@/components/SecurityDashboard';
+import { ResponsiveContainer } from '@/components/ResponsiveLayout';
+import { spacing, dimensions, typography } from '@/utils/responsive';
 
 const LoginScreen: React.FC = () => {
   const {
@@ -295,8 +297,9 @@ const LoginScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.loginContainer}>
-        <View style={styles.loginHeader}>
+      <ResponsiveContainer maxWidth="small" padding="large" centered>
+        <View style={styles.loginContainer}>
+          <View style={styles.loginHeader}>
           <Shield size={48} color="#0066CC" />
           <Text style={styles.loginTitle}>PCR System</Text>
           <Text style={styles.loginSubtitle}>Electronic Patient Care Record</Text>
@@ -503,16 +506,17 @@ const LoginScreen: React.FC = () => {
             </Text>
           </View>
         )}
-      </View>
-      
-      {/* Security Dashboard Modal */}
-      {showSecurityDashboard && (
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <SecurityDashboard onClose={() => setShowSecurityDashboard(false)} />
-          </View>
         </View>
-      )}
+        
+        {/* Security Dashboard Modal */}
+        {showSecurityDashboard && (
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContainer}>
+              <SecurityDashboard onClose={() => setShowSecurityDashboard(false)} />
+            </View>
+          </View>
+        )}
+      </ResponsiveContainer>
     </SafeAreaView>
   );
 };

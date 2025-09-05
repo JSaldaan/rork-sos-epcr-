@@ -9,6 +9,8 @@ import {
   Alert,
   Platform,
 } from "react-native";
+import { ResponsiveContainer, ResponsiveRow } from '@/components/ResponsiveLayout';
+import { spacing, isTablet } from '@/utils/responsive';
 import { Activity, Clock, Plus, Camera } from "lucide-react-native";
 import { usePCRStore } from "@/store/pcrStore";
 import { CameraView, useCameraPermissions } from 'expo-camera';
@@ -111,8 +113,7 @@ export default function VitalsScreen() {
       await saveVitalsData();
       console.log('Vital signs saved to draft');
       Alert.alert("Success", "Vital signs recorded and saved successfully.");
-    } catch (error) {
-      console.error('Error saving vitals:', error);
+    } catch {
       Alert.alert("Warning", "Vital signs recorded but failed to save to storage");
     }
   }, [currentVitals, addVitalSigns, initialVitals, saveVitalsData]);
@@ -247,7 +248,7 @@ export default function VitalsScreen() {
     try {
       await saveTabDataWithNotification('Vitals');
       Alert.alert("Success", "Vitals data saved successfully!");
-    } catch (error) {
+    } catch {
       Alert.alert("Error", "Failed to save vitals data. Please try again.");
     }
   }, [saveTabDataWithNotification]);
@@ -273,7 +274,7 @@ export default function VitalsScreen() {
                 "Report Submitted",
                 "Your vitals report has been submitted successfully! Go to Preview tab to submit the complete PCR."
               );
-            } catch (error) {
+            } catch {
               Alert.alert("Error", "Failed to submit report. Please try again.");
             }
           }
@@ -283,15 +284,16 @@ export default function VitalsScreen() {
   }, [vitals.length, saveTabDataWithNotification]);
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ResponsiveContainer maxWidth="large" padding="medium">
+      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Activity size={20} color="#0066CC" />
           <Text style={styles.sectionTitle}>Record Vital Signs</Text>
         </View>
 
-        <View style={styles.row}>
-          <View style={styles.halfInput}>
+        <ResponsiveRow gap={spacing.md} wrap={isTablet()}>
+          <View style={[styles.inputContainer, isTablet() && styles.tabletInput]}>
             <Text style={styles.label}>Systolic BP</Text>
             <TextInput
               style={styles.input}
@@ -301,7 +303,7 @@ export default function VitalsScreen() {
               keyboardType="numeric"
             />
           </View>
-          <View style={styles.halfInput}>
+          <View style={[styles.inputContainer, isTablet() && styles.tabletInput]}>
             <Text style={styles.label}>Diastolic BP</Text>
             <TextInput
               style={styles.input}
@@ -311,10 +313,10 @@ export default function VitalsScreen() {
               keyboardType="numeric"
             />
           </View>
-        </View>
+        </ResponsiveRow>
 
-        <View style={styles.row}>
-          <View style={styles.halfInput}>
+        <ResponsiveRow gap={spacing.md} wrap={isTablet()}>
+          <View style={[styles.inputContainer, isTablet() && styles.tabletInput]}>
             <Text style={styles.label}>Heart Rate (bpm)</Text>
             <TextInput
               style={styles.input}
@@ -324,7 +326,7 @@ export default function VitalsScreen() {
               keyboardType="numeric"
             />
           </View>
-          <View style={styles.halfInput}>
+          <View style={[styles.inputContainer, isTablet() && styles.tabletInput]}>
             <Text style={styles.label}>Respiratory Rate</Text>
             <TextInput
               style={styles.input}
@@ -334,10 +336,10 @@ export default function VitalsScreen() {
               keyboardType="numeric"
             />
           </View>
-        </View>
+        </ResponsiveRow>
 
-        <View style={styles.row}>
-          <View style={styles.halfInput}>
+        <ResponsiveRow gap={spacing.md} wrap={isTablet()}>
+          <View style={[styles.inputContainer, isTablet() && styles.tabletInput]}>
             <Text style={styles.label}>O2 Saturation (%)</Text>
             <TextInput
               style={styles.input}
@@ -347,7 +349,7 @@ export default function VitalsScreen() {
               keyboardType="numeric"
             />
           </View>
-          <View style={styles.halfInput}>
+          <View style={[styles.inputContainer, isTablet() && styles.tabletInput]}>
             <Text style={styles.label}>Temperature (°C)</Text>
             <TextInput
               style={styles.input}
@@ -357,10 +359,10 @@ export default function VitalsScreen() {
               keyboardType="numeric"
             />
           </View>
-        </View>
+        </ResponsiveRow>
 
-        <View style={styles.row}>
-          <View style={styles.halfInput}>
+        <ResponsiveRow gap={spacing.md} wrap={isTablet()}>
+          <View style={[styles.inputContainer, isTablet() && styles.tabletInput]}>
             <Text style={styles.label}>Blood Glucose</Text>
             <TextInput
               style={styles.input}
@@ -370,7 +372,7 @@ export default function VitalsScreen() {
               keyboardType="numeric"
             />
           </View>
-          <View style={styles.halfInput}>
+          <View style={[styles.inputContainer, isTablet() && styles.tabletInput]}>
             <Text style={styles.label}>Pain Scale (0-10)</Text>
             <TextInput
               style={styles.input}
@@ -380,7 +382,7 @@ export default function VitalsScreen() {
               keyboardType="numeric"
             />
           </View>
-        </View>
+        </ResponsiveRow>
 
         <TouchableOpacity style={styles.addButton} onPress={handleAddVitals}>
           <Plus size={20} color="#fff" />
@@ -483,9 +485,9 @@ export default function VitalsScreen() {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.bottomPadding} />
-      
-      {showCamera && (
+        <View style={styles.bottomPadding} />
+        
+        {showCamera && (
         <View style={styles.cameraContainer}>
           <View style={styles.cameraHeader}>
             <Text style={styles.cameraTitle}>ECG Capture/Recording</Text>
@@ -501,8 +503,9 @@ export default function VitalsScreen() {
             </View>
           </CameraView>
         </View>
-      )}
-    </ScrollView>
+        )}
+      </ScrollView>
+    </ResponsiveContainer>
   );
 }
 
@@ -750,5 +753,13 @@ const styles = StyleSheet.create({
     fontSize: 9,
     marginTop: 2,
     fontFamily: "monospace",
+  },
+  inputContainer: {
+    flex: 1,
+    minWidth: 150,
+  },
+  tabletInput: {
+    minWidth: 200,
+    maxWidth: 300,
   },
 });

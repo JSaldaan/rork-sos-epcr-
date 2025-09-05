@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState, useEffect } from "react";
+import React, { useCallback, useState, useEffect } from "react";
 import {
   StyleSheet,
   Text,
@@ -10,6 +10,8 @@ import {
   Modal,
   FlatList,
 } from "react-native";
+import { ResponsiveContainer, ResponsiveRow } from '@/components/ResponsiveLayout';
+import { spacing, isTablet } from '@/utils/responsive';
 import { Clock, MapPin, User, ChevronDown, Shield } from "lucide-react-native";
 import { usePCRStore } from "@/store/pcrStore";
 import { router } from "expo-router";
@@ -80,7 +82,7 @@ export default function NewPCRScreen() {
     updateIncidentInfo,
     adminLogin,
     isAdmin,
-    submitPCR,
+
     currentSession,
   } = usePCRStore();
   const [showDiagnosisModal, setShowDiagnosisModal] = useState<boolean>(false);
@@ -91,7 +93,7 @@ export default function NewPCRScreen() {
   const [adminPassword, setAdminPassword] = useState<string>('');
   const [showOfflineDetails, setShowOfflineDetails] = useState<boolean>(false);
 
-  const { saveCurrentPCRDraft, saveTabDataWithNotification } = usePCRStore();
+  const { saveTabDataWithNotification } = usePCRStore();
   
   // Route guard: Admin users should not access this screen
   const isAdminUser = currentSession?.role === 'admin' || 
@@ -105,27 +107,13 @@ export default function NewPCRScreen() {
     }
   }, [isAdminUser]);
 
-  const handleSavePatient = useCallback(async () => {
-    if (!patientInfo.firstName || !patientInfo.lastName) {
-      Alert.alert("Required Fields", "Please enter patient's first and last name");
-      return;
-    }
-    
-    try {
-      await saveCurrentPCRDraft();
-      console.log('Patient information saved to draft');
-      Alert.alert("Success", "Patient information saved successfully. Continue to other tabs to complete the PCR.");
-    } catch (error) {
-      console.error('Error saving patient data:', error);
-      Alert.alert("Error", "Failed to save patient information. Please try again.");
-    }
-  }, [patientInfo.firstName, patientInfo.lastName, saveCurrentPCRDraft]);
+
 
   const handleSaveTab = useCallback(async () => {
     try {
       await saveTabDataWithNotification('Patient Info');
       Alert.alert("Success", "Patient information saved successfully!");
-    } catch (error) {
+    } catch {
       Alert.alert("Error", "Failed to save patient information. Please try again.");
     }
   }, [saveTabDataWithNotification]);
@@ -151,7 +139,7 @@ export default function NewPCRScreen() {
                 "Patient Report Submitted",
                 "Your patient information has been submitted successfully! Continue to other tabs to complete the full PCR."
               );
-            } catch (error) {
+            } catch {
               Alert.alert("Error", "Failed to submit patient report. Please try again.");
             }
           }
@@ -221,14 +209,15 @@ export default function NewPCRScreen() {
   }, [adminLogin, adminPassword]);
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Offline Status Component */}
-      <OfflineStatus 
-        showDetails={showOfflineDetails} 
-        onToggleDetails={() => setShowOfflineDetails(!showOfflineDetails)} 
-      />
-      
-      <View style={styles.headerSection}>
+    <ResponsiveContainer maxWidth="large" padding="medium">
+      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+        {/* Offline Status Component */}
+        <OfflineStatus 
+          showDetails={showOfflineDetails} 
+          onToggleDetails={() => setShowOfflineDetails(!showOfflineDetails)} 
+        />
+        
+        <View style={styles.headerSection}>
         <Text style={styles.headerTitle}>New Patient Care Report</Text>
         <Text style={styles.headerSubtitle}>Enter patient and call information</Text>
         
@@ -253,8 +242,8 @@ export default function NewPCRScreen() {
           <Text style={styles.sectionTitle}>Call Time Information</Text>
         </View>
         
-        <View style={styles.row}>
-          <View style={styles.halfInput}>
+        <ResponsiveRow gap={spacing.md} wrap={isTablet()}>
+          <View style={[styles.inputContainer, isTablet() && styles.tabletInput]}>
             <Text style={styles.label}>Time of Call</Text>
             <TextInput
               style={styles.input}
@@ -263,7 +252,7 @@ export default function NewPCRScreen() {
               placeholder="HH:MM"
             />
           </View>
-          <View style={styles.halfInput}>
+          <View style={[styles.inputContainer, isTablet() && styles.tabletInput]}>
             <Text style={styles.label}>Date</Text>
             <TextInput
               style={styles.input}
@@ -272,10 +261,10 @@ export default function NewPCRScreen() {
               placeholder="DD/MM/YYYY"
             />
           </View>
-        </View>
+        </ResponsiveRow>
 
-        <View style={styles.row}>
-          <View style={styles.halfInput}>
+        <ResponsiveRow gap={spacing.md} wrap={isTablet()}>
+          <View style={[styles.inputContainer, isTablet() && styles.tabletInput]}>
             <Text style={styles.label}>Arrival on Scene</Text>
             <TextInput
               style={styles.input}
@@ -284,7 +273,7 @@ export default function NewPCRScreen() {
               placeholder="HH:MM"
             />
           </View>
-          <View style={styles.halfInput}>
+          <View style={[styles.inputContainer, isTablet() && styles.tabletInput]}>
             <Text style={styles.label}>At Patient Side</Text>
             <TextInput
               style={styles.input}
@@ -293,10 +282,10 @@ export default function NewPCRScreen() {
               placeholder="HH:MM"
             />
           </View>
-        </View>
+        </ResponsiveRow>
 
-        <View style={styles.row}>
-          <View style={styles.halfInput}>
+        <ResponsiveRow gap={spacing.md} wrap={isTablet()}>
+          <View style={[styles.inputContainer, isTablet() && styles.tabletInput]}>
             <Text style={styles.label}>To Destination</Text>
             <TextInput
               style={styles.input}
@@ -305,7 +294,7 @@ export default function NewPCRScreen() {
               placeholder="HH:MM"
             />
           </View>
-          <View style={styles.halfInput}>
+          <View style={[styles.inputContainer, isTablet() && styles.tabletInput]}>
             <Text style={styles.label}>At Destination</Text>
             <TextInput
               style={styles.input}
@@ -314,7 +303,7 @@ export default function NewPCRScreen() {
               placeholder="HH:MM"
             />
           </View>
-        </View>
+        </ResponsiveRow>
       </View>
 
       <View style={styles.section}>
@@ -323,8 +312,8 @@ export default function NewPCRScreen() {
           <Text style={styles.sectionTitle}>Patient Information</Text>
         </View>
         
-        <View style={styles.row}>
-          <View style={styles.halfInput}>
+        <ResponsiveRow gap={spacing.md} wrap={isTablet()}>
+          <View style={[styles.inputContainer, isTablet() && styles.tabletInput]}>
             <Text style={styles.label}>First Name *</Text>
             <TextInput
               style={styles.input}
@@ -333,7 +322,7 @@ export default function NewPCRScreen() {
               placeholder="Enter first name"
             />
           </View>
-          <View style={styles.halfInput}>
+          <View style={[styles.inputContainer, isTablet() && styles.tabletInput]}>
             <Text style={styles.label}>Last Name *</Text>
             <TextInput
               style={styles.input}
@@ -342,10 +331,10 @@ export default function NewPCRScreen() {
               placeholder="Enter last name"
             />
           </View>
-        </View>
+        </ResponsiveRow>
 
-        <View style={styles.row}>
-          <View style={styles.halfInput}>
+        <ResponsiveRow gap={spacing.md} wrap={isTablet()}>
+          <View style={[styles.inputContainer, isTablet() && styles.tabletInput]}>
             <Text style={styles.label}>Age</Text>
             <TextInput
               style={styles.input}
@@ -355,7 +344,7 @@ export default function NewPCRScreen() {
               keyboardType="numeric"
             />
           </View>
-          <View style={styles.halfInput}>
+          <View style={[styles.inputContainer, isTablet() && styles.tabletInput]}>
             <Text style={styles.label}>Gender</Text>
             <View style={styles.genderContainer}>
               <TouchableOpacity
@@ -392,7 +381,7 @@ export default function NewPCRScreen() {
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </ResponsiveRow>
 
         <Text style={styles.label}>Phone Number</Text>
         <TextInput
@@ -657,7 +646,7 @@ export default function NewPCRScreen() {
             </View>
             
             <Text style={styles.adminHintText}>
-              Hint: Default password is "admin123"
+              Hint: Default password is &quot;admin123&quot;
             </Text>
           </View>
         </View>
@@ -673,8 +662,9 @@ export default function NewPCRScreen() {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.bottomPadding} />
-    </ScrollView>
+        <View style={styles.bottomPadding} />
+      </ScrollView>
+    </ResponsiveContainer>
   );
 }
 
@@ -1072,5 +1062,13 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 15,
     fontStyle: "italic",
+  },
+  inputContainer: {
+    flex: 1,
+    minWidth: 150,
+  },
+  tabletInput: {
+    minWidth: 200,
+    maxWidth: 300,
   },
 });
