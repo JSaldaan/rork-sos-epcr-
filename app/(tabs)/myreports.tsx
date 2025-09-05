@@ -235,7 +235,7 @@ const MyReportsScreen: React.FC = () => {
         <View style={styles.pcrInfo}>
           <Text style={styles.pcrId}>PCR #{pcr.id}</Text>
           <Text style={styles.patientName}>
-            {pcr.patientInfo.firstName || 'N/A'} {pcr.patientInfo.lastName || 'N/A'}
+            {(pcr.patientInfo.firstName || 'N/A')} {(pcr.patientInfo.lastName || 'N/A')}
           </Text>
           <View style={styles.metaInfo}>
             <Calendar size={14} color="#6b7280" />
@@ -305,7 +305,7 @@ const MyReportsScreen: React.FC = () => {
         
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Patient Information</Text>
-          <Text style={styles.detailText}>Name: {pcr.patientInfo.firstName || 'N/A'} {pcr.patientInfo.lastName || 'N/A'}</Text>
+          <Text style={styles.detailText}>Name: {(pcr.patientInfo.firstName || 'N/A')} {(pcr.patientInfo.lastName || 'N/A')}</Text>
           <Text style={styles.detailText}>Age: {pcr.patientInfo.age || 'N/A'}</Text>
           <Text style={styles.detailText}>Gender: {pcr.patientInfo.gender || 'N/A'}</Text>
           <Text style={styles.detailText}>Phone: {pcr.patientInfo.phone || 'N/A'}</Text>
