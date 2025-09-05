@@ -131,13 +131,14 @@ const MyReportsScreen: React.FC = () => {
       
       `INCIDENT INFORMATION\n` +
       `Location: ${pcr.incidentInfo.location || 'N/A'}\n` +
+      `On Arrival Info: ${pcr.incidentInfo.onArrivalInfo || 'N/A'}\n` +
       `Chief Complaint: ${pcr.incidentInfo.chiefComplaint || 'N/A'}\n` +
       `History: ${pcr.incidentInfo.history || 'N/A'}\n` +
       `Assessment: ${pcr.incidentInfo.assessment || 'N/A'}\n` +
       `Treatment Given: ${pcr.incidentInfo.treatmentGiven || 'N/A'}\n` +
       `Priority: ${pcr.incidentInfo.priority || 'N/A'}\n` +
-      `On Arrival Info: ${pcr.incidentInfo.onArrivalInfo || 'N/A'}\n` +
-      `Provisional Diagnosis: ${pcr.incidentInfo.provisionalDiagnosis || 'N/A'}\n\n` +
+      `Provisional Diagnosis: ${pcr.incidentInfo.provisionalDiagnosis || 'N/A'}\n` +
+      `Additional Notes: ${pcr.incidentInfo.additionalNotes || 'N/A'}\n\n` +
       
       `VITAL SIGNS\n` +
       (pcr.vitals && pcr.vitals.length > 0 ? 
@@ -324,13 +325,14 @@ const MyReportsScreen: React.FC = () => {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Incident Information</Text>
           <Text style={styles.detailText}>Location: {pcr.incidentInfo.location || 'N/A'}</Text>
+          <Text style={styles.detailText}>On Arrival Info: {pcr.incidentInfo.onArrivalInfo || 'N/A'}</Text>
           <Text style={styles.detailText}>Chief Complaint: {pcr.incidentInfo.chiefComplaint || 'N/A'}</Text>
           <Text style={styles.detailText}>History: {pcr.incidentInfo.history || 'N/A'}</Text>
           <Text style={styles.detailText}>Assessment: {pcr.incidentInfo.assessment || 'N/A'}</Text>
           <Text style={styles.detailText}>Treatment: {pcr.incidentInfo.treatmentGiven || 'N/A'}</Text>
           <Text style={styles.detailText}>Priority: {pcr.incidentInfo.priority || 'N/A'}</Text>
-          <Text style={styles.detailText}>On Arrival Info: {pcr.incidentInfo.onArrivalInfo || 'N/A'}</Text>
           <Text style={styles.detailText}>Provisional Diagnosis: {pcr.incidentInfo.provisionalDiagnosis || 'N/A'}</Text>
+          <Text style={styles.detailText}>Additional Notes: {pcr.incidentInfo.additionalNotes || 'N/A'}</Text>
         </View>
 
         <View style={styles.section}>

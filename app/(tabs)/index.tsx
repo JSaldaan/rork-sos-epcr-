@@ -521,6 +521,16 @@ export default function NewPCRScreen() {
             />
           </View>
         )}
+        
+        <Text style={styles.label}>Additional Notes</Text>
+        <TextInput
+          style={[styles.input, styles.textArea]}
+          value={incidentInfo.additionalNotes}
+          onChangeText={handleIncidentChange('additionalNotes')}
+          placeholder="Any additional notes, observations, or important information not covered above"
+          multiline
+          numberOfLines={4}
+        />
       </View>
 
       <Modal

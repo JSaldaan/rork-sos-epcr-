@@ -269,13 +269,14 @@ export default function PreviewScreen() {
           "Incident Information",
           <View>
             {renderField("Location", incidentInfo.location)}
+            {renderField("On Arrival Info", incidentInfo.onArrivalInfo)}
             {renderField("Chief Complaint", incidentInfo.chiefComplaint)}
             {renderField("History", incidentInfo.history)}
             {renderField("Assessment", incidentInfo.assessment)}
             {renderField("Treatment Given", incidentInfo.treatmentGiven)}
             {renderField("Priority", incidentInfo.priority)}
-            {renderField("On Arrival Info", incidentInfo.onArrivalInfo)}
             {renderField("Provisional Diagnosis", incidentInfo.provisionalDiagnosis)}
+            {renderField("Additional Notes", incidentInfo.additionalNotes)}
           </View>
         )}
 

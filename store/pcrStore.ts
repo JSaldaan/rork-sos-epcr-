@@ -29,6 +29,7 @@ export interface IncidentInfo {
   priority: string;
   onArrivalInfo: string;
   provisionalDiagnosis: string;
+  additionalNotes: string;
 }
 
 export interface VitalSigns {
@@ -307,6 +308,7 @@ const initialIncidentInfo: IncidentInfo = {
   priority: '',
   onArrivalInfo: '',
   provisionalDiagnosis: '',
+  additionalNotes: '',
 };
 
 const initialTransportInfo: TransportInfo = {
@@ -1522,13 +1524,14 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
       report += `Provisional Diagnosis: ${encounter.provisional_diagnosis}\n`;
     } else {
       report += `Location: ${pcr.incidentInfo.location}\n`;
+      report += `On Arrival Info: ${pcr.incidentInfo.onArrivalInfo}\n`;
       report += `Chief Complaint: ${pcr.incidentInfo.chiefComplaint}\n`;
       report += `History: ${pcr.incidentInfo.history}\n`;
       report += `Assessment: ${pcr.incidentInfo.assessment}\n`;
       report += `Treatment Given: ${pcr.incidentInfo.treatmentGiven}\n`;
       report += `Priority: ${pcr.incidentInfo.priority}\n`;
-      report += `On Arrival Info: ${pcr.incidentInfo.onArrivalInfo}\n`;
       report += `Provisional Diagnosis: ${pcr.incidentInfo.provisionalDiagnosis}\n`;
+      report += `Additional Notes: ${pcr.incidentInfo.additionalNotes}\n`;
     }
     report += `\n`;
     
