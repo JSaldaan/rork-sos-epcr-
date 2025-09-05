@@ -533,19 +533,21 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   label: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "500",
     color: "#333",
-    marginBottom: 8,
+    marginBottom: 6,
   },
   input: {
     borderWidth: 1,
     borderColor: "#E0E0E0",
     borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
+    padding: 10,
+    fontSize: 15,
     backgroundColor: "#fff",
-    marginBottom: 16,
+    marginBottom: 12,
+    minHeight: 42,
+    color: "#333",
   },
   row: {
     flexDirection: "row",
@@ -752,17 +754,21 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     flex: 1,
-    minWidth: 150,
+    minWidth: 140,
+    marginBottom: 8,
   },
   tabletInput: {
-    minWidth: 200,
-    maxWidth: 300,
+    minWidth: 180,
+    maxWidth: 280,
   },
   twoColumnContainer: {
     flexDirection: "row",
-    gap: 16,
+    gap: 12,
+    flexWrap: "wrap",
   },
   column: {
     flex: 1,
+    minWidth: 140,
+    maxWidth: "48%",
   },
 });
