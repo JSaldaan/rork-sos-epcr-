@@ -545,7 +545,8 @@ const styles = StyleSheet.create({
     padding: 12,
     fontSize: 16,
     backgroundColor: "#fff",
-    marginBottom: 16,
+    marginBottom: 12,
+    minHeight: 44,
   },
   row: {
     flexDirection: "row",
@@ -753,6 +754,7 @@ const styles = StyleSheet.create({
   inputContainer: {
     flex: 1,
     minWidth: 150,
+    marginBottom: 4,
   },
   tabletInput: {
     minWidth: 200,
@@ -760,9 +762,11 @@ const styles = StyleSheet.create({
   },
   twoColumnContainer: {
     flexDirection: "row",
-    gap: 16,
+    gap: 20,
+    marginBottom: 8,
   },
   column: {
     flex: 1,
+    paddingHorizontal: 4,
   },
 });
