@@ -463,7 +463,7 @@ export default function VitalsScreen() {
                   <Text style={styles.ecgTimestamp}>
                     {vital.ecgCaptureTimestamp ? new Date(vital.ecgCaptureTimestamp).toLocaleTimeString() : 'N/A'}
                   </Text>
-                  <Text style={styles.ecgReference}>Ref: {vital.ecgCapture?.substring(0, 20)}...</Text>
+                  <Text style={styles.ecgReference}>Ref: {vital.ecgCapture?.substring(0, 20)}{'...'}</Text>
                 </View>
               )}
             </View>

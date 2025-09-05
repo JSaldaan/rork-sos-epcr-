@@ -110,8 +110,7 @@ export default function TransportScreen() {
   }, [updateTransportInfo]);
 
   return (
-    <>
-      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <MapPin size={20} color="#0066CC" />
@@ -242,8 +241,7 @@ export default function TransportScreen() {
       </View>
 
       <View style={styles.bottomPadding} />
-      </ScrollView>
-
+      
       <Modal
         visible={showHospitalDropdown}
         transparent
@@ -279,7 +277,7 @@ export default function TransportScreen() {
           </View>
         </TouchableOpacity>
       </Modal>
-    </>
+    </ScrollView>
   );
 }
 
