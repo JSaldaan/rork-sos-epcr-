@@ -5,6 +5,7 @@ import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { usePCRStore } from "@/store/pcrStore";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { SecurityManager, SecurityLogger } from '@/utils/security';
 
 
 SplashScreen.preventAutoHideAsync();
@@ -132,7 +133,11 @@ function AppInitializer() {
       try {
         console.log('=== APP INITIALIZATION ===');
         
-        // Initialize staff database first
+        // Initialize security system first
+        await SecurityManager.initialize();
+        console.log('Security system initialized');
+        
+        // Initialize staff database
         await initializeStaffDatabase();
         console.log('Staff database initialized');
         
@@ -148,6 +153,13 @@ function AppInitializer() {
         
         console.log('All users must login fresh on app start');
         
+        // Log app initialization
+        await SecurityLogger.logEvent(
+          'SUSPICIOUS_ACTIVITY',
+          'Application started and initialized',
+          'LOW'
+        );
+        
         // Load any existing draft
         await loadCurrentPCRDraft();
         console.log('App initialized, draft loaded if available');
@@ -155,6 +167,11 @@ function AppInitializer() {
         setHasInitialized(true);
       } catch (error) {
         console.error('Error initializing app:', error);
+        await SecurityLogger.logEvent(
+          'SUSPICIOUS_ACTIVITY',
+          `App initialization failed: ${error}`,
+          'HIGH'
+        ).catch(() => {});
         setHasInitialized(true); // Still mark as initialized to prevent infinite loading
       } finally {
         // Hide splash screen after initialization
@@ -171,6 +188,13 @@ function AppInitializer() {
 }
 
 export default function RootLayout() {
+  // Cleanup security system on app unmount
+  React.useEffect(() => {
+    return () => {
+      SecurityManager.shutdown();
+    };
+  }, []);
+  
   return (
     <QueryClientProvider client={queryClient}>
       <GestureHandlerRootView style={{ flex: 1 }}>

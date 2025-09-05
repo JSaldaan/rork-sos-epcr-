@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,9 +9,17 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { usePCRStore } from '@/store/pcrStore';
-import { Shield, Users, TestTube } from 'lucide-react-native';
+import { Shield, Users, TestTube, AlertTriangle } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { verifyCompleteLogout } from '@/utils/auth';
+import {
+  SecurityManager,
+  SecurityLogger,
+  BruteForceProtection,
+  InputValidator,
+  MalwareProtection,
+} from '@/utils/security';
+import { SecurityDashboard } from '@/components/SecurityDashboard';
 
 const LoginScreen: React.FC = () => {
   const {
@@ -24,14 +32,78 @@ const LoginScreen: React.FC = () => {
   const [loginError, setLoginError] = useState<string>('');
   const [loginMode, setLoginMode] = useState<'staff' | 'admin'>('staff');
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [showSecurityDashboard, setShowSecurityDashboard] = useState<boolean>(false);
+  const [accountLocked, setAccountLocked] = useState<boolean>(false);
+  const [lockoutTime, setLockoutTime] = useState<number>(0);
 
-  // Don't auto-redirect if user is already logged in
-  // Let them stay on login page and manually navigate to tabs if they want
-  // This ensures the app always starts from login page
+  // Initialize security system
+  useEffect(() => {
+    const initSecurity = async () => {
+      try {
+        await SecurityManager.initialize();
+        console.log('Security system initialized');
+      } catch (error) {
+        console.error('Failed to initialize security system:', error);
+      }
+    };
+    initSecurity();
+  }, []);
+
+  // Check for account lockout
+  useEffect(() => {
+    const checkLockout = async () => {
+      if (corporationId) {
+        const isLocked = await BruteForceProtection.isAccountLocked(corporationId);
+        setAccountLocked(isLocked);
+        if (isLocked) {
+          const remaining = await BruteForceProtection.getRemainingLockoutTime(corporationId);
+          setLockoutTime(remaining);
+        }
+      }
+    };
+    checkLockout();
+  }, [corporationId]);
 
   const handleStaffLogin = async () => {
-    if (!corporationId.trim()) {
+    const trimmedId = corporationId.trim().toUpperCase();
+    
+    if (!trimmedId) {
       setLoginError('Please enter your Corporation ID');
+      return;
+    }
+    
+    // Security validation
+    if (!InputValidator.validateCorporationId(trimmedId)) {
+      setLoginError('Invalid Corporation ID format');
+      await SecurityLogger.logEvent(
+        'LOGIN_FAILURE',
+        `Invalid Corporation ID format: ${trimmedId}`,
+        'MEDIUM'
+      );
+      return;
+    }
+    
+    // Check for malicious input
+    const malwareScan = MalwareProtection.scanInput(trimmedId);
+    if (!malwareScan.safe) {
+      setLoginError('Security threat detected in input');
+      await SecurityLogger.logEvent(
+        'INJECTION_ATTEMPT',
+        `Malicious input detected: ${malwareScan.threats.join(', ')}`,
+        'CRITICAL',
+        true
+      );
+      return;
+    }
+    
+    // Check account lockout
+    const isLocked = await BruteForceProtection.isAccountLocked(trimmedId);
+    if (isLocked) {
+      const remaining = await BruteForceProtection.getRemainingLockoutTime(trimmedId);
+      const minutes = Math.ceil(remaining / (60 * 1000));
+      setLoginError(`Account locked. Try again in ${minutes} minutes.`);
+      setAccountLocked(true);
+      setLockoutTime(remaining);
       return;
     }
     
@@ -39,36 +111,83 @@ const LoginScreen: React.FC = () => {
     setLoginError('');
     
     try {
+      // Log login attempt
+      await SecurityLogger.logEvent(
+        'LOGIN_ATTEMPT',
+        `Staff login attempt for: ${trimmedId}`,
+        'LOW'
+      );
+      
       // First validate the corporation ID to check role
       await usePCRStore.getState().loadStaffMembers();
-      const staff = await usePCRStore.getState().validateCorporationId(corporationId.trim().toUpperCase());
+      const staff = await usePCRStore.getState().validateCorporationId(trimmedId);
       
       if (staff && (staff.role === 'SuperAdmin' || staff.role === 'Admin')) {
         setLoginError('Admin and Super Admin accounts must use Admin Only login');
+        await BruteForceProtection.recordLoginAttempt(trimmedId, false);
         setIsLoading(false);
         return;
       }
       
-      const success = await staffLogin(corporationId.trim().toUpperCase());
+      const success = await staffLogin(trimmedId);
+      
+      // Record login attempt for brute force protection
+      await BruteForceProtection.recordLoginAttempt(trimmedId, success);
+      
       if (success) {
         setCorporationId('');
         setLoginError('');
+        setAccountLocked(false);
+        setLockoutTime(0);
+        
+        await SecurityLogger.logEvent(
+          'LOGIN_SUCCESS',
+          `Staff login successful for: ${trimmedId}`,
+          'LOW'
+        );
+        
         console.log('Staff login successful, redirecting to tabs');
         router.replace('/(tabs)');
       } else {
         setLoginError('Invalid Corporation ID or account inactive');
+        await SecurityLogger.logEvent(
+          'LOGIN_FAILURE',
+          `Staff login failed for: ${trimmedId}`,
+          'MEDIUM'
+        );
       }
     } catch (error) {
       console.error('Staff login error:', error);
       setLoginError('Login failed. Please try again.');
+      await SecurityLogger.logEvent(
+        'LOGIN_FAILURE',
+        `Staff login error for ${trimmedId}: ${error}`,
+        'HIGH'
+      );
+      await BruteForceProtection.recordLoginAttempt(trimmedId, false);
     } finally {
       setIsLoading(false);
     }
   };
   
   const handleAdminLogin = async () => {
-    if (!password.trim()) {
+    const trimmedPassword = password.trim();
+    
+    if (!trimmedPassword) {
       setLoginError('Please enter admin credentials');
+      return;
+    }
+    
+    // Security validation for admin login
+    const malwareScan = MalwareProtection.scanInput(trimmedPassword);
+    if (!malwareScan.safe) {
+      setLoginError('Security threat detected in input');
+      await SecurityLogger.logEvent(
+        'INJECTION_ATTEMPT',
+        `Malicious admin input detected: ${malwareScan.threats.join(', ')}`,
+        'CRITICAL',
+        true
+      );
       return;
     }
     
@@ -76,38 +195,91 @@ const LoginScreen: React.FC = () => {
     setLoginError('');
     
     try {
+      await SecurityLogger.logEvent(
+        'LOGIN_ATTEMPT',
+        'Admin login attempt',
+        'MEDIUM'
+      );
+      
       // Check if it's the system admin password
-      if (password === 'admin123') {
-        if (adminLogin(password)) {
+      if (trimmedPassword === 'admin123') {
+        if (adminLogin(trimmedPassword)) {
           setPassword('');
           setLoginError('');
+          
+          await SecurityLogger.logEvent(
+            'LOGIN_SUCCESS',
+            'System admin login successful',
+            'HIGH'
+          );
+          
           console.log('System admin login successful, redirecting to tabs');
           router.replace('/(tabs)');
         } else {
           setLoginError('System admin login failed');
+          await SecurityLogger.logEvent(
+            'LOGIN_FAILURE',
+            'System admin login failed',
+            'HIGH'
+          );
         }
       } else {
         // Check if it's a staff member with admin/super admin role using corporation ID as password
+        const upperPassword = trimmedPassword.toUpperCase();
+        
+        if (!InputValidator.validateCorporationId(upperPassword)) {
+          setLoginError('Invalid admin credentials format');
+          await SecurityLogger.logEvent(
+            'LOGIN_FAILURE',
+            'Invalid admin Corporation ID format',
+            'MEDIUM'
+          );
+          setIsLoading(false);
+          return;
+        }
+        
         await usePCRStore.getState().loadStaffMembers();
-        const staff = await usePCRStore.getState().validateCorporationId(password.trim().toUpperCase());
+        const staff = await usePCRStore.getState().validateCorporationId(upperPassword);
         
         if (staff && (staff.role === 'SuperAdmin' || staff.role === 'Admin')) {
-          const success = await staffLogin(password.trim().toUpperCase());
+          const success = await staffLogin(upperPassword);
           if (success) {
             setPassword('');
             setLoginError('');
+            
+            await SecurityLogger.logEvent(
+              'LOGIN_SUCCESS',
+              `Admin staff login successful: ${upperPassword}`,
+              'HIGH'
+            );
+            
             console.log('Admin staff login successful, redirecting to tabs');
             router.replace('/(tabs)');
           } else {
             setLoginError('Admin login failed');
+            await SecurityLogger.logEvent(
+              'LOGIN_FAILURE',
+              `Admin staff login failed: ${upperPassword}`,
+              'HIGH'
+            );
           }
         } else {
           setLoginError('Invalid admin credentials. Use system password or admin Corporation ID');
+          await SecurityLogger.logEvent(
+            'LOGIN_FAILURE',
+            'Invalid admin credentials provided',
+            'MEDIUM'
+          );
         }
       }
     } catch (error) {
       console.error('Admin login error:', error);
       setLoginError('Admin login failed. Please try again.');
+      await SecurityLogger.logEvent(
+        'LOGIN_FAILURE',
+        `Admin login error: ${error}`,
+        'HIGH'
+      );
     } finally {
       setIsLoading(false);
     }
@@ -257,8 +429,16 @@ const LoginScreen: React.FC = () => {
           </View>
         )}
         
-        {/* Debug buttons - remove in production */}
+        {/* Security and Debug Actions */}
         <View style={styles.debugContainer}>
+          <Pressable
+            style={[styles.debugButton, styles.securityButton]}
+            onPress={() => setShowSecurityDashboard(true)}
+          >
+            <Shield size={16} color="#0066CC" />
+            <Text style={[styles.debugButtonText, styles.securityButtonText]}>Security Dashboard</Text>
+          </Pressable>
+          
           <Pressable
             style={styles.debugButton}
             onPress={async () => {
@@ -275,8 +455,9 @@ const LoginScreen: React.FC = () => {
                   staffMembers: [],
                 });
                 
-                // Re-initialize staff database
+                // Re-initialize staff database and security
                 await usePCRStore.getState().initializeStaffDatabase();
+                await SecurityManager.initialize();
                 
                 alert('All data cleared and reset. You can now test login.');
                 console.log('=== END CLEARING ALL DATA ===');
@@ -311,7 +492,27 @@ const LoginScreen: React.FC = () => {
             <Text style={styles.debugButtonText}>Test Logout State</Text>
           </Pressable>
         </View>
+        
+        {/* Account Lockout Warning */}
+        {accountLocked && (
+          <View style={styles.lockoutWarning}>
+            <AlertTriangle size={20} color="#ef4444" />
+            <Text style={styles.lockoutText}>
+              Account temporarily locked due to multiple failed attempts.
+              {lockoutTime > 0 && ` Try again in ${Math.ceil(lockoutTime / (60 * 1000))} minutes.`}
+            </Text>
+          </View>
+        )}
       </View>
+      
+      {/* Security Dashboard Modal */}
+      {showSecurityDashboard && (
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <SecurityDashboard onClose={() => setShowSecurityDashboard(false)} />
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 };
@@ -536,10 +737,54 @@ const styles = StyleSheet.create({
     backgroundColor: '#fef3c7',
     borderColor: '#f59e0b',
   },
+  securityButton: {
+    backgroundColor: '#eff6ff',
+    borderColor: '#3b82f6',
+  },
   debugButtonText: {
     fontSize: 12,
     color: '#6b7280',
     textAlign: 'center',
+  },
+  securityButtonText: {
+    color: '#0066CC',
+  },
+  lockoutWarning: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fef2f2',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#fecaca',
+    marginTop: 16,
+    width: '100%',
+    maxWidth: 400,
+  },
+  lockoutText: {
+    fontSize: 14,
+    color: '#ef4444',
+    marginLeft: 8,
+    flex: 1,
+  },
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  modalContainer: {
+    width: '90%',
+    maxWidth: 600,
+    height: '80%',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    overflow: 'hidden',
   },
 });
 

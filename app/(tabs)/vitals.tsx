@@ -12,6 +12,11 @@ import {
 import { Activity, Clock, Plus, Camera } from "lucide-react-native";
 import { usePCRStore } from "@/store/pcrStore";
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import {
+  InputValidator,
+  MalwareProtection,
+  SecurityLogger,
+} from '@/utils/security';
 
 export default function VitalsScreen() {
   const { vitals, addVitalSigns, saveVitalsData, addECGCapture, saveTabDataWithNotification } = usePCRStore();
@@ -44,6 +49,54 @@ export default function VitalsScreen() {
       Alert.alert("Required", "Please enter at least heart rate or blood pressure");
       return;
     }
+
+    // Security validation for vital signs input
+    const vitalsToValidate = [
+      { value: currentVitals.bloodPressureSystolic, type: 'bp' as const, name: 'Systolic BP' },
+      { value: currentVitals.bloodPressureDiastolic, type: 'bp' as const, name: 'Diastolic BP' },
+      { value: currentVitals.heartRate, type: 'hr' as const, name: 'Heart Rate' },
+      { value: currentVitals.respiratoryRate, type: 'rr' as const, name: 'Respiratory Rate' },
+      { value: currentVitals.oxygenSaturation, type: 'spo2' as const, name: 'Oxygen Saturation' },
+      { value: currentVitals.temperature, type: 'temp' as const, name: 'Temperature' },
+    ];
+
+    for (const vital of vitalsToValidate) {
+      if (vital.value) {
+        // Check for malicious input
+        const malwareScan = MalwareProtection.scanInput(vital.value);
+        if (!malwareScan.safe) {
+          Alert.alert('Security Alert', `Malicious content detected in ${vital.name}`);
+          await SecurityLogger.logEvent(
+            'INJECTION_ATTEMPT',
+            `Malicious vital signs input detected in ${vital.name}: ${malwareScan.threats.join(', ')}`,
+            'CRITICAL',
+            true
+          );
+          return;
+        }
+
+        // Validate vital signs ranges
+        if (!InputValidator.validateVitalSigns(vital.value, vital.type)) {
+          Alert.alert(
+            'Invalid Value',
+            `${vital.name} value "${vital.value}" is outside normal medical ranges. Please check your input.`
+          );
+          await SecurityLogger.logEvent(
+            'DATA_ACCESS',
+            `Invalid vital signs value entered: ${vital.name} = ${vital.value}`,
+            'MEDIUM'
+          );
+          return;
+        }
+      }
+    }
+
+    // Log successful vital signs entry
+    await SecurityLogger.logEvent(
+      'DATA_ACCESS',
+      'Vital signs data entered successfully',
+      'LOW'
+    );
 
     const vitalSigns = {
       ...currentVitals,
