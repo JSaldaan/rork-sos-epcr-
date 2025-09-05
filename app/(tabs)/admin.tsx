@@ -1789,7 +1789,7 @@ export default function AdminScreen() {
               
               <TouchableOpacity style={[styles.reportActionButton, { borderColor: '#28a745', backgroundColor: '#e8f5e8' }]} onPress={() => handleExportPDF(true)}>
                 <FileText size={20} color="#28a745" />
-                <Text style={[styles.reportActionText, { color: '#28a745', fontWeight: 'bold' }]}>📋 Complete Report PDF</Text>
+                <Text style={[styles.reportActionText, { color: '#28a745', fontWeight: 'bold' }]}>Complete Report PDF</Text>
               </TouchableOpacity>
             </View>
 
