@@ -9,6 +9,8 @@ import {
   Alert,
   Modal,
   FlatList,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { ResponsiveContainer, ResponsiveRow } from '@/components/ResponsiveLayout';
 import { spacing, isTablet } from '@/utils/responsive';
@@ -212,7 +214,16 @@ export default function NewPCRScreen() {
 
   return (
     <ResponsiveContainer maxWidth="large" padding="medium">
-      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      <KeyboardAvoidingView 
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 0}
+      >
+        <ScrollView 
+          style={styles.container} 
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
         {/* Offline Status Component */}
         <OfflineStatus 
           showDetails={showOfflineDetails} 
@@ -681,8 +692,9 @@ export default function NewPCRScreen() {
         </TouchableOpacity>
       </View>
 
-        <View style={styles.bottomPadding} />
-      </ScrollView>
+          <View style={styles.bottomPadding} />
+        </ScrollView>
+      </KeyboardAvoidingView>
       
       <VoiceNotesModal
         visible={showVoiceNotes}
@@ -853,7 +865,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   bottomPadding: {
-    height: 20,
+    height: 100,
   },
   dropdownButton: {
     borderWidth: 1,

@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Alert,
   Platform,
+  KeyboardAvoidingView,
 } from "react-native";
 import { ResponsiveContainer } from '@/components/ResponsiveLayout';
 import { isTablet } from '@/utils/responsive';
@@ -287,7 +288,16 @@ export default function VitalsScreen() {
 
   return (
     <ResponsiveContainer maxWidth="large" padding="medium">
-      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      <KeyboardAvoidingView 
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 0}
+      >
+        <ScrollView 
+          style={styles.container} 
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Activity size={20} color="#0066CC" />
@@ -491,9 +501,9 @@ export default function VitalsScreen() {
         </TouchableOpacity>
       </View>
 
-        <View style={styles.bottomPadding} />
-        
-        {showCamera && (
+          <View style={styles.bottomPadding} />
+          
+          {showCamera && (
         <View style={styles.cameraContainer}>
           <View style={styles.cameraHeader}>
             <Text style={styles.cameraTitle}>ECG Capture/Recording</Text>
@@ -509,8 +519,9 @@ export default function VitalsScreen() {
             </View>
           </CameraView>
         </View>
-        )}
-      </ScrollView>
+          )}
+        </ScrollView>
+      </KeyboardAvoidingView>
       
       <VoiceNotesModal
         visible={showVoiceNotes}
@@ -638,7 +649,7 @@ const styles = StyleSheet.create({
     color: "#333",
   },
   bottomPadding: {
-    height: 20,
+    height: 100,
   },
   actionButtons: {
     flexDirection: "row",
