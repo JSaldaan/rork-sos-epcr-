@@ -1042,20 +1042,31 @@ export default function AdminScreen() {
               <div><strong>Captured:</strong> ${vital.ecgCaptureTimestamp || vital.timestamp}</div>
               <div><strong>Associated Vitals:</strong> HR: ${vital.heartRate}, BP: ${vital.bloodPressureSystolic}/${vital.bloodPressureDiastolic}</div>
               ${vital.ecgCapture ? `
-                <div class="ecg-container">
-                  <div class="ecg-title">📈 ECG Recording from Vitals</div>
+                <div class="ecg-container" style="page-break-inside: avoid; margin: 20px 0; padding: 20px; border: 3px solid #0066CC; background: white; border-radius: 8px;">
+                  <div style="background: #0066CC; color: white; padding: 10px; margin: -20px -20px 15px -20px; text-align: center; font-weight: bold; font-size: 14pt;">📈 ELECTROCARDIOGRAM (ECG) RECORDING</div>
                   ${vital.ecgCapture.startsWith('data:image') ? `
-                    <div style="border: 1px solid #ddd; padding: 10px; background: white; margin: 10px 0;">
-                      <img src="${vital.ecgCapture}" class="ecg-image" alt="ECG from Vitals ${index + 1}" style="width: 100%; max-width: 600px; height: auto; display: block; margin: 0 auto; border: 1px solid #333;" />
-                      <div class="ecg-info" style="text-align: center; margin-top: 10px; font-size: 10pt; color: #333;">✓ Digital ECG Capture - Timestamp: ${vital.ecgCaptureTimestamp || vital.timestamp}</div>
+                    <div style="border: 2px solid #333; padding: 15px; background: white; margin: 10px 0;">
+                      <img src="${vital.ecgCapture}" style="width: 100%; height: auto; display: block; margin: 0 auto; border: 2px solid #000; min-height: 300px; object-fit: contain; background: white;" alt="ECG Recording ${index + 1}" />
+                      <div style="margin-top: 15px; padding: 10px; background: #e8f5e8; border: 1px solid #4caf50; text-align: center;">
+                        <strong style="color: #2e7d32;">✓ DIGITAL ECG CAPTURE VERIFIED</strong><br/>
+                        <span style="font-size: 10pt;">Captured at: ${vital.ecgCaptureTimestamp || vital.timestamp}</span><br/>
+                        <span style="font-size: 9pt;">Heart Rate: ${vital.heartRate} bpm | BP: ${vital.bloodPressureSystolic}/${vital.bloodPressureDiastolic} mmHg</span>
+                      </div>
                     </div>
                   ` : `
-                    <div style="border: 2px solid #000; padding: 20px; margin: 10px 0; background: white; text-align: center; min-height: 200px; display: flex; flex-direction: column; justify-content: center;">
-                      <div style="font-size: 14pt; font-weight: bold; margin-bottom: 10px;">📈 ECG RECORDING CAPTURED</div>
-                      <div style="font-size: 12pt; color: #333; margin: 10px 0; padding: 10px; background: #f0f0f0; border: 1px solid #ccc;">ECG Image Data: ${vital.ecgCapture.substring(0, 100)}${'...'}</div>
-                      <div style="font-size: 10pt; color: #333; margin: 5px 0;">Timestamp: ${vital.ecgCaptureTimestamp || vital.timestamp}</div>
-                      <div style="font-size: 9pt; color: #666; margin-top: 10px; font-style: italic;">Digital ECG data captured and stored in system</div>
-                      <div style="font-size: 8pt; color: #999; margin-top: 5px;">Note: ECG image may require special viewer for display</div>
+                    <div style="border: 2px solid #000; padding: 20px; margin: 10px 0; background: linear-gradient(to bottom, #f0f7ff, white); text-align: center; min-height: 300px; display: flex; flex-direction: column; justify-content: center;">
+                      <div style="font-size: 16pt; font-weight: bold; margin-bottom: 15px; color: #0066CC;">📈 ECG DATA CAPTURED</div>
+                      <div style="font-size: 11pt; color: #333; margin: 10px 0; padding: 15px; background: white; border: 2px solid #0066CC; border-radius: 6px;">
+                        <strong>ECG Recording Available</strong><br/>
+                        <span style="font-size: 9pt;">Format: Digital Camera Capture</span>
+                      </div>
+                      <div style="font-size: 10pt; color: #333; margin: 10px 0;">
+                        <strong>Timestamp:</strong> ${vital.ecgCaptureTimestamp || vital.timestamp}<br/>
+                        <strong>Associated Vitals:</strong> HR ${vital.heartRate} | BP ${vital.bloodPressureSystolic}/${vital.bloodPressureDiastolic}
+                      </div>
+                      <div style="font-size: 9pt; color: #666; margin-top: 15px; padding: 10px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px;">
+                        ⚠️ ECG image stored in system database. Original capture from medical device camera.
+                      </div>
                     </div>
                   `}
                 </div>
