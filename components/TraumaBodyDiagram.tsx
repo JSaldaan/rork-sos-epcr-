@@ -9,8 +9,11 @@ import {
   Alert,
   Dimensions,
   TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { X, User, AlertCircle, MapPin } from "lucide-react-native";
+import Svg, { Path, Circle, G, Ellipse, Line, Rect } from "react-native-svg";
 
 interface InjuryPoint {
   id: string;
@@ -29,8 +32,8 @@ interface TraumaBodyDiagramProps {
 }
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
-const BODY_WIDTH = screenWidth * 0.8;
-const BODY_HEIGHT = screenHeight * 0.6;
+const BODY_WIDTH = Math.min(screenWidth * 0.85, 350);
+const BODY_HEIGHT = Math.min(screenHeight * 0.55, 450);
 
 const severityColors = {
   minor: '#FFC107',
@@ -39,24 +42,48 @@ const severityColors = {
   critical: '#D32F2F',
 };
 
-const bodyParts = [
-  { name: 'Head', x: 0.5, y: 0.08, width: 0.15, height: 0.1 },
-  { name: 'Neck', x: 0.5, y: 0.15, width: 0.1, height: 0.05 },
-  { name: 'Right Shoulder', x: 0.35, y: 0.2, width: 0.12, height: 0.08 },
-  { name: 'Left Shoulder', x: 0.65, y: 0.2, width: 0.12, height: 0.08 },
-  { name: 'Chest', x: 0.5, y: 0.28, width: 0.25, height: 0.15 },
-  { name: 'Right Arm', x: 0.28, y: 0.35, width: 0.08, height: 0.2 },
-  { name: 'Left Arm', x: 0.72, y: 0.35, width: 0.08, height: 0.2 },
-  { name: 'Abdomen', x: 0.5, y: 0.42, width: 0.22, height: 0.12 },
-  { name: 'Pelvis', x: 0.5, y: 0.52, width: 0.22, height: 0.08 },
-  { name: 'Right Thigh', x: 0.42, y: 0.62, width: 0.1, height: 0.15 },
-  { name: 'Left Thigh', x: 0.58, y: 0.62, width: 0.1, height: 0.15 },
-  { name: 'Right Knee', x: 0.42, y: 0.75, width: 0.08, height: 0.05 },
-  { name: 'Left Knee', x: 0.58, y: 0.75, width: 0.08, height: 0.05 },
-  { name: 'Right Lower Leg', x: 0.42, y: 0.82, width: 0.08, height: 0.12 },
-  { name: 'Left Lower Leg', x: 0.58, y: 0.82, width: 0.08, height: 0.12 },
-  { name: 'Right Foot', x: 0.42, y: 0.94, width: 0.08, height: 0.05 },
-  { name: 'Left Foot', x: 0.58, y: 0.94, width: 0.08, height: 0.05 },
+// Anatomical body regions with precise coordinates
+const bodyRegions = [
+  // Head and Neck
+  { name: 'Head', x: 0.5, y: 0.08, width: 0.12, height: 0.09 },
+  { name: 'Face', x: 0.5, y: 0.075, width: 0.1, height: 0.06 },
+  { name: 'Neck', x: 0.5, y: 0.135, width: 0.08, height: 0.04 },
+  
+  // Upper Body
+  { name: 'Right Shoulder', x: 0.37, y: 0.19, width: 0.1, height: 0.06 },
+  { name: 'Left Shoulder', x: 0.63, y: 0.19, width: 0.1, height: 0.06 },
+  { name: 'Right Clavicle', x: 0.42, y: 0.175, width: 0.08, height: 0.03 },
+  { name: 'Left Clavicle', x: 0.58, y: 0.175, width: 0.08, height: 0.03 },
+  { name: 'Chest (Thorax)', x: 0.5, y: 0.25, width: 0.22, height: 0.12 },
+  { name: 'Right Upper Arm', x: 0.31, y: 0.28, width: 0.06, height: 0.12 },
+  { name: 'Left Upper Arm', x: 0.69, y: 0.28, width: 0.06, height: 0.12 },
+  { name: 'Right Elbow', x: 0.31, y: 0.38, width: 0.05, height: 0.04 },
+  { name: 'Left Elbow', x: 0.69, y: 0.38, width: 0.05, height: 0.04 },
+  { name: 'Right Forearm', x: 0.29, y: 0.44, width: 0.05, height: 0.1 },
+  { name: 'Left Forearm', x: 0.71, y: 0.44, width: 0.05, height: 0.1 },
+  { name: 'Right Wrist', x: 0.28, y: 0.52, width: 0.04, height: 0.03 },
+  { name: 'Left Wrist', x: 0.72, y: 0.52, width: 0.04, height: 0.03 },
+  { name: 'Right Hand', x: 0.27, y: 0.56, width: 0.04, height: 0.05 },
+  { name: 'Left Hand', x: 0.73, y: 0.56, width: 0.04, height: 0.05 },
+  
+  // Core
+  { name: 'Upper Abdomen', x: 0.5, y: 0.36, width: 0.2, height: 0.08 },
+  { name: 'Lower Abdomen', x: 0.5, y: 0.43, width: 0.19, height: 0.08 },
+  { name: 'Pelvis', x: 0.5, y: 0.5, width: 0.2, height: 0.06 },
+  { name: 'Right Hip', x: 0.43, y: 0.53, width: 0.08, height: 0.06 },
+  { name: 'Left Hip', x: 0.57, y: 0.53, width: 0.08, height: 0.06 },
+  
+  // Lower Body
+  { name: 'Right Thigh', x: 0.43, y: 0.62, width: 0.08, height: 0.14 },
+  { name: 'Left Thigh', x: 0.57, y: 0.62, width: 0.08, height: 0.14 },
+  { name: 'Right Knee', x: 0.43, y: 0.74, width: 0.06, height: 0.04 },
+  { name: 'Left Knee', x: 0.57, y: 0.74, width: 0.06, height: 0.04 },
+  { name: 'Right Shin', x: 0.43, y: 0.82, width: 0.06, height: 0.12 },
+  { name: 'Left Shin', x: 0.57, y: 0.82, width: 0.06, height: 0.12 },
+  { name: 'Right Ankle', x: 0.43, y: 0.92, width: 0.05, height: 0.03 },
+  { name: 'Left Ankle', x: 0.57, y: 0.92, width: 0.05, height: 0.03 },
+  { name: 'Right Foot', x: 0.43, y: 0.96, width: 0.06, height: 0.04 },
+  { name: 'Left Foot', x: 0.57, y: 0.96, width: 0.06, height: 0.04 },
 ];
 
 export default function TraumaBodyDiagram({
@@ -76,27 +103,15 @@ export default function TraumaBodyDiagram({
     const relativeX = x / BODY_WIDTH;
     const relativeY = y / BODY_HEIGHT;
 
-    console.log('Touch position:', { x, y, relativeX, relativeY });
-    console.log('Body dimensions:', { BODY_WIDTH, BODY_HEIGHT });
-
-    // Find the closest body part based on distance to center
-    let closestPart = 'Body';
+    // Find the body part that contains the touch point
+    let selectedPart = 'Unspecified Location';
     let minDistance = Infinity;
 
-    for (const part of bodyParts) {
-      const partCenterX = part.x;
-      const partCenterY = part.y;
-      
-      // Calculate distance from touch point to part center
-      const distance = Math.sqrt(
-        Math.pow(relativeX - partCenterX, 2) + Math.pow(relativeY - partCenterY, 2)
-      );
-      
-      // Check if touch is within part bounds
-      const leftBound = part.x - part.width / 2;
-      const rightBound = part.x + part.width / 2;
-      const topBound = part.y - part.height / 2;
-      const bottomBound = part.y + part.height / 2;
+    for (const region of bodyRegions) {
+      const leftBound = region.x - region.width / 2;
+      const rightBound = region.x + region.width / 2;
+      const topBound = region.y - region.height / 2;
+      const bottomBound = region.y + region.height / 2;
 
       const isWithinBounds = (
         relativeX >= leftBound &&
@@ -105,22 +120,20 @@ export default function TraumaBodyDiagram({
         relativeY <= bottomBound
       );
 
-      console.log(`Part: ${part.name}`, {
-        center: { x: partCenterX, y: partCenterY },
-        bounds: { left: leftBound, right: rightBound, top: topBound, bottom: bottomBound },
-        distance,
-        isWithinBounds
-      });
-
-      // If within bounds and closer than previous matches
-      if (isWithinBounds && distance < minDistance) {
-        minDistance = distance;
-        closestPart = part.name;
+      if (isWithinBounds) {
+        // Calculate distance to center for precision
+        const distance = Math.sqrt(
+          Math.pow(relativeX - region.x, 2) + Math.pow(relativeY - region.y, 2)
+        );
+        
+        if (distance < minDistance) {
+          minDistance = distance;
+          selectedPart = region.name;
+        }
       }
     }
 
-    console.log('Selected body part:', closestPart);
-    return closestPart;
+    return selectedPart;
   }, []);
 
   const handleBodyPress = useCallback((event: any) => {
@@ -222,39 +235,118 @@ export default function TraumaBodyDiagram({
             onPress={handleBodyPress}
             activeOpacity={1}
           >
-            {/* Body SVG representation */}
-            <View style={styles.bodyOutline}>
-              {/* Head */}
-              <View style={[styles.head]} />
-              {/* Neck */}
-              <View style={[styles.neck]} />
-              {/* Torso */}
-              <View style={[styles.torso]} />
-              {/* Arms */}
-              <View style={[styles.leftArm]} />
-              <View style={[styles.rightArm]} />
-              {/* Legs */}
-              <View style={[styles.leftLeg]} />
-              <View style={[styles.rightLeg]} />
-            </View>
+            {/* Professional Medical Body Diagram */}
+            <Svg
+              width={BODY_WIDTH}
+              height={BODY_HEIGHT}
+              viewBox="0 0 200 400"
+              style={styles.svgBody}
+            >
+              <G>
+                {/* Head */}
+                <Ellipse cx="100" cy="30" rx="22" ry="26" fill="#FFF5F0" stroke="#4A5568" strokeWidth="1.5" />
+                
+                {/* Facial Features */}
+                <Circle cx="92" cy="26" r="2" fill="#718096" />
+                <Circle cx="108" cy="26" r="2" fill="#718096" />
+                <Path d="M 100 30 L 100 35" stroke="#718096" strokeWidth="1" />
+                <Path d="M 94 38 Q 100 40 106 38" stroke="#718096" strokeWidth="1" fill="none" />
+                
+                {/* Ears */}
+                <Ellipse cx="78" cy="30" rx="4" ry="8" fill="#FFF5F0" stroke="#4A5568" strokeWidth="1" />
+                <Ellipse cx="122" cy="30" rx="4" ry="8" fill="#FFF5F0" stroke="#4A5568" strokeWidth="1" />
+                
+                {/* Neck */}
+                <Rect x="92" y="52" width="16" height="18" fill="#FFF5F0" stroke="#4A5568" strokeWidth="1.5" rx="2" />
+                
+                {/* Shoulders and Clavicles */}
+                <Path d="M 70 70 Q 85 68 92 70" fill="none" stroke="#4A5568" strokeWidth="1.5" />
+                <Path d="M 108 70 Q 115 68 130 70" fill="none" stroke="#4A5568" strokeWidth="1.5" />
+                <Circle cx="70" cy="72" r="8" fill="#FFF5F0" stroke="#4A5568" strokeWidth="1.5" />
+                <Circle cx="130" cy="72" r="8" fill="#FFF5F0" stroke="#4A5568" strokeWidth="1.5" />
+                
+                {/* Torso - Chest */}
+                <Path d="M 75 75 L 75 140 Q 75 150 80 155 L 85 160 L 85 165 Q 85 170 90 170 L 110 170 Q 115 170 115 165 L 115 160 L 120 155 Q 125 150 125 140 L 125 75"
+                      fill="#FFF5F0" stroke="#4A5568" strokeWidth="1.5" />
+                
+                {/* Chest Details - Ribs indication */}
+                <Path d="M 80 85 Q 100 82 120 85" stroke="#E2E8F0" strokeWidth="0.5" fill="none" />
+                <Path d="M 80 95 Q 100 92 120 95" stroke="#E2E8F0" strokeWidth="0.5" fill="none" />
+                <Path d="M 80 105 Q 100 102 120 105" stroke="#E2E8F0" strokeWidth="0.5" fill="none" />
+                
+                {/* Abdomen muscles indication */}
+                <Line x1="100" y1="120" x2="100" y2="160" stroke="#E2E8F0" strokeWidth="0.5" />
+                <Path d="M 85 125 L 115 125" stroke="#E2E8F0" strokeWidth="0.5" />
+                <Path d="M 85 140 L 115 140" stroke="#E2E8F0" strokeWidth="0.5" />
+                
+                {/* Arms */}
+                {/* Right Arm */}
+                <Path d="M 70 78 L 65 100 L 62 130 L 60 155" fill="none" stroke="#4A5568" strokeWidth="1.5" />
+                <Path d="M 60 155 L 58 180 L 56 200 L 55 220" fill="none" stroke="#4A5568" strokeWidth="1.5" />
+                <Circle cx="60" cy="155" r="5" fill="#FFF5F0" stroke="#4A5568" strokeWidth="1.5" />
+                <Ellipse cx="55" cy="225" rx="8" ry="12" fill="#FFF5F0" stroke="#4A5568" strokeWidth="1.5" />
+                
+                {/* Left Arm */}
+                <Path d="M 130 78 L 135 100 L 138 130 L 140 155" fill="none" stroke="#4A5568" strokeWidth="1.5" />
+                <Path d="M 140 155 L 142 180 L 144 200 L 145 220" fill="none" stroke="#4A5568" strokeWidth="1.5" />
+                <Circle cx="140" cy="155" r="5" fill="#FFF5F0" stroke="#4A5568" strokeWidth="1.5" />
+                <Ellipse cx="145" cy="225" rx="8" ry="12" fill="#FFF5F0" stroke="#4A5568" strokeWidth="1.5" />
+                
+                {/* Pelvis */}
+                <Path d="M 85 165 Q 85 175 90 180 L 95 185 Q 100 188 100 195"
+                      fill="none" stroke="#4A5568" strokeWidth="1.5" />
+                <Path d="M 115 165 Q 115 175 110 180 L 105 185 Q 100 188 100 195"
+                      fill="none" stroke="#4A5568" strokeWidth="1.5" />
+                
+                {/* Legs */}
+                {/* Right Leg */}
+                <Path d="M 90 180 L 88 220 L 86 260 L 85 290" fill="none" stroke="#4A5568" strokeWidth="1.5" />
+                <Circle cx="85" cy="290" r="6" fill="#FFF5F0" stroke="#4A5568" strokeWidth="1.5" />
+                <Path d="M 85 296 L 84 330 L 83 360" fill="none" stroke="#4A5568" strokeWidth="1.5" />
+                <Ellipse cx="83" cy="365" rx="5" ry="3" fill="#FFF5F0" stroke="#4A5568" strokeWidth="1.5" />
+                <Path d="M 78 365 L 78 375 L 88 375 L 88 365" fill="#FFF5F0" stroke="#4A5568" strokeWidth="1.5" />
+                
+                {/* Left Leg */}
+                <Path d="M 110 180 L 112 220 L 114 260 L 115 290" fill="none" stroke="#4A5568" strokeWidth="1.5" />
+                <Circle cx="115" cy="290" r="6" fill="#FFF5F0" stroke="#4A5568" strokeWidth="1.5" />
+                <Path d="M 115 296 L 116 330 L 117 360" fill="none" stroke="#4A5568" strokeWidth="1.5" />
+                <Ellipse cx="117" cy="365" rx="5" ry="3" fill="#FFF5F0" stroke="#4A5568" strokeWidth="1.5" />
+                <Path d="M 112 365 L 112 375 L 122 375 L 122 365" fill="#FFF5F0" stroke="#4A5568" strokeWidth="1.5" />
+                
+                {/* Muscle groups for reference */}
+                {/* Biceps */}
+                <Ellipse cx="65" cy="110" rx="6" ry="12" fill="none" stroke="#E2E8F0" strokeWidth="0.5" />
+                <Ellipse cx="135" cy="110" rx="6" ry="12" fill="none" stroke="#E2E8F0" strokeWidth="0.5" />
+                
+                {/* Quadriceps */}
+                <Ellipse cx="88" cy="240" rx="8" ry="20" fill="none" stroke="#E2E8F0" strokeWidth="0.5" />
+                <Ellipse cx="112" cy="240" rx="8" ry="20" fill="none" stroke="#E2E8F0" strokeWidth="0.5" />
+              </G>
+            </Svg>
 
             {/* Injury markers */}
-            {injuries.map((injury) => (
-              <TouchableOpacity
-                key={injury.id}
-                style={[
-                  styles.injuryMarker,
-                  {
-                    left: injury.x - 12,
-                    top: injury.y - 12,
-                    backgroundColor: severityColors[injury.severity],
-                  },
-                ]}
-                onPress={() => setSelectedInjury(injury)}
-              >
-                <MapPin size={16} color="#fff" />
-              </TouchableOpacity>
-            ))}
+            {injuries.map((injury) => {
+              // Convert injury coordinates to match SVG viewBox
+              const svgX = (injury.x / BODY_WIDTH) * 200;
+              const svgY = (injury.y / BODY_HEIGHT) * 400;
+              
+              return (
+                <TouchableOpacity
+                  key={injury.id}
+                  style={[
+                    styles.injuryMarker,
+                    {
+                      left: injury.x - 12,
+                      top: injury.y - 12,
+                      backgroundColor: severityColors[injury.severity],
+                    },
+                  ]}
+                  onPress={() => setSelectedInjury(injury)}
+                >
+                  <MapPin size={16} color="#fff" />
+                </TouchableOpacity>
+              );
+            })}
           </TouchableOpacity>
 
           {/* Legend */}
@@ -335,7 +427,10 @@ export default function TraumaBodyDiagram({
         transparent={true}
         onRequestClose={() => setShowAddInjuryModal(false)}
       >
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView 
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Add Injury Details</Text>
             
@@ -398,7 +493,7 @@ export default function TraumaBodyDiagram({
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Selected Injury Details Modal */}
@@ -492,85 +587,10 @@ const styles = StyleSheet.create({
     elevation: 3,
     position: 'relative',
   },
-  bodyOutline: {
-    flex: 1,
-    position: 'relative',
-  },
-  head: {
+  svgBody: {
     position: 'absolute',
-    width: BODY_WIDTH * 0.15,
-    height: BODY_HEIGHT * 0.1,
-    backgroundColor: '#E8F4F8',
-    borderRadius: BODY_WIDTH * 0.075,
-    left: BODY_WIDTH * 0.425,
-    top: BODY_HEIGHT * 0.03,
-    borderWidth: 2,
-    borderColor: '#0066CC',
-  },
-  neck: {
-    position: 'absolute',
-    width: BODY_WIDTH * 0.08,
-    height: BODY_HEIGHT * 0.05,
-    backgroundColor: '#E8F4F8',
-    left: BODY_WIDTH * 0.46,
-    top: BODY_HEIGHT * 0.125,
-    borderWidth: 2,
-    borderColor: '#0066CC',
-  },
-  torso: {
-    position: 'absolute',
-    width: BODY_WIDTH * 0.3,
-    height: BODY_HEIGHT * 0.35,
-    backgroundColor: '#E8F4F8',
-    borderRadius: 20,
-    left: BODY_WIDTH * 0.35,
-    top: BODY_HEIGHT * 0.17,
-    borderWidth: 2,
-    borderColor: '#0066CC',
-  },
-  leftArm: {
-    position: 'absolute',
-    width: BODY_WIDTH * 0.08,
-    height: BODY_HEIGHT * 0.3,
-    backgroundColor: '#E8F4F8',
-    borderRadius: 20,
-    left: BODY_WIDTH * 0.68,
-    top: BODY_HEIGHT * 0.2,
-    borderWidth: 2,
-    borderColor: '#0066CC',
-  },
-  rightArm: {
-    position: 'absolute',
-    width: BODY_WIDTH * 0.08,
-    height: BODY_HEIGHT * 0.3,
-    backgroundColor: '#E8F4F8',
-    borderRadius: 20,
-    left: BODY_WIDTH * 0.24,
-    top: BODY_HEIGHT * 0.2,
-    borderWidth: 2,
-    borderColor: '#0066CC',
-  },
-  leftLeg: {
-    position: 'absolute',
-    width: BODY_WIDTH * 0.1,
-    height: BODY_HEIGHT * 0.4,
-    backgroundColor: '#E8F4F8',
-    borderRadius: 20,
-    left: BODY_WIDTH * 0.53,
-    top: BODY_HEIGHT * 0.52,
-    borderWidth: 2,
-    borderColor: '#0066CC',
-  },
-  rightLeg: {
-    position: 'absolute',
-    width: BODY_WIDTH * 0.1,
-    height: BODY_HEIGHT * 0.4,
-    backgroundColor: '#E8F4F8',
-    borderRadius: 20,
-    left: BODY_WIDTH * 0.37,
-    top: BODY_HEIGHT * 0.52,
-    borderWidth: 2,
-    borderColor: '#0066CC',
+    top: 0,
+    left: 0,
   },
   injuryMarker: {
     position: 'absolute',
