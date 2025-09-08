@@ -423,6 +423,15 @@ export default function AdminScreen() {
         pcr.refusalInfo.paramedicSignature : 
         convertSvgPathToBase64(pcr.refusalInfo.paramedicSignaturePaths || pcr.refusalInfo.paramedicSignature)) : null;
     
+    // Log signature data for debugging
+    console.log('Refusal signatures found:', {
+      patient: !!patientRefusalSignatureImage,
+      witness: !!witnessRefusalSignatureImage,
+      paramedic: !!paramedicRefusalSignatureImage,
+      patientData: pcr.refusalInfo?.patientSignature?.substring(0, 50),
+      patientPaths: pcr.refusalInfo?.patientSignaturePaths?.substring(0, 50)
+    });
+    
     return `
       <!DOCTYPE html>
       <html>
@@ -1164,9 +1173,9 @@ export default function AdminScreen() {
               <div class="signature-label">PATIENT SIGNATURE</div>
               <div class="signature-content">
                 ${patientRefusalSignatureImage ? `
-                  <img src="${patientRefusalSignatureImage}" class="signature-image" alt="Patient Refusal Signature" />
+                  <img src="${patientRefusalSignatureImage}" class="signature-image" alt="Patient Refusal Signature" style="max-width: 150px !important; max-height: 60px !important; width: auto !important; height: auto !important; border: 1px solid #333 !important; margin: 5px auto !important; display: block !important; object-fit: contain !important; background: white !important;" />
                   <div style="font-size: 8pt; color: #000; text-align: center; margin-top: 5px;">✓ Refusal Signature Captured</div>
-                ` : '<div class="signature-line"></div><div style="font-size: 8pt; color: #999; text-align: center;">Not signed</div>'}
+                ` : `<div class="signature-line"></div><div style="font-size: 8pt; color: #999; text-align: center;">${pcr.refusalInfo?.patientSignature || pcr.refusalInfo?.patientSignaturePaths ? 'Signature data present but not displayable' : 'Not signed'}</div>`}
               </div>
               <div class="signature-info">
                 <strong>Name:</strong> ${anonymizeReport ? 'CONFIDENTIAL' : (pcr.refusalInfo.patientName || 'Not provided')}<br/>
@@ -1180,9 +1189,9 @@ export default function AdminScreen() {
               <div class="signature-label">WITNESS SIGNATURE</div>
               <div class="signature-content">
                 ${witnessRefusalSignatureImage ? `
-                  <img src="${witnessRefusalSignatureImage}" class="signature-image" alt="Witness Signature" />
+                  <img src="${witnessRefusalSignatureImage}" class="signature-image" alt="Witness Signature" style="max-width: 150px !important; max-height: 60px !important; width: auto !important; height: auto !important; border: 1px solid #333 !important; margin: 5px auto !important; display: block !important; object-fit: contain !important; background: white !important;" />
                   <div style="font-size: 8pt; color: #000; text-align: center; margin-top: 5px;">✓ Witness Signature Captured</div>
-                ` : '<div class="signature-line"></div><div style="font-size: 8pt; color: #999; text-align: center;">Not signed</div>'}
+                ` : `<div class="signature-line"></div><div style="font-size: 8pt; color: #999; text-align: center;">${pcr.refusalInfo?.witnessSignature || pcr.refusalInfo?.witnessSignaturePaths ? 'Signature data present but not displayable' : 'Not signed'}</div>`}
               </div>
               <div class="signature-info">
                 <strong>Name:</strong> ${anonymizeReport ? 'CONFIDENTIAL' : (pcr.refusalInfo.witnessName || 'Not provided')}<br/>
@@ -1195,9 +1204,9 @@ export default function AdminScreen() {
               <div class="signature-label">PARAMEDIC SIGNATURE</div>
               <div class="signature-content">
                 ${paramedicRefusalSignatureImage ? `
-                  <img src="${paramedicRefusalSignatureImage}" class="signature-image" alt="Paramedic Signature" />
+                  <img src="${paramedicRefusalSignatureImage}" class="signature-image" alt="Paramedic Signature" style="max-width: 150px !important; max-height: 60px !important; width: auto !important; height: auto !important; border: 1px solid #333 !important; margin: 5px auto !important; display: block !important; object-fit: contain !important; background: white !important;" />
                   <div style="font-size: 8pt; color: #000; text-align: center; margin-top: 5px;">✓ Paramedic Signature Captured</div>
-                ` : '<div class="signature-line"></div><div style="font-size: 8pt; color: #999; text-align: center;">Not signed</div>'}
+                ` : `<div class="signature-line"></div><div style="font-size: 8pt; color: #999; text-align: center;">${pcr.refusalInfo?.paramedicSignature || pcr.refusalInfo?.paramedicSignaturePaths ? 'Signature data present but not displayable' : 'Not signed'}</div>`}
               </div>
               <div class="signature-info">
                 <strong>Name:</strong> ${anonymizeReport ? 'CONFIDENTIAL' : (pcr.refusalInfo.paramedicName || 'Not provided')}<br/>
@@ -1217,14 +1226,15 @@ export default function AdminScreen() {
               <div class="signature-label">NURSE/PROVIDER</div>
               <div class="signature-content">
                 ${nurseSignatureImage ? `
-                  <img src="${nurseSignatureImage}" class="signature-image" alt="Nurse Signature" />
+                  <img src="${nurseSignatureImage}" class="signature-image" alt="Nurse Signature" style="max-width: 150px !important; max-height: 60px !important; width: auto !important; height: auto !important; border: 1px solid #333 !important; margin: 5px auto !important; display: block !important; object-fit: contain !important; background: white !important;" />
                   <div style="font-size: 8pt; color: #000; text-align: center; margin-top: 5px;">✓ Digital Signature Captured</div>
-                ` : '<div class="signature-line"></div><div style="font-size: 8pt; color: #999; text-align: center;">Not signed</div>'}
+                ` : `<div class="signature-line"></div><div style="font-size: 8pt; color: #999; text-align: center;">${pcr.signatureInfo.nurseSignature || pcr.signatureInfo.nurseSignaturePaths ? 'Signature data present' : 'Not signed'}</div>`}
               </div>
               <div class="signature-info">
-                <strong>Name:</strong> ${anonymizeReport ? 'CONFIDENTIAL' : (pcr.signatureInfo.nurseSignature || 'Not signed')}<br/>
-                <strong>ID:</strong> ${anonymizeReport ? 'XXXXX' : (pcr.signatureInfo.nurseCorporationId || 'N/A')}<br/>
-                <strong>Date:</strong> ${pcr.submittedAt ? new Date(pcr.submittedAt).toLocaleDateString() : 'N/A'}
+                <strong>Name:</strong> ${anonymizeReport ? 'CONFIDENTIAL' : (pcr.submittedBy?.name || 'Not provided')}<br/>
+                <strong>ID:</strong> ${anonymizeReport ? 'XXXXX' : (pcr.signatureInfo.nurseCorporationId || pcr.submittedBy?.corporationId || 'N/A')}<br/>
+                <strong>Date:</strong> ${pcr.submittedAt ? new Date(pcr.submittedAt).toLocaleDateString() : 'N/A'}<br/>
+                <strong>Status:</strong> ${nurseSignatureImage ? '✓ Signed' : 'Pending'}
               </div>
             </div>
             
@@ -1232,14 +1242,15 @@ export default function AdminScreen() {
               <div class="signature-label">PHYSICIAN</div>
               <div class="signature-content">
                 ${doctorSignatureImage ? `
-                  <img src="${doctorSignatureImage}" class="signature-image" alt="Doctor Signature" />
+                  <img src="${doctorSignatureImage}" class="signature-image" alt="Doctor Signature" style="max-width: 150px !important; max-height: 60px !important; width: auto !important; height: auto !important; border: 1px solid #333 !important; margin: 5px auto !important; display: block !important; object-fit: contain !important; background: white !important;" />
                   <div style="font-size: 8pt; color: #000; text-align: center; margin-top: 5px;">✓ Digital Signature Captured</div>
-                ` : '<div class="signature-line"></div><div style="font-size: 8pt; color: #999; text-align: center;">Not signed</div>'}
+                ` : `<div class="signature-line"></div><div style="font-size: 8pt; color: #999; text-align: center;">${pcr.signatureInfo.doctorSignature || pcr.signatureInfo.doctorSignaturePaths ? 'Signature data present' : 'Not signed'}</div>`}
               </div>
               <div class="signature-info">
-                <strong>Name:</strong> ${anonymizeReport ? 'CONFIDENTIAL' : (pcr.signatureInfo.doctorSignature || 'Not signed')}<br/>
+                <strong>Name:</strong> ${anonymizeReport ? 'CONFIDENTIAL' : 'Physician'}<br/>
                 <strong>ID:</strong> ${anonymizeReport ? 'XXXXX' : (pcr.signatureInfo.doctorCorporationId || 'N/A')}<br/>
-                <strong>Date:</strong> ${pcr.submittedAt ? new Date(pcr.submittedAt).toLocaleDateString() : 'N/A'}
+                <strong>Date:</strong> ${pcr.submittedAt ? new Date(pcr.submittedAt).toLocaleDateString() : 'N/A'}<br/>
+                <strong>Status:</strong> ${doctorSignatureImage ? '✓ Signed' : 'Pending'}
               </div>
             </div>
             
@@ -1247,14 +1258,15 @@ export default function AdminScreen() {
               <div class="signature-label">${pcr.signatureInfo.othersRole || 'PATIENT/GUARDIAN'}</div>
               <div class="signature-content">
                 ${othersSignatureImage ? `
-                  <img src="${othersSignatureImage}" class="signature-image" alt="${pcr.signatureInfo.othersRole || 'Patient'} Signature" />
+                  <img src="${othersSignatureImage}" class="signature-image" alt="${pcr.signatureInfo.othersRole || 'Patient'} Signature" style="max-width: 150px !important; max-height: 60px !important; width: auto !important; height: auto !important; border: 1px solid #333 !important; margin: 5px auto !important; display: block !important; object-fit: contain !important; background: white !important;" />
                   <div style="font-size: 8pt; color: #000; text-align: center; margin-top: 5px;">✓ Digital Signature Captured</div>
-                ` : '<div class="signature-line"></div><div style="font-size: 8pt; color: #999; text-align: center;">Not signed</div>'}
+                ` : `<div class="signature-line"></div><div style="font-size: 8pt; color: #999; text-align: center;">${pcr.signatureInfo.othersSignature || pcr.signatureInfo.othersSignaturePaths ? 'Signature data present' : 'Not signed'}</div>`}
               </div>
               <div class="signature-info">
-                <strong>Name:</strong> ${anonymizeReport ? 'CONFIDENTIAL' : (pcr.signatureInfo.othersSignature || 'Not signed')}<br/>
-                <strong>Role:</strong> ${pcr.signatureInfo.othersRole || 'N/A'}<br/>
-                <strong>Date:</strong> ${pcr.submittedAt ? new Date(pcr.submittedAt).toLocaleDateString() : 'N/A'}
+                <strong>Name:</strong> ${anonymizeReport ? 'CONFIDENTIAL' : (pcr.signatureInfo.othersRole || 'Patient/Guardian')}<br/>
+                <strong>Role:</strong> ${pcr.signatureInfo.othersRole || 'Patient/Guardian'}<br/>
+                <strong>Date:</strong> ${pcr.submittedAt ? new Date(pcr.submittedAt).toLocaleDateString() : 'N/A'}<br/>
+                <strong>Status:</strong> ${othersSignatureImage ? '✓ Signed' : 'Pending'}
               </div>
             </div>
           </div>
