@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  Image,
 } from "react-native";
 import { usePCRStore } from "@/store/pcrStore";
 import { Send, FileText, AlertCircle } from "lucide-react-native";
@@ -299,12 +300,27 @@ export default function PreviewScreen() {
                 {renderField("Pain Scale", vital.painScale ? `${vital.painScale}/10` : undefined)}
                 {vital.ecgCapture && (
                   <View style={styles.ecgCaptureField}>
-                    <Text style={styles.fieldLabel}>ECG Capture:</Text>
-                    <Text style={styles.ecgCapturePresent}>📷 Plain ECG Captured</Text>
-                    <Text style={styles.ecgCaptureTime}>
-                      {vital.ecgCaptureTimestamp ? new Date(vital.ecgCaptureTimestamp).toLocaleString() : 'N/A'}
-                    </Text>
-                    <Text style={styles.ecgReference}>Camera capture: {vital.ecgCapture?.substring(0, 40)}{'...'}</Text>
+                    <Text style={styles.fieldLabel}>ECG Photo:</Text>
+                    {vital.ecgCapture.startsWith('data:image') ? (
+                      <View>
+                        <Image 
+                          source={{ uri: vital.ecgCapture }}
+                          style={styles.ecgImage}
+                          resizeMode="contain"
+                        />
+                        <Text style={styles.ecgCaptureTime}>
+                          Captured: {vital.ecgCaptureTimestamp ? new Date(vital.ecgCaptureTimestamp).toLocaleString() : 'N/A'}
+                        </Text>
+                        <Text style={styles.ecgPhotoInfo}>✓ ECG photo ready for printing</Text>
+                      </View>
+                    ) : (
+                      <View>
+                        <Text style={styles.ecgCapturePresent}>📷 ECG Captured</Text>
+                        <Text style={styles.ecgCaptureTime}>
+                          {vital.ecgCaptureTimestamp ? new Date(vital.ecgCaptureTimestamp).toLocaleString() : 'N/A'}
+                        </Text>
+                      </View>
+                    )}
                   </View>
                 )}
               </View>
@@ -595,6 +611,21 @@ const styles = StyleSheet.create({
     color: "#666",
     marginTop: 2,
     fontFamily: "monospace",
+  },
+  ecgImage: {
+    width: '100%',
+    height: 200,
+    marginVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
+    backgroundColor: "#F5F5F5",
+  },
+  ecgPhotoInfo: {
+    color: "#28A745",
+    fontSize: 12,
+    fontWeight: "500" as const,
+    marginTop: 5,
   },
   refusalHeader: {
     backgroundColor: "#FEF2F2",

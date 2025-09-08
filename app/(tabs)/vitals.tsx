@@ -24,6 +24,7 @@ import {
 
 export default function VitalsScreen() {
   const { vitals, addVitalSigns, saveVitalsData, addECGCapture, saveTabDataWithNotification } = usePCRStore();
+  const cameraRef = React.useRef<any>(null);
   const [currentVitals, setCurrentVitals] = useState({
     bloodPressureSystolic: "",
     bloodPressureDiastolic: "",
@@ -149,45 +150,49 @@ export default function VitalsScreen() {
   }, []);
 
   const handleECGSave = useCallback(async () => {
+    if (vitals.length === 0) {
+      setShowCamera(false);
+      Alert.alert(
+        "No Vital Signs",
+        "Please record vital signs first before capturing ECG."
+      );
+      return;
+    }
+
     try {
-      // Simple plain ECG capture - just store a timestamp and identifier
-      // This represents what would be captured directly from the camera
-      const timestamp = new Date().toISOString();
-      const ecgData = `ECG_PLAIN_CAPTURE_${Date.now()}_${timestamp}`;
-      
-      if (vitals.length > 0) {
-        addECGCapture(ecgData);
-        setShowCamera(false); // Exit camera immediately after capture
-        Alert.alert(
-          "ECG Captured",
-          "Plain ECG recording has been captured as photographed and saved with the most recent vital signs."
-        );
-      } else {
-        setShowCamera(false); // Exit camera
-        Alert.alert(
-          "No Vital Signs",
-          "Please record vital signs first before capturing ECG."
-        );
+      if (cameraRef.current) {
+        // Capture the actual photo from the camera
+        const photo = await cameraRef.current.takePictureAsync({
+          quality: 0.8,
+          base64: true,
+          skipProcessing: true, // Keep the photo as-is without processing
+        });
+        
+        if (photo && photo.base64) {
+          // Store the actual base64 image data
+          const timestamp = new Date().toISOString();
+          const ecgImageData = `data:image/jpeg;base64,${photo.base64}`;
+          
+          // Add the actual photo data to the ECG capture
+          addECGCapture(ecgImageData);
+          setShowCamera(false);
+          
+          Alert.alert(
+            "ECG Photo Captured",
+            "ECG photo has been captured exactly as photographed and saved with the most recent vital signs."
+          );
+          
+          console.log('ECG photo captured successfully, size:', photo.base64.length);
+        } else {
+          throw new Error('Failed to capture photo');
+        }
       }
     } catch (error) {
-      console.error('Error capturing ECG:', error);
-      // Fallback to simple identifier
-      const ecgData = `ECG_PLAIN_CAPTURE_${Date.now()}_ERROR`;
-      
-      if (vitals.length > 0) {
-        addECGCapture(ecgData);
-        setShowCamera(false);
-        Alert.alert(
-          "ECG Captured",
-          "Plain ECG recording has been captured and saved with the most recent vital signs."
-        );
-      } else {
-        setShowCamera(false);
-        Alert.alert(
-          "No Vital Signs",
-          "Please record vital signs first before capturing ECG."
-        );
-      }
+      console.error('Error capturing ECG photo:', error);
+      Alert.alert(
+        "Capture Failed",
+        "Failed to capture ECG photo. Please try again."
+      );
     }
   }, [vitals.length, addECGCapture]);
 
@@ -417,11 +422,13 @@ export default function VitalsScreen() {
               </View>
               {vital.ecgCapture && (
                 <View style={styles.ecgIndicator}>
-                  <Text style={styles.ecgIndicatorText}>📷 Plain ECG Captured</Text>
+                  <Text style={styles.ecgIndicatorText}>📷 ECG Photo Captured</Text>
                   <Text style={styles.ecgTimestamp}>
                     {vital.ecgCaptureTimestamp ? new Date(vital.ecgCaptureTimestamp).toLocaleTimeString() : 'N/A'}
                   </Text>
-                  <Text style={styles.ecgReference}>Camera capture: {vital.ecgCapture?.substring(0, 30)}{'...'}</Text>
+                  {vital.ecgCapture.startsWith('data:image') && (
+                    <Text style={styles.ecgPhotoStatus}>✓ Photo saved ({Math.round(vital.ecgCapture.length / 1024)}KB)</Text>
+                  )}
                 </View>
               )}
             </View>
@@ -457,7 +464,11 @@ export default function VitalsScreen() {
               <Text style={styles.closeButtonText}>✕</Text>
             </TouchableOpacity>
           </View>
-          <CameraView style={styles.camera} facing="back">
+          <CameraView 
+            ref={cameraRef}
+            style={styles.camera} 
+            facing="back"
+          >
             <View style={styles.cameraControls}>
               <TouchableOpacity style={styles.captureButton} onPress={handleECGSave}>
                 <Text style={styles.captureButtonText}>Capture ECG</Text>
@@ -742,6 +753,12 @@ const styles = StyleSheet.create({
     fontSize: 9,
     marginTop: 2,
     fontFamily: "monospace",
+  },
+  ecgPhotoStatus: {
+    color: "#28A745",
+    fontSize: 11,
+    marginTop: 4,
+    fontWeight: "500",
   },
   inputContainer: {
     flex: 1,
