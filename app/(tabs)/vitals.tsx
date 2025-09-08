@@ -297,6 +297,8 @@ export default function VitalsScreen() {
           style={styles.container} 
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{ paddingBottom: 120 }}
+          automaticallyAdjustKeyboardInsets={true}
         >
       <View style={styles.section}>
         <View style={styles.sectionHeader}>

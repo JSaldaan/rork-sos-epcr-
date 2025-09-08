@@ -76,22 +76,51 @@ export default function TraumaBodyDiagram({
     const relativeX = x / BODY_WIDTH;
     const relativeY = y / BODY_HEIGHT;
 
+    console.log('Touch position:', { x, y, relativeX, relativeY });
+    console.log('Body dimensions:', { BODY_WIDTH, BODY_HEIGHT });
+
+    // Find the closest body part based on distance to center
+    let closestPart = 'Body';
+    let minDistance = Infinity;
+
     for (const part of bodyParts) {
+      const partCenterX = part.x;
+      const partCenterY = part.y;
+      
+      // Calculate distance from touch point to part center
+      const distance = Math.sqrt(
+        Math.pow(relativeX - partCenterX, 2) + Math.pow(relativeY - partCenterY, 2)
+      );
+      
+      // Check if touch is within part bounds
       const leftBound = part.x - part.width / 2;
       const rightBound = part.x + part.width / 2;
       const topBound = part.y - part.height / 2;
       const bottomBound = part.y + part.height / 2;
 
-      if (
+      const isWithinBounds = (
         relativeX >= leftBound &&
         relativeX <= rightBound &&
         relativeY >= topBound &&
         relativeY <= bottomBound
-      ) {
-        return part.name;
+      );
+
+      console.log(`Part: ${part.name}`, {
+        center: { x: partCenterX, y: partCenterY },
+        bounds: { left: leftBound, right: rightBound, top: topBound, bottom: bottomBound },
+        distance,
+        isWithinBounds
+      });
+
+      // If within bounds and closer than previous matches
+      if (isWithinBounds && distance < minDistance) {
+        minDistance = distance;
+        closestPart = part.name;
       }
     }
-    return 'Body';
+
+    console.log('Selected body part:', closestPart);
+    return closestPart;
   }, []);
 
   const handleBodyPress = useCallback((event: any) => {

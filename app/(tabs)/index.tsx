@@ -263,6 +263,8 @@ export default function NewPCRScreen() {
           style={styles.container} 
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{ paddingBottom: 120 }}
+          automaticallyAdjustKeyboardInsets={true}
         >
         {/* Offline Status Component */}
         <OfflineStatus 
