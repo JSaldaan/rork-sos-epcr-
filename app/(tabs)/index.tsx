@@ -198,6 +198,7 @@ export default function NewPCRScreen() {
       console.log('Is trauma diagnosis:', traumaDiagnoses.includes(diagnosis));
       
       if (traumaDiagnoses.includes(diagnosis)) {
+        console.log('Trauma diagnosis detected:', diagnosis);
         // Show trauma diagram after a short delay
         setTimeout(() => {
           console.log('Showing trauma diagram prompt');
@@ -215,7 +216,9 @@ export default function NewPCRScreen() {
               }
             ]
           );
-        }, 500);
+        }, 300);
+      } else {
+        console.log('Non-trauma diagnosis selected:', diagnosis);
       }
     }
   }, [updateIncidentInfo]);
@@ -620,7 +623,10 @@ export default function NewPCRScreen() {
           <Text style={styles.traumaAccessLabel}>Injury Documentation</Text>
           <TouchableOpacity 
             style={styles.traumaAccessButton}
-            onPress={() => setShowTraumaDiagram(true)}
+            onPress={() => {
+              console.log('Manual trauma diagram button pressed');
+              setShowTraumaDiagram(true);
+            }}
           >
             <Activity size={16} color="#DC3545" />
             <Text style={styles.traumaAccessButtonText}>Open Body Diagram</Text>
