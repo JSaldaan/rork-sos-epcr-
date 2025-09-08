@@ -231,8 +231,15 @@ export default function NewPCRScreen() {
         />
         
         <View style={styles.headerSection}>
+        <View style={styles.brandingContainer}>
+          <View style={styles.logoContainer}>
+            <Shield size={32} color="#0066CC" />
+            <Text style={styles.brandName}>MediCare Pro</Text>
+          </View>
+          <Text style={styles.tagline}>Professional ePCR System</Text>
+        </View>
         <Text style={styles.headerTitle}>New Patient Care Report</Text>
-        <Text style={styles.headerSubtitle}>Enter patient and call information</Text>
+        <Text style={styles.headerSubtitle}>Complete digital documentation for emergency medical services</Text>
         
         {!isAdmin ? (
           <TouchableOpacity
@@ -992,25 +999,53 @@ const styles = StyleSheet.create({
   headerSection: {
     backgroundColor: "#fff",
     margin: 16,
-    padding: 20,
-    borderRadius: 12,
+    padding: 24,
+    borderRadius: 16,
     alignItems: "center",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 5,
+    borderTopWidth: 4,
+    borderTopColor: "#0066CC",
   },
-  headerTitle: {
+  brandingContainer: {
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  logoContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  brandName: {
     fontSize: 24,
     fontWeight: "bold",
+    color: "#0066CC",
+    marginLeft: 8,
+    letterSpacing: 0.5,
+  },
+  tagline: {
+    fontSize: 12,
+    color: "#666",
+    fontWeight: "500",
+    textTransform: "uppercase",
+    letterSpacing: 1,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: "600",
     color: "#333",
-    marginBottom: 5,
+    marginBottom: 8,
+    textAlign: "center",
   },
   headerSubtitle: {
     fontSize: 14,
     color: "#666",
     marginBottom: 15,
+    textAlign: "center",
+    lineHeight: 20,
   },
   adminButton: {
     flexDirection: "row",

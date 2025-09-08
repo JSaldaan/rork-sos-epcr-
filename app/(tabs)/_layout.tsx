@@ -145,9 +145,9 @@ export default function TabLayout() {
         <Tabs.Screen
           name="admin"
           options={{
-            title: "Admin Dashboard",
+            title: "Admin Pro",
             tabBarIcon: ({ color }) => <Shield size={24} color={color} />,
-            headerTitle: "Administrator Dashboard",
+            headerTitle: "MediCare Pro - Administrator Dashboard",
           }}
         />
         {/* Hide all other tabs for admin users */}
@@ -220,7 +220,7 @@ export default function TabLayout() {
         options={{
           title: "New PCR",
           tabBarIcon: ({ color }) => <FileText size={24} color={color} />,
-          headerTitle: "Electronic Patient Care Record",
+          headerTitle: "MediCare Pro - New Patient Care Report",
         }}
       />
       <Tabs.Screen
@@ -228,7 +228,7 @@ export default function TabLayout() {
         options={{
           title: "Vitals",
           tabBarIcon: ({ color }) => <Activity size={24} color={color} />,
-          headerTitle: "Vital Signs",
+          headerTitle: "MediCare Pro - Vital Signs Monitoring",
         }}
       />
       <Tabs.Screen
@@ -236,7 +236,7 @@ export default function TabLayout() {
         options={{
           title: "Transport",
           tabBarIcon: ({ color }) => <Truck size={24} color={color} />,
-          headerTitle: "Transport Information",
+          headerTitle: "MediCare Pro - Transport Management",
         }}
       />
       <Tabs.Screen
@@ -244,7 +244,7 @@ export default function TabLayout() {
         options={{
           title: "Summary",
           tabBarIcon: ({ color }) => <User size={24} color={color} />,
-          headerTitle: "PCR Summary",
+          headerTitle: "MediCare Pro - Patient Summary",
         }}
       />
       <Tabs.Screen
@@ -252,7 +252,7 @@ export default function TabLayout() {
         options={{
           title: "Refusal",
           tabBarIcon: ({ color }) => <FileX size={24} color={color} />,
-          headerTitle: "Patient Refusal Form",
+          headerTitle: "MediCare Pro - Treatment Refusal",
         }}
       />
       <Tabs.Screen
@@ -260,7 +260,7 @@ export default function TabLayout() {
         options={{
           title: "Preview",
           tabBarIcon: ({ color }) => <Eye size={24} color={color} />,
-          headerTitle: "Report Preview",
+          headerTitle: "MediCare Pro - Report Preview",
         }}
       />
       <Tabs.Screen
@@ -268,7 +268,7 @@ export default function TabLayout() {
         options={{
           title: "My Reports",
           tabBarIcon: ({ color }) => <FolderOpen size={24} color={color} />,
-          headerTitle: "My Submitted Reports",
+          headerTitle: "MediCare Pro - My Submitted Reports",
         }}
       />
       {/* Hide admin tab for staff users */}

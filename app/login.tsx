@@ -21,6 +21,7 @@ import {
 } from '@/utils/security';
 import { SecurityDashboard } from '@/components/SecurityDashboard';
 import { ResponsiveContainer } from '@/components/ResponsiveLayout';
+import { SalesModal } from '@/components/SalesModal';
 import { spacing, dimensions, typography } from '@/utils/responsive';
 
 const LoginScreen: React.FC = () => {
@@ -35,6 +36,7 @@ const LoginScreen: React.FC = () => {
   const [loginMode, setLoginMode] = useState<'staff' | 'admin'>('staff');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [showSecurityDashboard, setShowSecurityDashboard] = useState<boolean>(false);
+  const [showSalesModal, setShowSalesModal] = useState<boolean>(false);
   const [accountLocked, setAccountLocked] = useState<boolean>(false);
   const [lockoutTime, setLockoutTime] = useState<number>(0);
 
@@ -300,9 +302,20 @@ const LoginScreen: React.FC = () => {
       <ResponsiveContainer maxWidth="small" padding="large" centered>
         <View style={styles.loginContainer}>
           <View style={styles.loginHeader}>
-          <Shield size={48} color="#0066CC" />
-          <Text style={styles.loginTitle}>PCR System</Text>
-          <Text style={styles.loginSubtitle}>Electronic Patient Care Record</Text>
+          <View style={styles.logoSection}>
+            <Shield size={56} color="#0066CC" />
+            <Text style={styles.brandTitle}>MediCare Pro</Text>
+            <Text style={styles.brandSubtitle}>Professional ePCR System</Text>
+          </View>
+          <View style={styles.featuresPreview}>
+            <Text style={styles.featuresTitle}>✨ Enterprise Features</Text>
+            <Text style={styles.featureItem}>🏥 Complete Patient Documentation</Text>
+            <Text style={styles.featureItem}>📊 Real-time Vital Signs Tracking</Text>
+            <Text style={styles.featureItem}>🔒 HIPAA Compliant Security</Text>
+            <Text style={styles.featureItem}>📱 Offline Capability</Text>
+            <Text style={styles.featureItem}>🎤 AI-Powered Voice Notes</Text>
+            <Text style={styles.featureItem}>📈 Advanced Analytics Dashboard</Text>
+          </View>
         </View>
         
         <View style={styles.loginModeContainer}>
@@ -399,35 +412,53 @@ const LoginScreen: React.FC = () => {
           </Text>
         </Pressable>
         
+        <Pressable
+          style={styles.learnMoreButton}
+          onPress={() => setShowSalesModal(true)}
+        >
+          <Text style={styles.learnMoreText}>Learn More About MediCare Pro</Text>
+        </Pressable>
+        
         {loginMode === 'staff' && (
           <View style={styles.demoContainer}>
-            <Text style={styles.demoTitle}>Demo Corporation IDs:</Text>
-            <View style={styles.demoIds}>
-              <Text style={styles.demoId}>PARA001 - John Smith</Text>
-              <Text style={styles.demoId}>PARA002 - Sarah Johnson</Text>
-              <Text style={styles.demoId}>NURSE001 - Emily Davis</Text>
-              <Text style={styles.demoId}>DOC001 - Dr. Michael Brown</Text>
-              <Text style={styles.demoId}>SUP001 - Lisa Wilson</Text>
-              <Text style={styles.demoId}>Note: Admin accounts use Admin Only login</Text>
+            <Text style={styles.demoTitle}>🎯 Demo Access Credentials</Text>
+            <View style={styles.credentialsGrid}>
+              <View style={styles.credentialCard}>
+                <Text style={styles.credentialRole}>👨‍⚕️ Paramedics</Text>
+                <Text style={styles.demoId}>PARA001 - John Smith</Text>
+                <Text style={styles.demoId}>PARA002 - Sarah Johnson</Text>
+              </View>
+              <View style={styles.credentialCard}>
+                <Text style={styles.credentialRole}>👩‍⚕️ Medical Staff</Text>
+                <Text style={styles.demoId}>NURSE001 - Emily Davis</Text>
+                <Text style={styles.demoId}>DOC001 - Dr. Michael Brown</Text>
+              </View>
+              <View style={styles.credentialCard}>
+                <Text style={styles.credentialRole}>👔 Supervisors</Text>
+                <Text style={styles.demoId}>SUP001 - Lisa Wilson</Text>
+              </View>
             </View>
+            <Text style={styles.demoNote}>💡 Admin accounts use "Admin Only" login mode</Text>
           </View>
         )}
         
         {loginMode === 'admin' && (
           <View style={styles.adminHintContainer}>
-            <Text style={styles.adminHintTitle}>🔐 Administrator Access</Text>
+            <Text style={styles.adminHintTitle}>🔐 Administrator Dashboard</Text>
             <Text style={styles.adminHintText}>System Password: &quot;admin123&quot;</Text>
             <Text style={styles.adminHintSubtext}>Or use Admin/Super Admin Corporation ID:</Text>
             <View style={styles.adminFeaturesList}>
               <Text style={styles.adminFeature}>• SUPER001 - Super Administrator</Text>
               <Text style={styles.adminFeature}>• ADMIN001 - System Administrator</Text>
             </View>
-            <Text style={styles.adminHintSubtext}>Full system access including:</Text>
+            <Text style={styles.adminHintSubtext}>🚀 Premium Admin Features:</Text>
             <View style={styles.adminFeaturesList}>
-              <Text style={styles.adminFeature}>• View all patient reports</Text>
-              <Text style={styles.adminFeature}>• Manage staff accounts</Text>
-              <Text style={styles.adminFeature}>• Export comprehensive data</Text>
-              <Text style={styles.adminFeature}>• Access audit logs</Text>
+              <Text style={styles.adminFeature}>• 📊 Real-time Analytics Dashboard</Text>
+              <Text style={styles.adminFeature}>• 👥 Staff Management & Permissions</Text>
+              <Text style={styles.adminFeature}>• 📈 Performance Metrics & KPIs</Text>
+              <Text style={styles.adminFeature}>• 🔍 Advanced Search & Filtering</Text>
+              <Text style={styles.adminFeature}>• 📋 Comprehensive Report Export</Text>
+              <Text style={styles.adminFeature}>• 🔒 Security & Audit Logs</Text>
             </View>
           </View>
         )}
@@ -516,6 +547,12 @@ const LoginScreen: React.FC = () => {
             </View>
           </View>
         )}
+        
+        {/* Sales Modal */}
+        <SalesModal
+          visible={showSalesModal}
+          onClose={() => setShowSalesModal(false)}
+        />
       </ResponsiveContainer>
     </SafeAreaView>
   );
@@ -536,18 +573,48 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 32,
   },
-  loginTitle: {
-    fontSize: 28,
+  logoSection: {
+    alignItems: 'center',
+    marginBottom: 32,
+  },
+  brandTitle: {
+    fontSize: 32,
     fontWeight: 'bold',
     color: '#0066CC',
     marginTop: 16,
     marginBottom: 8,
+    letterSpacing: 0.5,
   },
-  loginSubtitle: {
-    fontSize: 16,
+  brandSubtitle: {
+    fontSize: 14,
     color: '#6b7280',
     textAlign: 'center',
-    marginBottom: 32,
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  featuresPreview: {
+    backgroundColor: '#f8fafc',
+    padding: 20,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    width: '100%',
+    maxWidth: 400,
+    marginBottom: 24,
+  },
+  featuresTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1e293b',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  featureItem: {
+    fontSize: 13,
+    color: '#475569',
+    marginBottom: 6,
+    textAlign: 'left',
   },
   loginModeContainer: {
     flexDirection: 'row',
@@ -638,30 +705,66 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  demoContainer: {
-    backgroundColor: '#f9fafb',
-    padding: 16,
+  learnMoreButton: {
+    width: '100%',
+    maxWidth: 400,
+    backgroundColor: 'transparent',
+    paddingVertical: 12,
     borderRadius: 8,
+    alignItems: 'center',
+    marginBottom: 16,
+    borderWidth: 2,
+    borderColor: '#0066CC',
+  },
+  learnMoreText: {
+    color: '#0066CC',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  demoContainer: {
+    backgroundColor: '#f8fafc',
+    padding: 20,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: '#e2e8f0',
     width: '100%',
     maxWidth: 400,
   },
   demoTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: 12,
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1e293b',
+    marginBottom: 16,
     textAlign: 'center',
   },
-  demoIds: {
-    alignItems: 'flex-start',
+  credentialsGrid: {
+    gap: 12,
+    marginBottom: 16,
+  },
+  credentialCard: {
+    backgroundColor: '#ffffff',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  credentialRole: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#0066CC',
+    marginBottom: 8,
   },
   demoId: {
     fontSize: 12,
-    color: '#6b7280',
-    marginBottom: 4,
+    color: '#64748b',
+    marginBottom: 3,
     fontFamily: 'monospace',
+  },
+  demoNote: {
+    fontSize: 11,
+    color: '#64748b',
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
   hintContainer: {
     backgroundColor: '#f0f9ff',
@@ -683,41 +786,44 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   adminHintContainer: {
-    backgroundColor: '#fef2f2',
-    padding: 16,
-    borderRadius: 8,
+    backgroundColor: '#fef7ff',
+    padding: 20,
+    borderRadius: 12,
     borderLeftWidth: 4,
-    borderLeftColor: '#DC2626',
+    borderLeftColor: '#8b5cf6',
     width: '100%',
     maxWidth: 400,
   },
   adminHintTitle: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: 'bold',
-    color: '#DC2626',
+    color: '#8b5cf6',
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: 12,
   },
   adminHintText: {
-    fontSize: 12,
-    color: '#DC2626',
+    fontSize: 13,
+    color: '#7c3aed',
     textAlign: 'center',
     fontWeight: '600',
-    marginBottom: 8,
+    marginBottom: 12,
   },
   adminHintSubtext: {
-    fontSize: 11,
-    color: '#7f1d1d',
+    fontSize: 12,
+    color: '#6b46c1',
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: 10,
+    fontWeight: '500',
   },
   adminFeaturesList: {
     alignItems: 'flex-start',
+    marginBottom: 12,
   },
   adminFeature: {
-    fontSize: 10,
-    color: '#991b1b',
-    marginBottom: 2,
+    fontSize: 11,
+    color: '#5b21b6',
+    marginBottom: 4,
+    paddingLeft: 8,
   },
   debugContainer: {
     marginTop: 20,
