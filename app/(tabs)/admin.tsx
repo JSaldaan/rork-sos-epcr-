@@ -48,8 +48,9 @@ import {
 } from 'lucide-react-native';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-type TabType = 'vault' | 'staff' | 'audit' | 'reports';
+type TabType = 'vault' | 'staff' | 'audit' | 'reports' | 'enterprise';
 type VaultSection = 'patients' | 'encounters' | 'vitals' | 'ecgs' | 'signatures' | 'attachments' | 'pcrs';
 
 export default function AdminScreen() {
@@ -91,6 +92,44 @@ export default function AdminScreen() {
   }, [isStaffUser]);
 
   const [activeTab, setActiveTab] = useState<TabType>('vault');
+  const [showEnterpriseModal, setShowEnterpriseModal] = useState(false);
+  const [editingFeature, setEditingFeature] = useState<any>(null);
+  const [enterpriseConfig, setEnterpriseConfig] = useState({
+    pricing: {
+      basic: { name: 'Basic', price: 99, currency: 'USD', period: 'month' },
+      professional: { name: 'Professional', price: 299, currency: 'USD', period: 'month' },
+      enterprise: { name: 'Enterprise', price: 999, currency: 'USD', period: 'month' },
+      custom: { name: 'Custom', price: 0, currency: 'USD', period: 'custom' }
+    },
+    features: [
+      { id: '1', name: 'Real-time PCR Management', description: 'Complete patient care reporting system', plans: ['basic', 'professional', 'enterprise'], enabled: true },
+      { id: '2', name: 'Voice-to-Text Documentation', description: 'AI-powered voice notes with automatic transcription', plans: ['professional', 'enterprise'], enabled: true },
+      { id: '3', name: 'Trauma Body Diagram', description: 'Interactive body diagram for injury documentation', plans: ['professional', 'enterprise'], enabled: true },
+      { id: '4', name: 'Offline Mode', description: 'Work without internet, sync when connected', plans: ['basic', 'professional', 'enterprise'], enabled: true },
+      { id: '5', name: 'Multi-Team Support', description: 'Manage multiple teams and departments', plans: ['professional', 'enterprise'], enabled: true },
+      { id: '6', name: 'Advanced Analytics', description: 'Comprehensive reporting and insights', plans: ['enterprise'], enabled: true },
+      { id: '7', name: 'Custom Integrations', description: 'API access and third-party integrations', plans: ['enterprise', 'custom'], enabled: true },
+      { id: '8', name: 'Priority Support', description: '24/7 dedicated support team', plans: ['enterprise', 'custom'], enabled: true },
+      { id: '9', name: 'Data Export', description: 'Export data in multiple formats', plans: ['basic', 'professional', 'enterprise'], enabled: true },
+      { id: '10', name: 'Audit Trail', description: 'Complete activity logging and compliance', plans: ['professional', 'enterprise'], enabled: true }
+    ],
+    learnMore: {
+      companyInfo: 'RORK Emergency Medical Services',
+      description: 'Industry-leading patient care reporting system designed for emergency medical services, hospitals, and healthcare providers.',
+      benefits: [
+        'Reduce documentation time by 70%',
+        'Ensure compliance with medical standards',
+        'Improve patient care quality',
+        'Real-time team collaboration',
+        'Secure cloud storage with encryption'
+      ],
+      contact: {
+        email: 'sales@rork-ems.com',
+        phone: '1-800-RORK-EMS',
+        website: 'www.rork-ems.com'
+      }
+    }
+  });
   const [vaultSection, setVaultSection] = useState<VaultSection>('pcrs');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
@@ -1553,6 +1592,319 @@ export default function AdminScreen() {
     </View>
   );
 
+  const renderEnterpriseSettings = () => (
+    <View style={styles.enterpriseContainer}>
+      <View style={styles.enterpriseHeader}>
+        <Text style={styles.sectionTitle}>Enterprise Features & Pricing</Text>
+        <TouchableOpacity style={styles.saveButton} onPress={handleSaveEnterpriseConfig}>
+          <Check size={20} color="#fff" />
+          <Text style={styles.saveButtonText}>Save Changes</Text>
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView showsVerticalScrollIndicator={false}>
+        {/* Pricing Plans Section */}
+        <View style={styles.pricingSection}>
+          <Text style={styles.subsectionTitle}>Pricing Plans</Text>
+          <View style={styles.pricingGrid}>
+            {Object.entries(enterpriseConfig.pricing).map(([key, plan]) => (
+              <TouchableOpacity
+                key={key}
+                style={styles.pricingCard}
+                onPress={() => handleEditPricing(key, plan)}
+              >
+                <View style={styles.pricingCardHeader}>
+                  <Text style={styles.pricingPlanName}>{plan.name}</Text>
+                  <Edit3 size={16} color="#0066CC" />
+                </View>
+                <View style={styles.pricingAmount}>
+                  <Text style={styles.pricingCurrency}>{plan.currency}</Text>
+                  <Text style={styles.pricingPrice}>
+                    {key === 'custom' ? 'Contact' : `${plan.price}`}
+                  </Text>
+                  {key !== 'custom' && (
+                    <Text style={styles.pricingPeriod}>/{plan.period}</Text>
+                  )}
+                </View>
+                <View style={styles.pricingFeatures}>
+                  {enterpriseConfig.features
+                    .filter(f => f.plans.includes(key) && f.enabled)
+                    .slice(0, 3)
+                    .map(feature => (
+                      <Text key={feature.id} style={styles.pricingFeatureItem}>
+                        • {feature.name}
+                      </Text>
+                    ))}
+                  {enterpriseConfig.features.filter(f => f.plans.includes(key)).length > 3 && (
+                    <Text style={styles.pricingFeatureMore}>
+                      +{enterpriseConfig.features.filter(f => f.plans.includes(key)).length - 3} more features
+                    </Text>
+                  )}
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        {/* Features Management Section */}
+        <View style={styles.featuresSection}>
+          <View style={styles.featuresSectionHeader}>
+            <Text style={styles.subsectionTitle}>Feature Management</Text>
+            <TouchableOpacity
+              style={styles.addFeatureButton}
+              onPress={() => handleAddFeature()}
+            >
+              <Plus size={16} color="#0066CC" />
+              <Text style={styles.addFeatureText}>Add Feature</Text>
+            </TouchableOpacity>
+          </View>
+          
+          {enterpriseConfig.features.map(feature => (
+            <View key={feature.id} style={styles.featureCard}>
+              <View style={styles.featureHeader}>
+                <View style={styles.featureInfo}>
+                  <Text style={styles.featureName}>{feature.name}</Text>
+                  <Text style={styles.featureDescription}>{feature.description}</Text>
+                  <View style={styles.featurePlans}>
+                    {feature.plans.map(plan => (
+                      <View key={plan} style={styles.featurePlanBadge}>
+                        <Text style={styles.featurePlanText}>
+                          {enterpriseConfig.pricing[plan]?.name || plan}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+                <View style={styles.featureActions}>
+                  <Switch
+                    value={feature.enabled}
+                    onValueChange={(value) => handleToggleFeature(feature.id, value)}
+                    trackColor={{ false: '#E5E5E5', true: '#0066CC' }}
+                  />
+                  <TouchableOpacity
+                    style={styles.featureEditButton}
+                    onPress={() => handleEditFeature(feature)}
+                  >
+                    <Edit3 size={16} color="#666" />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.featureDeleteButton}
+                    onPress={() => handleDeleteFeature(feature.id)}
+                  >
+                    <Trash2 size={16} color="#FF3B30" />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          ))}
+        </View>
+
+        {/* Company Information Section */}
+        <View style={styles.companySection}>
+          <Text style={styles.subsectionTitle}>Company Information</Text>
+          <View style={styles.companyCard}>
+            <TextInput
+              style={styles.companyInput}
+              placeholder="Company Name"
+              value={enterpriseConfig.learnMore.companyInfo}
+              onChangeText={(text) => setEnterpriseConfig({
+                ...enterpriseConfig,
+                learnMore: { ...enterpriseConfig.learnMore, companyInfo: text }
+              })}
+            />
+            <TextInput
+              style={[styles.companyInput, styles.textArea]}
+              placeholder="Product Description"
+              value={enterpriseConfig.learnMore.description}
+              onChangeText={(text) => setEnterpriseConfig({
+                ...enterpriseConfig,
+                learnMore: { ...enterpriseConfig.learnMore, description: text }
+              })}
+              multiline
+              numberOfLines={4}
+            />
+            
+            <Text style={styles.inputLabel}>Key Benefits</Text>
+            {enterpriseConfig.learnMore.benefits.map((benefit, index) => (
+              <View key={index} style={styles.benefitRow}>
+                <TextInput
+                  style={styles.benefitInput}
+                  value={benefit}
+                  onChangeText={(text) => handleUpdateBenefit(index, text)}
+                  placeholder="Enter benefit"
+                />
+                <TouchableOpacity
+                  onPress={() => handleRemoveBenefit(index)}
+                  style={styles.removeBenefitButton}
+                >
+                  <X size={16} color="#FF3B30" />
+                </TouchableOpacity>
+              </View>
+            ))}
+            <TouchableOpacity
+              style={styles.addBenefitButton}
+              onPress={handleAddBenefit}
+            >
+              <Plus size={16} color="#0066CC" />
+              <Text style={styles.addBenefitText}>Add Benefit</Text>
+            </TouchableOpacity>
+
+            <Text style={styles.inputLabel}>Contact Information</Text>
+            <TextInput
+              style={styles.companyInput}
+              placeholder="Email"
+              value={enterpriseConfig.learnMore.contact.email}
+              onChangeText={(text) => setEnterpriseConfig({
+                ...enterpriseConfig,
+                learnMore: {
+                  ...enterpriseConfig.learnMore,
+                  contact: { ...enterpriseConfig.learnMore.contact, email: text }
+                }
+              })}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+            <TextInput
+              style={styles.companyInput}
+              placeholder="Phone"
+              value={enterpriseConfig.learnMore.contact.phone}
+              onChangeText={(text) => setEnterpriseConfig({
+                ...enterpriseConfig,
+                learnMore: {
+                  ...enterpriseConfig.learnMore,
+                  contact: { ...enterpriseConfig.learnMore.contact, phone: text }
+                }
+              })}
+              keyboardType="phone-pad"
+            />
+            <TextInput
+              style={styles.companyInput}
+              placeholder="Website"
+              value={enterpriseConfig.learnMore.contact.website}
+              onChangeText={(text) => setEnterpriseConfig({
+                ...enterpriseConfig,
+                learnMore: {
+                  ...enterpriseConfig.learnMore,
+                  contact: { ...enterpriseConfig.learnMore.contact, website: text }
+                }
+              })}
+              autoCapitalize="none"
+            />
+          </View>
+        </View>
+      </ScrollView>
+    </View>
+  );
+
+  const handleSaveEnterpriseConfig = async () => {
+    try {
+      // Save to AsyncStorage or your backend
+      await AsyncStorage.setItem('enterpriseConfig', JSON.stringify(enterpriseConfig));
+      Alert.alert('Success', 'Enterprise configuration saved successfully');
+      await addAuditLog('UPDATE_ENTERPRISE_CONFIG', 'System', 'CONFIG', 'Updated enterprise features and pricing');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to save configuration');
+    }
+  };
+
+  const handleEditPricing = (key: string, plan: any) => {
+    Alert.prompt(
+      'Edit Pricing',
+      `Enter new price for ${plan.name} (current: ${plan.price}/${plan.period})`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Update',
+          onPress: (value) => {
+            const newPrice = parseInt(value || '0');
+            setEnterpriseConfig({
+              ...enterpriseConfig,
+              pricing: {
+                ...enterpriseConfig.pricing,
+                [key]: { ...plan, price: newPrice }
+              }
+            });
+          }
+        }
+      ],
+      'plain-text',
+      plan.price.toString()
+    );
+  };
+
+  const handleToggleFeature = (featureId: string, enabled: boolean) => {
+    setEnterpriseConfig({
+      ...enterpriseConfig,
+      features: enterpriseConfig.features.map(f =>
+        f.id === featureId ? { ...f, enabled } : f
+      )
+    });
+  };
+
+  const handleEditFeature = (feature: any) => {
+    setEditingFeature(feature);
+    setShowEnterpriseModal(true);
+  };
+
+  const handleAddFeature = () => {
+    const newFeature = {
+      id: Date.now().toString(),
+      name: 'New Feature',
+      description: 'Feature description',
+      plans: ['basic'],
+      enabled: true
+    };
+    setEditingFeature(newFeature);
+    setShowEnterpriseModal(true);
+  };
+
+  const handleDeleteFeature = (featureId: string) => {
+    Alert.alert(
+      'Delete Feature',
+      'Are you sure you want to delete this feature?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            setEnterpriseConfig({
+              ...enterpriseConfig,
+              features: enterpriseConfig.features.filter(f => f.id !== featureId)
+            });
+          }
+        }
+      ]
+    );
+  };
+
+  const handleUpdateBenefit = (index: number, text: string) => {
+    const newBenefits = [...enterpriseConfig.learnMore.benefits];
+    newBenefits[index] = text;
+    setEnterpriseConfig({
+      ...enterpriseConfig,
+      learnMore: { ...enterpriseConfig.learnMore, benefits: newBenefits }
+    });
+  };
+
+  const handleRemoveBenefit = (index: number) => {
+    const newBenefits = enterpriseConfig.learnMore.benefits.filter((_, i) => i !== index);
+    setEnterpriseConfig({
+      ...enterpriseConfig,
+      learnMore: { ...enterpriseConfig.learnMore, benefits: newBenefits }
+    });
+  };
+
+  const handleAddBenefit = () => {
+    setEnterpriseConfig({
+      ...enterpriseConfig,
+      learnMore: {
+        ...enterpriseConfig.learnMore,
+        benefits: [...enterpriseConfig.learnMore.benefits, '']
+      }
+    });
+  };
+
   const renderAuditLogs = () => (
     <View style={styles.auditContainer}>
       <Text style={styles.sectionTitle}>Audit Logs</Text>
@@ -1635,6 +1987,16 @@ export default function AdminScreen() {
             Audit
           </Text>
         </TouchableOpacity>
+        
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'enterprise' && styles.tabActive]}
+          onPress={() => setActiveTab('enterprise')}
+        >
+          <Database size={20} color={activeTab === 'enterprise' ? '#0066CC' : '#666'} />
+          <Text style={[styles.tabText, activeTab === 'enterprise' && styles.tabTextActive]}>
+            Enterprise
+          </Text>
+        </TouchableOpacity>
       </View>
 
       {isLoading ? (
@@ -1647,6 +2009,7 @@ export default function AdminScreen() {
           {activeTab === 'vault' && renderVaultSection()}
           {activeTab === 'staff' && renderStaffManagement()}
           {activeTab === 'audit' && renderAuditLogs()}
+          {activeTab === 'enterprise' && renderEnterpriseSettings()}
         </>
       )}
 
@@ -1711,6 +2074,106 @@ export default function AdminScreen() {
               </TouchableOpacity>
               <TouchableOpacity style={styles.modalSubmitButton} onPress={handleAddStaff}>
                 <Text style={styles.modalSubmitText}>Add Staff</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Enterprise Feature Modal */}
+      <Modal
+        visible={showEnterpriseModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowEnterpriseModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                {editingFeature?.id ? 'Edit Feature' : 'Add Feature'}
+              </Text>
+              <TouchableOpacity onPress={() => setShowEnterpriseModal(false)}>
+                <X size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
+
+            <TextInput
+              style={styles.modalInput}
+              placeholder="Feature Name"
+              value={editingFeature?.name || ''}
+              onChangeText={(text) => setEditingFeature({ ...editingFeature, name: text })}
+            />
+
+            <TextInput
+              style={[styles.modalInput, styles.textArea]}
+              placeholder="Feature Description"
+              value={editingFeature?.description || ''}
+              onChangeText={(text) => setEditingFeature({ ...editingFeature, description: text })}
+              multiline
+              numberOfLines={3}
+            />
+
+            <Text style={styles.inputLabel}>Available in Plans:</Text>
+            <View style={styles.plansSelection}>
+              {Object.entries(enterpriseConfig.pricing).map(([key, plan]) => (
+                <TouchableOpacity
+                  key={key}
+                  style={[
+                    styles.planCheckbox,
+                    editingFeature?.plans?.includes(key) && styles.planCheckboxActive
+                  ]}
+                  onPress={() => {
+                    const currentPlans = editingFeature?.plans || [];
+                    const newPlans = currentPlans.includes(key)
+                      ? currentPlans.filter(p => p !== key)
+                      : [...currentPlans, key];
+                    setEditingFeature({ ...editingFeature, plans: newPlans });
+                  }}
+                >
+                  {editingFeature?.plans?.includes(key) && (
+                    <Check size={14} color="#fff" />
+                  )}
+                  <Text style={[
+                    styles.planCheckboxText,
+                    editingFeature?.plans?.includes(key) && styles.planCheckboxTextActive
+                  ]}>
+                    {plan.name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.modalCancelButton}
+                onPress={() => setShowEnterpriseModal(false)}
+              >
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.modalSubmitButton}
+                onPress={() => {
+                  if (editingFeature) {
+                    const existingIndex = enterpriseConfig.features.findIndex(
+                      f => f.id === editingFeature.id
+                    );
+                    if (existingIndex >= 0) {
+                      const newFeatures = [...enterpriseConfig.features];
+                      newFeatures[existingIndex] = editingFeature;
+                      setEnterpriseConfig({ ...enterpriseConfig, features: newFeatures });
+                    } else {
+                      setEnterpriseConfig({
+                        ...enterpriseConfig,
+                        features: [...enterpriseConfig.features, editingFeature]
+                      });
+                    }
+                  }
+                  setShowEnterpriseModal(false);
+                  setEditingFeature(null);
+                }}
+              >
+                <Text style={styles.modalSubmitText}>Save Feature</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -2318,5 +2781,261 @@ const styles = StyleSheet.create({
   modalCloseText: {
     fontSize: 14,
     color: '#666',
+  },
+  // Enterprise styles
+  enterpriseContainer: {
+    flex: 1,
+  },
+  enterpriseHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 15,
+    backgroundColor: '#fff',
+  },
+  saveButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    backgroundColor: '#28A745',
+    borderRadius: 6,
+    gap: 6,
+  },
+  saveButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  subsectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 15,
+  },
+  pricingSection: {
+    padding: 15,
+    backgroundColor: '#fff',
+    marginBottom: 10,
+  },
+  pricingGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  pricingCard: {
+    flex: 1,
+    minWidth: 150,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+    padding: 15,
+  },
+  pricingCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  pricingPlanName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  pricingAmount: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    marginBottom: 10,
+  },
+  pricingCurrency: {
+    fontSize: 14,
+    color: '#666',
+    marginRight: 2,
+  },
+  pricingPrice: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#0066CC',
+  },
+  pricingPeriod: {
+    fontSize: 14,
+    color: '#666',
+    marginLeft: 2,
+  },
+  pricingFeatures: {
+    marginTop: 10,
+  },
+  pricingFeatureItem: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 4,
+  },
+  pricingFeatureMore: {
+    fontSize: 12,
+    color: '#0066CC',
+    fontStyle: 'italic',
+    marginTop: 4,
+  },
+  featuresSection: {
+    padding: 15,
+    backgroundColor: '#fff',
+    marginBottom: 10,
+  },
+  featuresSectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  addFeatureButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#0066CC',
+    gap: 4,
+  },
+  addFeatureText: {
+    fontSize: 12,
+    color: '#0066CC',
+    fontWeight: '500',
+  },
+  featureCard: {
+    backgroundColor: '#F9F9F9',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 10,
+  },
+  featureHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  featureInfo: {
+    flex: 1,
+    marginRight: 10,
+  },
+  featureName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 4,
+  },
+  featureDescription: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 8,
+  },
+  featurePlans: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 4,
+  },
+  featurePlanBadge: {
+    backgroundColor: '#E5E5E5',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  featurePlanText: {
+    fontSize: 10,
+    color: '#666',
+  },
+  featureActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  featureEditButton: {
+    padding: 4,
+  },
+  featureDeleteButton: {
+    padding: 4,
+  },
+  companySection: {
+    padding: 15,
+    backgroundColor: '#fff',
+    marginBottom: 20,
+  },
+  companyCard: {
+    backgroundColor: '#F9F9F9',
+    borderRadius: 8,
+    padding: 15,
+  },
+  companyInput: {
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 15,
+    fontSize: 14,
+    backgroundColor: '#fff',
+  },
+  textArea: {
+    minHeight: 100,
+    textAlignVertical: 'top',
+  },
+  benefitRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+    gap: 10,
+  },
+  benefitInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+    borderRadius: 8,
+    padding: 10,
+    fontSize: 14,
+    backgroundColor: '#fff',
+  },
+  removeBenefitButton: {
+    padding: 8,
+  },
+  addBenefitButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#0066CC',
+    borderStyle: 'dashed',
+    gap: 6,
+    marginBottom: 15,
+  },
+  addBenefitText: {
+    fontSize: 14,
+    color: '#0066CC',
+  },
+  plansSelection: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 15,
+  },
+  planCheckbox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+    gap: 6,
+  },
+  planCheckboxActive: {
+    backgroundColor: '#0066CC',
+    borderColor: '#0066CC',
+  },
+  planCheckboxText: {
+    fontSize: 12,
+    color: '#666',
+  },
+  planCheckboxTextActive: {
+    color: '#fff',
   },
 });
