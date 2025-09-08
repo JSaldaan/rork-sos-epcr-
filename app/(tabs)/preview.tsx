@@ -300,10 +300,11 @@ export default function PreviewScreen() {
                 {vital.ecgCapture && (
                   <View style={styles.ecgCaptureField}>
                     <Text style={styles.fieldLabel}>ECG Capture:</Text>
-                    <Text style={styles.ecgCapturePresent}>📈 ECG Recorded</Text>
+                    <Text style={styles.ecgCapturePresent}>📷 Plain ECG Captured</Text>
                     <Text style={styles.ecgCaptureTime}>
                       {vital.ecgCaptureTimestamp ? new Date(vital.ecgCaptureTimestamp).toLocaleString() : 'N/A'}
                     </Text>
+                    <Text style={styles.ecgReference}>Camera capture: {vital.ecgCapture?.substring(0, 40)}{'...'}</Text>
                   </View>
                 )}
               </View>
@@ -328,62 +329,79 @@ export default function PreviewScreen() {
         )}
 
         {hasRefusalData && renderSection(
-          "Patient Refusal",
+          "Patient Refusal Form",
           <View>
+            <View style={styles.refusalHeader}>
+              <Text style={styles.refusalTitle}>TREATMENT REFUSAL DOCUMENTATION</Text>
+              <Text style={styles.refusalSubtitle}>This form documents the patient&apos;s refusal of medical treatment or transport</Text>
+            </View>
             {renderField("Patient Name", refusalInfo.patientName)}
             {renderField("Date of Refusal", refusalInfo.dateOfRefusal)}
             {renderField("Time of Refusal", refusalInfo.timeOfRefusal)}
             {renderField("Reason for Refusal", refusalInfo.reasonForRefusal)}
-            {renderField("Risks Explained", refusalInfo.risksExplained ? "Yes" : "No")}
-            {renderField("Mental Capacity Confirmed", refusalInfo.mentalCapacity ? "Yes" : "No")}
+            {renderField("Risks Explained to Patient", refusalInfo.risksExplained ? "Yes" : "No")}
+            {renderField("Patient Has Mental Capacity", refusalInfo.mentalCapacity ? "Yes" : "No")}
             {renderField("Witness Name", refusalInfo.witnessName)}
             {renderField("Paramedic Name", refusalInfo.paramedicName)}
             {renderField("Additional Notes", refusalInfo.additionalNotes)}
-            {refusalInfo.patientSignature && (
-              <View style={styles.signatureField}>
-                <Text style={styles.fieldLabel}>Patient Signature:</Text>
-                <Text style={styles.signaturePresent}>✓ Signature captured</Text>
-              </View>
-            )}
-            {refusalInfo.witnessSignature && (
-              <View style={styles.signatureField}>
-                <Text style={styles.fieldLabel}>Witness Signature:</Text>
-                <Text style={styles.signaturePresent}>✓ Signature captured</Text>
-              </View>
-            )}
-            {refusalInfo.paramedicSignature && (
-              <View style={styles.signatureField}>
-                <Text style={styles.fieldLabel}>Paramedic Signature:</Text>
-                <Text style={styles.signaturePresent}>✓ Signature captured</Text>
-              </View>
-            )}
+            
+            <View style={styles.signatureSection}>
+              <Text style={styles.signatureSectionTitle}>SIGNATURES</Text>
+              {refusalInfo.patientSignature && (
+                <View style={styles.signatureField}>
+                  <Text style={styles.fieldLabel}>Patient Signature:</Text>
+                  <Text style={styles.signaturePresent}>✓ Signature captured and verified</Text>
+                  <Text style={styles.signatureNote}>Patient acknowledges refusal of treatment</Text>
+                </View>
+              )}
+              {refusalInfo.witnessSignature && (
+                <View style={styles.signatureField}>
+                  <Text style={styles.fieldLabel}>Witness Signature:</Text>
+                  <Text style={styles.signaturePresent}>✓ Signature captured and verified</Text>
+                  <Text style={styles.signatureNote}>Witness: {refusalInfo.witnessName}</Text>
+                </View>
+              )}
+              {refusalInfo.paramedicSignature && (
+                <View style={styles.signatureField}>
+                  <Text style={styles.fieldLabel}>Paramedic Signature:</Text>
+                  <Text style={styles.signaturePresent}>✓ Signature captured and verified</Text>
+                  <Text style={styles.signatureNote}>Paramedic: {refusalInfo.paramedicName}</Text>
+                </View>
+              )}
+            </View>
           </View>
         )}
 
         {renderSection(
-          "Signatures",
+          "Healthcare Provider Signatures",
           <View>
-            {signatureInfo.nurseSignature && (
-              <View style={styles.signatureField}>
-                <Text style={styles.fieldLabel}>Nurse Signature:</Text>
-                <Text style={styles.signaturePresent}>✓ Signature captured</Text>
-                {renderField("Corporation ID", signatureInfo.nurseCorporationId)}
-              </View>
-            )}
-            {signatureInfo.doctorSignature && (
-              <View style={styles.signatureField}>
-                <Text style={styles.fieldLabel}>Doctor Signature:</Text>
-                <Text style={styles.signaturePresent}>✓ Signature captured</Text>
-                {renderField("Corporation ID", signatureInfo.doctorCorporationId)}
-              </View>
-            )}
-            {signatureInfo.othersSignature && (
-              <View style={styles.signatureField}>
-                <Text style={styles.fieldLabel}>Other Signature:</Text>
-                <Text style={styles.signaturePresent}>✓ Signature captured</Text>
-                {renderField("Role", signatureInfo.othersRole)}
-              </View>
-            )}
+            <View style={styles.signatureSection}>
+              <Text style={styles.signatureSectionTitle}>AUTHORIZED SIGNATURES</Text>
+              {signatureInfo.nurseSignature && (
+                <View style={styles.signatureField}>
+                  <Text style={styles.fieldLabel}>Nurse Signature:</Text>
+                  <Text style={styles.signaturePresent}>✓ Signature captured and verified</Text>
+                  {renderField("Nurse Name", signatureInfo.nurseSignature)}
+                  {renderField("Corporation ID", signatureInfo.nurseCorporationId)}
+                </View>
+              )}
+              {signatureInfo.doctorSignature && (
+                <View style={styles.signatureField}>
+                  <Text style={styles.fieldLabel}>Doctor Signature:</Text>
+                  <Text style={styles.signaturePresent}>✓ Signature captured and verified</Text>
+                  {renderField("Doctor Name", signatureInfo.doctorSignature)}
+                  {renderField("Corporation ID", signatureInfo.doctorCorporationId)}
+                </View>
+              )}
+              {signatureInfo.othersSignature && (
+                <View style={styles.signatureField}>
+                  <Text style={styles.fieldLabel}>Other Authorized Signature:</Text>
+                  <Text style={styles.signaturePresent}>✓ Signature captured and verified</Text>
+                  {renderField("Name", signatureInfo.othersSignature)}
+                  {renderField("Role/Title", signatureInfo.othersRole)}
+                </View>
+              )}
+            </View>
           </View>
         )}
 
@@ -571,6 +589,51 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#666",
     marginTop: 2,
+  },
+  ecgReference: {
+    fontSize: 10,
+    color: "#666",
+    marginTop: 2,
+    fontFamily: "monospace",
+  },
+  refusalHeader: {
+    backgroundColor: "#FEF2F2",
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 15,
+    borderLeftWidth: 4,
+    borderLeftColor: "#DC2626",
+  },
+  refusalTitle: {
+    fontSize: 16,
+    fontWeight: "600" as const,
+    color: "#991B1B",
+    marginBottom: 4,
+  },
+  refusalSubtitle: {
+    fontSize: 12,
+    color: "#7F1D1D",
+    lineHeight: 16,
+  },
+  signatureSection: {
+    backgroundColor: "#F0FDF4",
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 15,
+    borderLeftWidth: 4,
+    borderLeftColor: "#16A34A",
+  },
+  signatureSectionTitle: {
+    fontSize: 14,
+    fontWeight: "600" as const,
+    color: "#15803D",
+    marginBottom: 10,
+  },
+  signatureNote: {
+    fontSize: 12,
+    color: "#16A34A",
+    marginTop: 2,
+    fontStyle: "italic" as const,
   },
 
 });
