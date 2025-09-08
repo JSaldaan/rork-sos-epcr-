@@ -20,6 +20,15 @@ export interface CallTimeInfo {
   atDestination: string;
 }
 
+export interface TraumaInjury {
+  id: string;
+  x: number;
+  y: number;
+  description: string;
+  severity: 'minor' | 'moderate' | 'severe' | 'critical';
+  bodyPart: string;
+}
+
 export interface IncidentInfo {
   location: string;
   chiefComplaint: string;
@@ -30,6 +39,7 @@ export interface IncidentInfo {
   onArrivalInfo: string;
   provisionalDiagnosis: string;
   additionalNotes: string;
+  traumaInjuries?: TraumaInjury[];
 }
 
 export interface VitalSigns {
@@ -309,6 +319,7 @@ const initialIncidentInfo: IncidentInfo = {
   onArrivalInfo: '',
   provisionalDiagnosis: '',
   additionalNotes: '',
+  traumaInjuries: [],
 };
 
 const initialTransportInfo: TransportInfo = {

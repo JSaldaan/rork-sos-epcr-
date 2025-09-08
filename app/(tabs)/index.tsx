@@ -14,11 +14,12 @@ import {
 } from "react-native";
 import { ResponsiveContainer, ResponsiveRow } from '@/components/ResponsiveLayout';
 import { spacing, isTablet } from '@/utils/responsive';
-import { Clock, MapPin, User, ChevronDown, Shield, Mic } from "lucide-react-native";
+import { Clock, MapPin, User, ChevronDown, Shield, Mic, Activity } from "lucide-react-native";
 import { usePCRStore } from "@/store/pcrStore";
 import { router } from "expo-router";
 import { OfflineStatus } from "@/components/OfflineStatus";
 import { VoiceNotesModal } from "@/components/VoiceNotesModal";
+import TraumaBodyDiagram from "@/components/TraumaBodyDiagram";
 
 const priorityOptions = ["Emergency", "Urgent", "Non-Urgent"] as const;
 
@@ -96,6 +97,7 @@ export default function NewPCRScreen() {
   const [adminPassword, setAdminPassword] = useState<string>('');
   const [showOfflineDetails, setShowOfflineDetails] = useState<boolean>(false);
   const [showVoiceNotes, setShowVoiceNotes] = useState<boolean>(false);
+  const [showTraumaDiagram, setShowTraumaDiagram] = useState<boolean>(false);
 
   const { saveTabDataWithNotification } = usePCRStore();
   
@@ -180,6 +182,34 @@ export default function NewPCRScreen() {
       setShowDiagnosisModal(false);
       setShowOthersInput(false);
       setCustomDiagnosis("");
+      
+      // Check if it's a trauma-related diagnosis
+      const traumaDiagnoses = [
+        "Trauma - Multiple",
+        "Trauma - Head Injury",
+        "Trauma - Spinal Injury",
+        "Trauma - Fracture",
+        "Motor Vehicle Accident",
+        "Fall Injury",
+        "Burn Injury"
+      ];
+      
+      if (traumaDiagnoses.includes(diagnosis)) {
+        // Show trauma diagram after a short delay
+        setTimeout(() => {
+          Alert.alert(
+            "Document Trauma Injuries",
+            "Would you like to mark injury locations on a body diagram?",
+            [
+              { text: "Not Now", style: "cancel" },
+              { 
+                text: "Yes", 
+                onPress: () => setShowTraumaDiagram(true)
+              }
+            ]
+          );
+        }, 500);
+      }
     }
   }, [updateIncidentInfo]);
 
@@ -541,6 +571,43 @@ export default function NewPCRScreen() {
           </View>
         )}
         
+        {/* Trauma Injuries Section */}
+        {incidentInfo.traumaInjuries && incidentInfo.traumaInjuries.length > 0 && (
+          <View style={styles.traumaSection}>
+            <View style={styles.traumaHeader}>
+              <Activity size={16} color="#DC3545" />
+              <Text style={styles.traumaTitle}>Documented Injuries ({incidentInfo.traumaInjuries.length})</Text>
+            </View>
+            <TouchableOpacity 
+              style={styles.viewTraumaButton}
+              onPress={() => setShowTraumaDiagram(true)}
+            >
+              <Text style={styles.viewTraumaButtonText}>View/Edit Body Diagram</Text>
+            </TouchableOpacity>
+            <View style={styles.traumaList}>
+              {incidentInfo.traumaInjuries.slice(0, 3).map((injury) => (
+                <View key={injury.id} style={styles.traumaItem}>
+                  <View style={[
+                    styles.traumaSeverityIndicator,
+                    { backgroundColor: 
+                      injury.severity === 'critical' ? '#D32F2F' :
+                      injury.severity === 'severe' ? '#FF5722' :
+                      injury.severity === 'moderate' ? '#FF9800' : '#FFC107'
+                    }
+                  ]} />
+                  <View style={styles.traumaItemContent}>
+                    <Text style={styles.traumaBodyPart}>{injury.bodyPart}</Text>
+                    <Text style={styles.traumaDescription} numberOfLines={1}>{injury.description}</Text>
+                  </View>
+                </View>
+              ))}
+              {incidentInfo.traumaInjuries.length > 3 && (
+                <Text style={styles.moreTraumaText}>+{incidentInfo.traumaInjuries.length - 3} more injuries</Text>
+              )}
+            </View>
+          </View>
+        )}
+        
         <Text style={styles.label}>Additional Notes</Text>
         <TextInput
           style={[styles.input, styles.textArea]}
@@ -712,6 +779,21 @@ export default function NewPCRScreen() {
             console.log('AI analysis:', analysis);
           }
         }}
+      />
+      
+      <TraumaBodyDiagram
+        visible={showTraumaDiagram}
+        onClose={() => setShowTraumaDiagram(false)}
+        onSave={(injuries) => {
+          updateIncidentInfo({ traumaInjuries: injuries });
+          if (injuries.length > 0) {
+            Alert.alert(
+              "Injuries Documented",
+              `${injuries.length} injury location${injuries.length > 1 ? 's' : ''} have been recorded.`
+            );
+          }
+        }}
+        existingInjuries={incidentInfo.traumaInjuries}
       />
     </ResponsiveContainer>
   );
@@ -1171,5 +1253,70 @@ const styles = StyleSheet.create({
   column: {
     flex: 1,
     paddingHorizontal: 8,
+  },
+  traumaSection: {
+    backgroundColor: '#FFF5F5',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: '#FFCDD2',
+  },
+  traumaHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  traumaTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#DC3545',
+    marginLeft: 6,
+  },
+  viewTraumaButton: {
+    backgroundColor: '#DC3545',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  viewTraumaButtonText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  traumaList: {
+    marginTop: 4,
+  },
+  traumaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  traumaSeverityIndicator: {
+    width: 4,
+    height: 32,
+    borderRadius: 2,
+    marginRight: 8,
+  },
+  traumaItemContent: {
+    flex: 1,
+  },
+  traumaBodyPart: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#333',
+  },
+  traumaDescription: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 1,
+  },
+  moreTraumaText: {
+    fontSize: 12,
+    color: '#999',
+    fontStyle: 'italic',
+    marginTop: 4,
   },
 });
