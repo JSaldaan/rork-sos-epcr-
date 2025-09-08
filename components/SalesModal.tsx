@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -25,7 +25,11 @@ import {
   Mail,
   Calendar,
   X,
+  Activity,
+  FileText,
+  Database,
 } from 'lucide-react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface SalesModalProps {
   visible: boolean;
@@ -34,94 +38,189 @@ interface SalesModalProps {
 
 export const SalesModal: React.FC<SalesModalProps> = ({ visible, onClose }) => {
   const [activeTab, setActiveTab] = useState<'features' | 'pricing' | 'demo'>('features');
+  const [enterpriseConfig, setEnterpriseConfig] = useState<any>(null);
 
-  const features = [
-    {
-      icon: <Shield size={24} color="#0066CC" />,
-      title: "HIPAA Compliant Security",
-      description: "Enterprise-grade security with end-to-end encryption and audit trails"
-    },
-    {
-      icon: <Smartphone size={24} color="#0066CC" />,
-      title: "Cross-Platform Access",
-      description: "Native mobile apps and web access with real-time synchronization"
-    },
-    {
-      icon: <BarChart3 size={24} color="#0066CC" />,
-      title: "Advanced Analytics",
-      description: "Real-time dashboards, performance metrics, and compliance reporting"
-    },
-    {
-      icon: <Users size={24} color="#0066CC" />,
-      title: "Multi-User Collaboration",
-      description: "Role-based access for medical staff, supervisors, and administrators"
-    },
-    {
-      icon: <Clock size={24} color="#0066CC" />,
-      title: "Offline Capability",
-      description: "Full functionality without internet connection with auto-sync"
-    },
-    {
-      icon: <Heart size={24} color="#0066CC" />,
-      title: "AI-Powered Features",
-      description: "Voice-to-text transcription and intelligent form completion"
-    }
-  ];
+  useEffect(() => {
+    loadEnterpriseConfig();
+  }, [visible]);
 
-  const pricingPlans = [
-    {
-      name: "Starter",
-      price: "$29",
-      period: "per user/month",
-      features: [
-        "Basic ePCR functionality",
-        "Mobile and web access",
-        "Standard reporting",
-        "Email support",
-        "HIPAA compliance"
-      ],
-      popular: false
-    },
-    {
-      name: "Professional",
-      price: "$49",
-      period: "per user/month",
-      features: [
-        "All Starter features",
-        "Advanced analytics",
-        "Custom templates",
-        "API integrations",
-        "Priority support",
-        "Offline capability"
-      ],
-      popular: true
-    },
-    {
-      name: "Enterprise",
-      price: "Custom",
-      period: "contact for pricing",
-      features: [
-        "All Professional features",
-        "Custom integrations",
-        "Dedicated support",
-        "On-premise deployment",
-        "Advanced security",
-        "Training & onboarding"
-      ],
-      popular: false
+  const loadEnterpriseConfig = async () => {
+    try {
+      const configStr = await AsyncStorage.getItem('enterpriseConfig');
+      if (configStr) {
+        setEnterpriseConfig(JSON.parse(configStr));
+      }
+    } catch (error) {
+      console.log('Using default enterprise config');
     }
-  ];
+  };
+
+  // Use dynamic features from enterprise config or defaults
+  const getFeatures = () => {
+    if (enterpriseConfig?.features) {
+      return enterpriseConfig.features
+        .filter((f: any) => f.enabled)
+        .slice(0, 6)
+        .map((f: any) => ({
+          icon: getFeatureIcon(f.name),
+          title: f.name,
+          description: f.description
+        }));
+    }
+    
+    // Default features
+    return [
+      {
+        icon: <Shield size={24} color="#0066CC" />,
+        title: "HIPAA Compliant Security",
+        description: "Enterprise-grade security with end-to-end encryption and audit trails"
+      },
+      {
+        icon: <Smartphone size={24} color="#0066CC" />,
+        title: "Cross-Platform Access",
+        description: "Native mobile apps and web access with real-time synchronization"
+      },
+      {
+        icon: <BarChart3 size={24} color="#0066CC" />,
+        title: "Advanced Analytics",
+        description: "Real-time dashboards, performance metrics, and compliance reporting"
+      },
+      {
+        icon: <Users size={24} color="#0066CC" />,
+        title: "Multi-User Collaboration",
+        description: "Role-based access for medical staff, supervisors, and administrators"
+      },
+      {
+        icon: <Clock size={24} color="#0066CC" />,
+        title: "Offline Capability",
+        description: "Full functionality without internet connection with auto-sync"
+      },
+      {
+        icon: <Heart size={24} color="#0066CC" />,
+        title: "AI-Powered Features",
+        description: "Voice-to-text transcription and intelligent form completion"
+      }
+    ];
+  };
+
+  const getFeatureIcon = (name: string) => {
+    if (name.toLowerCase().includes('voice') || name.toLowerCase().includes('ai')) {
+      return <Heart size={24} color="#0066CC" />;
+    }
+    if (name.toLowerCase().includes('offline')) {
+      return <Clock size={24} color="#0066CC" />;
+    }
+    if (name.toLowerCase().includes('analytics') || name.toLowerCase().includes('report')) {
+      return <BarChart3 size={24} color="#0066CC" />;
+    }
+    if (name.toLowerCase().includes('team') || name.toLowerCase().includes('multi')) {
+      return <Users size={24} color="#0066CC" />;
+    }
+    if (name.toLowerCase().includes('trauma') || name.toLowerCase().includes('body')) {
+      return <Activity size={24} color="#0066CC" />;
+    }
+    if (name.toLowerCase().includes('export') || name.toLowerCase().includes('data')) {
+      return <Database size={24} color="#0066CC" />;
+    }
+    return <Shield size={24} color="#0066CC" />;
+  };
+
+  const features = getFeatures();
+
+  // Use dynamic pricing from enterprise config or defaults
+  const getPricingPlans = () => {
+    if (enterpriseConfig?.pricing && enterpriseConfig?.features) {
+      return Object.entries(enterpriseConfig.pricing)
+        .filter(([key]) => key !== 'custom')
+        .map(([key, plan]: [string, any]) => ({
+          name: plan.name,
+          price: `${plan.price}`,
+          period: `per ${plan.period}`,
+          features: enterpriseConfig.features
+            .filter((f: any) => f.enabled && f.plans.includes(key))
+            .slice(0, 6)
+            .map((f: any) => f.name),
+          popular: key === 'professional'
+        }))
+        .concat([{
+          name: enterpriseConfig.pricing.custom?.name || 'Enterprise',
+          price: 'Custom',
+          period: 'contact for pricing',
+          features: enterpriseConfig.features
+            .filter((f: any) => f.enabled && f.plans.includes('custom'))
+            .map((f: any) => f.name)
+            .concat(['Custom integrations', 'Dedicated support', 'Training & onboarding']),
+          popular: false
+        }]);
+    }
+    
+    // Default pricing
+    return [
+      {
+        name: "Basic",
+        price: "$99",
+        period: "per month",
+        features: [
+          "Real-time PCR Management",
+          "Offline Mode",
+          "Data Export",
+          "Email support",
+          "HIPAA compliance"
+        ],
+        popular: false
+      },
+      {
+        name: "Professional",
+        price: "$299",
+        period: "per month",
+        features: [
+          "All Basic features",
+          "Voice-to-Text Documentation",
+          "Trauma Body Diagram",
+          "Multi-Team Support",
+          "Audit Trail",
+          "Priority support"
+        ],
+        popular: true
+      },
+      {
+        name: "Enterprise",
+        price: "Custom",
+        period: "contact for pricing",
+        features: [
+          "All Professional features",
+          "Advanced Analytics",
+          "Custom Integrations",
+          "Priority Support",
+          "On-premise deployment",
+          "Training & onboarding"
+        ],
+        popular: false
+      }
+    ];
+  };
+
+  const pricingPlans = getPricingPlans();
+
+  const companyInfo = enterpriseConfig?.learnMore || {
+    companyInfo: 'RORK Emergency Medical Services',
+    contact: {
+      email: 'sales@rork-ems.com',
+      phone: '1-800-RORK-EMS',
+      website: 'www.rork-ems.com'
+    }
+  };
 
   const handleContactSales = () => {
-    Linking.openURL('mailto:sales@medicarepropcr.com?subject=MediCare Pro Demo Request');
+    Linking.openURL(`mailto:${companyInfo.contact.email}?subject=ePCR Demo Request`);
   };
 
   const handleScheduleDemo = () => {
-    Linking.openURL('https://calendly.com/medicarepropcr/demo');
+    Linking.openURL(`https://${companyInfo.contact.website}/demo`);
   };
 
   const handleCallSales = () => {
-    Linking.openURL('tel:+1-800-MEDICARE');
+    Linking.openURL(`tel:${companyInfo.contact.phone.replace(/[^0-9]/g, '')}`);
   };
 
   return (
@@ -136,7 +235,7 @@ export const SalesModal: React.FC<SalesModalProps> = ({ visible, onClose }) => {
           <View style={styles.headerContent}>
             <Shield size={32} color="#0066CC" />
             <View style={styles.headerText}>
-              <Text style={styles.headerTitle}>MediCare Pro</Text>
+              <Text style={styles.headerTitle}>{companyInfo.companyInfo}</Text>
               <Text style={styles.headerSubtitle}>Professional ePCR System</Text>
             </View>
           </View>
@@ -177,10 +276,10 @@ export const SalesModal: React.FC<SalesModalProps> = ({ visible, onClose }) => {
             <View style={styles.featuresContainer}>
               <Text style={styles.sectionTitle}>Enterprise Features</Text>
               <Text style={styles.sectionDescription}>
-                Comprehensive ePCR solution designed for healthcare professionals
+                {enterpriseConfig?.learnMore?.description || 'Comprehensive ePCR solution designed for healthcare professionals'}
               </Text>
               
-              {features.map((feature, index) => (
+              {features.map((feature: any, index: number) => (
                 <View key={index} style={styles.featureCard}>
                   <View style={styles.featureIcon}>
                     {feature.icon}
@@ -193,7 +292,7 @@ export const SalesModal: React.FC<SalesModalProps> = ({ visible, onClose }) => {
               ))}
 
               <View style={styles.statsContainer}>
-                <Text style={styles.statsTitle}>Trusted by Healthcare Professionals</Text>
+                <Text style={styles.statsTitle}>Trusted by Healthcare Professionals Worldwide</Text>
                 <View style={styles.statsGrid}>
                   <View style={styles.statItem}>
                     <Text style={styles.statNumber}>10,000+</Text>
@@ -237,7 +336,7 @@ export const SalesModal: React.FC<SalesModalProps> = ({ visible, onClose }) => {
                     <Text style={styles.period}>{plan.period}</Text>
                   </View>
                   <View style={styles.featuresContainer}>
-                    {plan.features.map((feature, featureIndex) => (
+                    {plan.features.map((feature: string, featureIndex: number) => (
                       <View key={featureIndex} style={styles.featureRow}>
                         <CheckCircle size={16} color="#28A745" />
                         <Text style={styles.featureText}>{feature}</Text>
@@ -258,9 +357,9 @@ export const SalesModal: React.FC<SalesModalProps> = ({ visible, onClose }) => {
 
           {activeTab === 'demo' && (
             <View style={styles.demoContainer}>
-              <Text style={styles.sectionTitle}>Experience MediCare Pro</Text>
+              <Text style={styles.sectionTitle}>Experience {companyInfo.companyInfo}</Text>
               <Text style={styles.sectionDescription}>
-                See how MediCare Pro can transform your patient care documentation
+                See how our ePCR system can transform your patient care documentation
               </Text>
 
               <View style={styles.demoCard}>
@@ -279,35 +378,31 @@ export const SalesModal: React.FC<SalesModalProps> = ({ visible, onClose }) => {
                 <TouchableOpacity style={styles.contactCard} onPress={handleCallSales}>
                   <Phone size={24} color="#0066CC" />
                   <Text style={styles.contactTitle}>Call Sales</Text>
-                  <Text style={styles.contactInfo}>1-800-MEDICARE</Text>
+                  <Text style={styles.contactInfo}>{companyInfo.contact.phone}</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity style={styles.contactCard} onPress={handleContactSales}>
                   <Mail size={24} color="#0066CC" />
                   <Text style={styles.contactTitle}>Email Us</Text>
-                  <Text style={styles.contactInfo}>sales@medicarepropcr.com</Text>
+                  <Text style={styles.contactInfo}>{companyInfo.contact.email}</Text>
                 </TouchableOpacity>
               </View>
 
               <View style={styles.benefitsContainer}>
-                <Text style={styles.benefitsTitle}>Why Choose MediCare Pro?</Text>
+                <Text style={styles.benefitsTitle}>Why Choose {companyInfo.companyInfo}?</Text>
                 <View style={styles.benefitsList}>
-                  <View style={styles.benefitItem}>
-                    <Zap size={16} color="#28A745" />
-                    <Text style={styles.benefitText}>Quick implementation (2-4 weeks)</Text>
-                  </View>
-                  <View style={styles.benefitItem}>
-                    <Lock size={16} color="#28A745" />
-                    <Text style={styles.benefitText}>HIPAA compliant out of the box</Text>
-                  </View>
-                  <View style={styles.benefitItem}>
-                    <Users size={16} color="#28A745" />
-                    <Text style={styles.benefitText}>Comprehensive training included</Text>
-                  </View>
-                  <View style={styles.benefitItem}>
-                    <Award size={16} color="#28A745" />
-                    <Text style={styles.benefitText}>Industry-leading support</Text>
-                  </View>
+                  {(enterpriseConfig?.learnMore?.benefits || [
+                    'Reduce documentation time by 70%',
+                    'Ensure compliance with medical standards',
+                    'Improve patient care quality',
+                    'Real-time team collaboration',
+                    'Secure cloud storage with encryption'
+                  ]).slice(0, 5).map((benefit: string, index: number) => (
+                    <View key={index} style={styles.benefitItem}>
+                      <CheckCircle size={16} color="#28A745" />
+                      <Text style={styles.benefitText}>{benefit}</Text>
+                    </View>
+                  ))}
                 </View>
               </View>
             </View>
