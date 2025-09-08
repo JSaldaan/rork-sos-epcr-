@@ -403,11 +403,17 @@ export default function AdminScreen() {
     
     // Convert signature paths to base64 images - check both signature and signaturePaths fields
     const nurseSignatureImage = (pcr.signatureInfo.nurseSignaturePaths || pcr.signatureInfo.nurseSignature) ? 
-      convertSvgPathToBase64(pcr.signatureInfo.nurseSignaturePaths || pcr.signatureInfo.nurseSignature) : null;
+      (pcr.signatureInfo.nurseSignature?.startsWith('data:image') ? 
+        pcr.signatureInfo.nurseSignature : 
+        convertSvgPathToBase64(pcr.signatureInfo.nurseSignaturePaths || pcr.signatureInfo.nurseSignature)) : null;
     const doctorSignatureImage = (pcr.signatureInfo.doctorSignaturePaths || pcr.signatureInfo.doctorSignature) ? 
-      convertSvgPathToBase64(pcr.signatureInfo.doctorSignaturePaths || pcr.signatureInfo.doctorSignature) : null;
+      (pcr.signatureInfo.doctorSignature?.startsWith('data:image') ? 
+        pcr.signatureInfo.doctorSignature : 
+        convertSvgPathToBase64(pcr.signatureInfo.doctorSignaturePaths || pcr.signatureInfo.doctorSignature)) : null;
     const othersSignatureImage = (pcr.signatureInfo.othersSignaturePaths || pcr.signatureInfo.othersSignature) ? 
-      convertSvgPathToBase64(pcr.signatureInfo.othersSignaturePaths || pcr.signatureInfo.othersSignature) : null;
+      (pcr.signatureInfo.othersSignature?.startsWith('data:image') ? 
+        pcr.signatureInfo.othersSignature : 
+        convertSvgPathToBase64(pcr.signatureInfo.othersSignaturePaths || pcr.signatureInfo.othersSignature)) : null;
     
     // Convert refusal signatures to base64 images - check both signature and signaturePaths fields
     const patientRefusalSignatureImage = (pcr.refusalInfo?.patientSignature || pcr.refusalInfo?.patientSignaturePaths) ? 
