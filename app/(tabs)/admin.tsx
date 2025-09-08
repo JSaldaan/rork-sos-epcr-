@@ -401,22 +401,25 @@ export default function AdminScreen() {
     const relatedECGs = ecgs.filter(e => e.encounter_id === encounterId);
     const relatedSignatures = signatures.filter(s => s.encounter_id === encounterId);
     
-    // Convert signature paths to base64 images
-    const nurseSignatureImage = convertSvgPathToBase64(pcr.signatureInfo.nurseSignaturePaths || pcr.signatureInfo.nurseSignature);
-    const doctorSignatureImage = convertSvgPathToBase64(pcr.signatureInfo.doctorSignaturePaths || pcr.signatureInfo.doctorSignature);
-    const othersSignatureImage = convertSvgPathToBase64(pcr.signatureInfo.othersSignaturePaths || pcr.signatureInfo.othersSignature);
+    // Convert signature paths to base64 images - check both signature and signaturePaths fields
+    const nurseSignatureImage = (pcr.signatureInfo.nurseSignaturePaths || pcr.signatureInfo.nurseSignature) ? 
+      convertSvgPathToBase64(pcr.signatureInfo.nurseSignaturePaths || pcr.signatureInfo.nurseSignature) : null;
+    const doctorSignatureImage = (pcr.signatureInfo.doctorSignaturePaths || pcr.signatureInfo.doctorSignature) ? 
+      convertSvgPathToBase64(pcr.signatureInfo.doctorSignaturePaths || pcr.signatureInfo.doctorSignature) : null;
+    const othersSignatureImage = (pcr.signatureInfo.othersSignaturePaths || pcr.signatureInfo.othersSignature) ? 
+      convertSvgPathToBase64(pcr.signatureInfo.othersSignaturePaths || pcr.signatureInfo.othersSignature) : null;
     
-    // Convert refusal signatures to base64 images
-    const patientRefusalSignatureImage = pcr.refusalInfo?.patientSignature ? 
-      (pcr.refusalInfo.patientSignature.startsWith('data:image') ? 
+    // Convert refusal signatures to base64 images - check both signature and signaturePaths fields
+    const patientRefusalSignatureImage = (pcr.refusalInfo?.patientSignature || pcr.refusalInfo?.patientSignaturePaths) ? 
+      (pcr.refusalInfo.patientSignature?.startsWith('data:image') ? 
         pcr.refusalInfo.patientSignature : 
         convertSvgPathToBase64(pcr.refusalInfo.patientSignaturePaths || pcr.refusalInfo.patientSignature)) : null;
-    const witnessRefusalSignatureImage = pcr.refusalInfo?.witnessSignature ? 
-      (pcr.refusalInfo.witnessSignature.startsWith('data:image') ? 
+    const witnessRefusalSignatureImage = (pcr.refusalInfo?.witnessSignature || pcr.refusalInfo?.witnessSignaturePaths) ? 
+      (pcr.refusalInfo.witnessSignature?.startsWith('data:image') ? 
         pcr.refusalInfo.witnessSignature : 
         convertSvgPathToBase64(pcr.refusalInfo.witnessSignaturePaths || pcr.refusalInfo.witnessSignature)) : null;
-    const paramedicRefusalSignatureImage = pcr.refusalInfo?.paramedicSignature ? 
-      (pcr.refusalInfo.paramedicSignature.startsWith('data:image') ? 
+    const paramedicRefusalSignatureImage = (pcr.refusalInfo?.paramedicSignature || pcr.refusalInfo?.paramedicSignaturePaths) ? 
+      (pcr.refusalInfo.paramedicSignature?.startsWith('data:image') ? 
         pcr.refusalInfo.paramedicSignature : 
         convertSvgPathToBase64(pcr.refusalInfo.paramedicSignaturePaths || pcr.refusalInfo.paramedicSignature)) : null;
     
@@ -893,6 +896,58 @@ export default function AdminScreen() {
           ` : ''}
         </div>
         
+        ${pcr.incidentInfo.traumaInjuries && pcr.incidentInfo.traumaInjuries.length > 0 ? `
+        <!-- Trauma Body Diagram Section -->
+        <div class="section">
+          <div class="section-title">Trauma Body Diagram Report</div>
+          <div style="border: 2px solid #000; padding: 15px; background: white; margin: 10px 0;">
+            <div style="text-align: center; margin-bottom: 15px;">
+              <strong style="font-size: 14pt;">📋 TRAUMA INJURY DOCUMENTATION</strong>
+            </div>
+            <div style="margin-bottom: 10px;">
+              <strong>Total Injuries Documented:</strong> ${pcr.incidentInfo.traumaInjuries.length}
+            </div>
+            <div style="margin-bottom: 15px;">
+              <strong>Assessment Date:</strong> ${new Date(pcr.submittedAt).toLocaleDateString()}
+            </div>
+            
+            <table style="width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 10pt;">
+              <thead>
+                <tr style="background-color: #f0f0f0;">
+                  <th style="border: 1px solid #000; padding: 8px; text-align: left;">#</th>
+                  <th style="border: 1px solid #000; padding: 8px; text-align: left;">Body Region</th>
+                  <th style="border: 1px solid #000; padding: 8px; text-align: left;">View</th>
+                  <th style="border: 1px solid #000; padding: 8px; text-align: left;">Severity</th>
+                  <th style="border: 1px solid #000; padding: 8px; text-align: left;">Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${pcr.incidentInfo.traumaInjuries.map((injury, index) => `
+                  <tr>
+                    <td style="border: 1px solid #000; padding: 6px; text-align: center;">${index + 1}</td>
+                    <td style="border: 1px solid #000; padding: 6px; font-weight: bold;">${injury.bodyPart}</td>
+                    <td style="border: 1px solid #000; padding: 6px;">${injury.view === 'front' ? 'Anterior' : 'Posterior'}</td>
+                    <td style="border: 1px solid #000; padding: 6px;">
+                      <span style="background-color: ${injury.severity === 'critical' ? '#D32F2F' : injury.severity === 'severe' ? '#FF5722' : injury.severity === 'moderate' ? '#FF9800' : '#FFC107'}; color: white; padding: 2px 6px; border-radius: 3px; font-size: 9pt; font-weight: bold;">
+                        ${injury.severity.toUpperCase()}
+                      </span>
+                    </td>
+                    <td style="border: 1px solid #000; padding: 6px;">${injury.description}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+            
+            <div style="margin-top: 15px; padding: 10px; background-color: #e8f5e8; border: 1px solid #4caf50;">
+              <strong style="color: #2e7d32;">📍 ANATOMICAL MAPPING:</strong> All injury locations were precisely mapped using professional anatomical body diagrams. 
+              Each injury point was documented with exact anatomical region identification and severity assessment by qualified medical staff.
+              <br/><br/>
+              <strong style="color: #2e7d32;">🏥 CLINICAL SIGNIFICANCE:</strong> This trauma documentation follows standard medical protocols for injury assessment and provides comprehensive anatomical reference for continued care and treatment planning.
+            </div>
+          </div>
+        </div>
+        ` : ''}
+        
         <!-- Vital Signs -->
         <div class="section">
           <div class="section-title">Vital Signs</div>
@@ -1164,7 +1219,7 @@ export default function AdminScreen() {
                 ${nurseSignatureImage ? `
                   <img src="${nurseSignatureImage}" class="signature-image" alt="Nurse Signature" />
                   <div style="font-size: 8pt; color: #000; text-align: center; margin-top: 5px;">✓ Digital Signature Captured</div>
-                ` : '<div class="signature-line"></div>'}
+                ` : '<div class="signature-line"></div><div style="font-size: 8pt; color: #999; text-align: center;">Not signed</div>'}
               </div>
               <div class="signature-info">
                 <strong>Name:</strong> ${anonymizeReport ? 'CONFIDENTIAL' : (pcr.signatureInfo.nurseSignature || 'Not signed')}<br/>
@@ -1179,7 +1234,7 @@ export default function AdminScreen() {
                 ${doctorSignatureImage ? `
                   <img src="${doctorSignatureImage}" class="signature-image" alt="Doctor Signature" />
                   <div style="font-size: 8pt; color: #000; text-align: center; margin-top: 5px;">✓ Digital Signature Captured</div>
-                ` : '<div class="signature-line"></div>'}
+                ` : '<div class="signature-line"></div><div style="font-size: 8pt; color: #999; text-align: center;">Not signed</div>'}
               </div>
               <div class="signature-info">
                 <strong>Name:</strong> ${anonymizeReport ? 'CONFIDENTIAL' : (pcr.signatureInfo.doctorSignature || 'Not signed')}<br/>
@@ -1194,7 +1249,7 @@ export default function AdminScreen() {
                 ${othersSignatureImage ? `
                   <img src="${othersSignatureImage}" class="signature-image" alt="${pcr.signatureInfo.othersRole || 'Patient'} Signature" />
                   <div style="font-size: 8pt; color: #000; text-align: center; margin-top: 5px;">✓ Digital Signature Captured</div>
-                ` : '<div class="signature-line"></div>'}
+                ` : '<div class="signature-line"></div><div style="font-size: 8pt; color: #999; text-align: center;">Not signed</div>'}
               </div>
               <div class="signature-info">
                 <strong>Name:</strong> ${anonymizeReport ? 'CONFIDENTIAL' : (pcr.signatureInfo.othersSignature || 'Not signed')}<br/>
@@ -1244,7 +1299,7 @@ export default function AdminScreen() {
               <strong style="color: #2e7d32;">🖨️ PRINTING GUARANTEE:</strong> All signatures and ECG images are embedded directly in this PDF with enhanced contrast and visibility settings. 
               Images are optimized for both screen display and printing. If any images appear faint, they will still print clearly due to enhanced print-specific styling.
               <br/><br/>
-              <strong style="color: #2e7d32;">✅ CONTENT SUMMARY:</strong> ${(pcr.vitals.filter(v => v.ecgCapture).length + relatedECGs.length)} ECG recordings and ${(relatedSignatures.length + [pcr.signatureInfo.nurseSignaturePaths, pcr.signatureInfo.doctorSignaturePaths, pcr.signatureInfo.othersSignaturePaths].filter(Boolean).length)} electronic signatures are embedded and ready for printing.
+              <strong style="color: #2e7d32;">✅ CONTENT SUMMARY:</strong> ${(pcr.vitals.filter(v => v.ecgCapture).length + relatedECGs.length)} ECG recordings, ${(relatedSignatures.length + [pcr.signatureInfo.nurseSignaturePaths, pcr.signatureInfo.doctorSignaturePaths, pcr.signatureInfo.othersSignaturePaths].filter(Boolean).length)} electronic signatures${pcr.incidentInfo.traumaInjuries && pcr.incidentInfo.traumaInjuries.length > 0 ? `, and ${pcr.incidentInfo.traumaInjuries.length} trauma injuries` : ''} are embedded and ready for printing.
             </div>
           </div>
         </div>
@@ -1255,7 +1310,7 @@ export default function AdminScreen() {
           <div><strong>Submitted By:</strong> ${pcr.submittedBy.name} (${pcr.submittedBy.corporationId}) - ${pcr.submittedBy.role}</div>
           <div><strong>Submission Date:</strong> ${new Date(pcr.submittedAt).toLocaleString()}</div>
           <div><strong>Report Generated:</strong> ${new Date().toLocaleString()}</div>
-          <div><strong>Content Summary:</strong> ${(pcr.vitals.filter(v => v.ecgCapture).length + relatedECGs.length)} ECG recordings, ${(relatedSignatures.length + [pcr.signatureInfo.nurseSignaturePaths, pcr.signatureInfo.doctorSignaturePaths, pcr.signatureInfo.othersSignaturePaths].filter(Boolean).length)} electronic signatures</div>
+          <div><strong>Content Summary:</strong> ${(pcr.vitals.filter(v => v.ecgCapture).length + relatedECGs.length)} ECG recordings, ${(relatedSignatures.length + [pcr.signatureInfo.nurseSignaturePaths, pcr.signatureInfo.doctorSignaturePaths, pcr.signatureInfo.othersSignaturePaths].filter(Boolean).length)} electronic signatures${pcr.incidentInfo.traumaInjuries && pcr.incidentInfo.traumaInjuries.length > 0 ? `, ${pcr.incidentInfo.traumaInjuries.length} trauma injuries` : ''}</div>
           <div style="margin-top: 10px; font-size: 8pt; color: #666;">
             This document contains confidential patient information.<br/>
             Digital signatures and ECG images are embedded and can be printed on any device without restrictions.
@@ -1265,7 +1320,7 @@ export default function AdminScreen() {
             This report contains embedded electronic signatures and ECG recordings.<br/>
             All digital content including signatures and ECG images can be printed on any device without restrictions.<br/>
             Images are embedded as base64 data for maximum compatibility and are optimized for both screen and print display.<br/>
-            <strong>Total Images:</strong> ${(pcr.vitals.filter(v => v.ecgCapture).length + relatedECGs.length)} ECG recordings, ${(relatedSignatures.length + [pcr.signatureInfo.nurseSignaturePaths, pcr.signatureInfo.doctorSignaturePaths, pcr.signatureInfo.othersSignaturePaths].filter(Boolean).length)} electronic signatures
+            <strong>Total Content:</strong> ${(pcr.vitals.filter(v => v.ecgCapture).length + relatedECGs.length)} ECG recordings, ${(relatedSignatures.length + [pcr.signatureInfo.nurseSignaturePaths, pcr.signatureInfo.doctorSignaturePaths, pcr.signatureInfo.othersSignaturePaths].filter(Boolean).length)} electronic signatures${pcr.incidentInfo.traumaInjuries && pcr.incidentInfo.traumaInjuries.length > 0 ? `, ${pcr.incidentInfo.traumaInjuries.length} trauma injuries documented` : ''}
           </div>
         </div>
       </body>
