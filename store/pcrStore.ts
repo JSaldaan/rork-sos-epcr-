@@ -27,6 +27,7 @@ export interface TraumaInjury {
   description: string;
   severity: 'minor' | 'moderate' | 'severe' | 'critical';
   bodyPart: string;
+  view: 'front' | 'back';
 }
 
 export interface IncidentInfo {
@@ -1372,17 +1373,20 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
       notes: `Pain Scale: ${vital.painScale}`,
     }));
     
-    // Store ECG captures
-    const ecgRecords: ECG[] = pcr.vitals
-      .filter(vital => vital.ecgCapture)
-      .map((vital, index) => ({
-        ecg_id: `ECG_${pcr.id}_${index}`,
-        encounter_id: encounterId,
-        captured_at: vital.ecgCaptureTimestamp || vital.timestamp,
-        rhythm_label: 'Captured during vitals',
-        image_ecg: vital.ecgCapture || '',
-        notes: `Captured with vital signs at ${vital.timestamp}`,
-      }));
+    // Consolidate all ECG captures into a single record
+    const allECGCaptures = pcr.vitals.filter(vital => vital.ecgCapture);
+    const ecgRecords: ECG[] = allECGCaptures.length > 0 ? [{
+      ecg_id: `ECG_${pcr.id}_CONSOLIDATED`,
+      encounter_id: encounterId,
+      captured_at: allECGCaptures[0].ecgCaptureTimestamp || allECGCaptures[0].timestamp,
+      rhythm_label: 'Consolidated ECG Report',
+      image_ecg: JSON.stringify(allECGCaptures.map(v => ({
+        timestamp: v.ecgCaptureTimestamp || v.timestamp,
+        image: v.ecgCapture,
+        vitalTimestamp: v.timestamp
+      }))),
+      notes: `Consolidated ${allECGCaptures.length} ECG capture(s) from vital signs`,
+    }] : [];
     
     // Store signatures
     const signatureRecords: Signature[] = [];
@@ -1437,6 +1441,21 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
       label: 'Transport Information',
       uploaded_at: pcr.submittedAt,
     });
+    
+    // Store trauma body diagram as attachment if present
+    if (pcr.incidentInfo.traumaInjuries && pcr.incidentInfo.traumaInjuries.length > 0) {
+      attachmentRecords.push({
+        attachment_id: `ATT_${pcr.id}_TRAUMA`,
+        encounter_id: encounterId,
+        file: JSON.stringify({
+          injuries: pcr.incidentInfo.traumaInjuries,
+          provisionalDiagnosis: pcr.incidentInfo.provisionalDiagnosis,
+          assessment: pcr.incidentInfo.assessment
+        }),
+        label: 'Trauma Body Diagram and Injury Details',
+        uploaded_at: pcr.submittedAt,
+      });
+    }
     
     // Store call time information as attachment
     attachmentRecords.push({
@@ -1569,28 +1588,43 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
     }
     report += `\n`;
     
-    // ECG Information
+    // ECG Information (Consolidated)
     report += `[ECG RECORDINGS]\n`;
-    if (ecgs.length > 0) {
-      ecgs.forEach((ecg, index) => {
-        report += `${index + 1}. Captured: ${ecg.captured_at}\n`;
-        report += `   Rhythm: ${ecg.rhythm_label}\n`;
-        report += `   Notes: ${ecg.notes}\n`;
-        report += `   Image Reference: ${ecg.image_ecg}\n`;
-      });
+    const consolidatedECG = ecgs.find(e => e.ecg_id.includes('CONSOLIDATED'));
+    if (consolidatedECG) {
+      try {
+        const ecgData = JSON.parse(consolidatedECG.image_ecg);
+        report += `Consolidated ECG Report - ${ecgData.length} capture(s)\n`;
+        report += `First Capture: ${consolidatedECG.captured_at}\n`;
+        report += `Notes: ${consolidatedECG.notes}\n`;
+        report += `All captures preserved in single file for printing\n`;
+      } catch {
+        report += `ECG Data Available - ${consolidatedECG.notes}\n`;
+      }
     } else {
       const ecgVitals = pcr.vitals.filter(v => v.ecgCapture);
       if (ecgVitals.length > 0) {
+        report += `${ecgVitals.length} ECG capture(s) from vital signs\n`;
         ecgVitals.forEach((vital, index) => {
-          report += `${index + 1}. Captured: ${vital.ecgCaptureTimestamp}\n`;
-          report += `   Associated with vitals at: ${vital.timestamp}\n`;
-          report += `   Reference: ${vital.ecgCapture}\n`;
+          report += `${index + 1}. Captured: ${vital.ecgCaptureTimestamp || vital.timestamp}\n`;
         });
       } else {
         report += `No ECG recordings captured\n`;
       }
     }
     report += `\n`;
+    
+    // Trauma Body Diagram Information
+    if (pcr.incidentInfo.traumaInjuries && pcr.incidentInfo.traumaInjuries.length > 0) {
+      report += `[TRAUMA BODY DIAGRAM]\n`;
+      report += `Total Injuries Marked: ${pcr.incidentInfo.traumaInjuries.length}\n`;
+      pcr.incidentInfo.traumaInjuries.forEach((injury, index) => {
+        report += `${index + 1}. ${injury.bodyPart} (${injury.view === 'front' ? 'Anterior' : 'Posterior'})\n`;
+        report += `   Severity: ${injury.severity.toUpperCase()}\n`;
+        report += `   Description: ${injury.description}\n`;
+      });
+      report += `\n`;
+    }
     
     // Transport Information
     report += `[TRANSPORT INFORMATION]\n`;
