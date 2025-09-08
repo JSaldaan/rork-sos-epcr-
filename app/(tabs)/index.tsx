@@ -194,9 +194,13 @@ export default function NewPCRScreen() {
         "Burn Injury"
       ];
       
+      console.log('Selected diagnosis:', diagnosis);
+      console.log('Is trauma diagnosis:', traumaDiagnoses.includes(diagnosis));
+      
       if (traumaDiagnoses.includes(diagnosis)) {
         // Show trauma diagram after a short delay
         setTimeout(() => {
+          console.log('Showing trauma diagram prompt');
           Alert.alert(
             "Document Trauma Injuries",
             "Would you like to mark injury locations on a body diagram?",
@@ -204,7 +208,10 @@ export default function NewPCRScreen() {
               { text: "Not Now", style: "cancel" },
               { 
                 text: "Yes", 
-                onPress: () => setShowTraumaDiagram(true)
+                onPress: () => {
+                  console.log('User selected Yes, opening trauma diagram');
+                  setShowTraumaDiagram(true);
+                }
               }
             ]
           );
@@ -607,6 +614,21 @@ export default function NewPCRScreen() {
             </View>
           </View>
         )}
+        
+        {/* Manual Trauma Diagram Access */}
+        <View style={styles.traumaAccessSection}>
+          <Text style={styles.traumaAccessLabel}>Injury Documentation</Text>
+          <TouchableOpacity 
+            style={styles.traumaAccessButton}
+            onPress={() => setShowTraumaDiagram(true)}
+          >
+            <Activity size={16} color="#DC3545" />
+            <Text style={styles.traumaAccessButtonText}>Open Body Diagram</Text>
+          </TouchableOpacity>
+          <Text style={styles.traumaAccessDescription}>
+            Use the body diagram to mark and document injury locations for any patient
+          </Text>
+        </View>
         
         <Text style={styles.label}>Additional Notes</Text>
         <TextInput
@@ -1318,5 +1340,40 @@ const styles = StyleSheet.create({
     color: '#999',
     fontStyle: 'italic',
     marginTop: 4,
+  },
+  traumaAccessSection: {
+    backgroundColor: '#F0F8FF',
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#B3D9FF',
+  },
+  traumaAccessLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#0066CC',
+    marginBottom: 8,
+  },
+  traumaAccessButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#DC3545',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+    marginBottom: 8,
+  },
+  traumaAccessButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '500',
+    marginLeft: 6,
+  },
+  traumaAccessDescription: {
+    fontSize: 12,
+    color: '#666',
+    lineHeight: 16,
   },
 });
