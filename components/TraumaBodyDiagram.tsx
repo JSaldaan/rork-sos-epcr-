@@ -42,48 +42,96 @@ const severityColors = {
   critical: '#D32F2F',
 };
 
-// Anatomical body regions with precise coordinates
+// Anatomically precise body regions with medical terminology
 const bodyRegions = [
-  // Head and Neck
-  { name: 'Head', x: 0.5, y: 0.08, width: 0.12, height: 0.09 },
-  { name: 'Face', x: 0.5, y: 0.075, width: 0.1, height: 0.06 },
-  { name: 'Neck', x: 0.5, y: 0.135, width: 0.08, height: 0.04 },
+  // CRANIUM AND FACIAL REGION
+  { name: 'Cranium (Skull)', x: 0.5, y: 0.065, width: 0.25, height: 0.08 },
+  { name: 'Frontal Region (Forehead)', x: 0.5, y: 0.055, width: 0.2, height: 0.04 },
+  { name: 'Orbital Region (Eyes)', x: 0.45, y: 0.08, width: 0.04, height: 0.02 },
+  { name: 'Orbital Region (Eyes)', x: 0.55, y: 0.08, width: 0.04, height: 0.02 },
+  { name: 'Nasal Region (Nose)', x: 0.5, y: 0.095, width: 0.03, height: 0.025 },
+  { name: 'Oral Region (Mouth)', x: 0.5, y: 0.11, width: 0.06, height: 0.02 },
+  { name: 'Mandibular Region (Jaw)', x: 0.5, y: 0.12, width: 0.12, height: 0.03 },
+  { name: 'Temporal Region', x: 0.375, y: 0.075, width: 0.05, height: 0.06 },
+  { name: 'Temporal Region', x: 0.625, y: 0.075, width: 0.05, height: 0.06 },
   
-  // Upper Body
-  { name: 'Right Shoulder', x: 0.37, y: 0.19, width: 0.1, height: 0.06 },
-  { name: 'Left Shoulder', x: 0.63, y: 0.19, width: 0.1, height: 0.06 },
-  { name: 'Right Clavicle', x: 0.42, y: 0.175, width: 0.08, height: 0.03 },
-  { name: 'Left Clavicle', x: 0.58, y: 0.175, width: 0.08, height: 0.03 },
-  { name: 'Chest (Thorax)', x: 0.5, y: 0.25, width: 0.22, height: 0.12 },
-  { name: 'Right Upper Arm', x: 0.31, y: 0.28, width: 0.06, height: 0.12 },
-  { name: 'Left Upper Arm', x: 0.69, y: 0.28, width: 0.06, height: 0.12 },
-  { name: 'Right Elbow', x: 0.31, y: 0.38, width: 0.05, height: 0.04 },
-  { name: 'Left Elbow', x: 0.69, y: 0.38, width: 0.05, height: 0.04 },
-  { name: 'Right Forearm', x: 0.29, y: 0.44, width: 0.05, height: 0.1 },
-  { name: 'Left Forearm', x: 0.71, y: 0.44, width: 0.05, height: 0.1 },
-  { name: 'Right Wrist', x: 0.28, y: 0.52, width: 0.04, height: 0.03 },
-  { name: 'Left Wrist', x: 0.72, y: 0.52, width: 0.04, height: 0.03 },
-  { name: 'Right Hand', x: 0.27, y: 0.56, width: 0.04, height: 0.05 },
-  { name: 'Left Hand', x: 0.73, y: 0.56, width: 0.04, height: 0.05 },
+  // CERVICAL REGION
+  { name: 'Cervical Spine (C1-C7)', x: 0.5, y: 0.155, width: 0.06, height: 0.05 },
+  { name: 'Anterior Neck', x: 0.5, y: 0.155, width: 0.08, height: 0.05 },
+  { name: 'Right Sternocleidomastoid', x: 0.44, y: 0.16, width: 0.04, height: 0.04 },
+  { name: 'Left Sternocleidomastoid', x: 0.56, y: 0.16, width: 0.04, height: 0.04 },
   
-  // Core
-  { name: 'Upper Abdomen', x: 0.5, y: 0.36, width: 0.2, height: 0.08 },
-  { name: 'Lower Abdomen', x: 0.5, y: 0.43, width: 0.19, height: 0.08 },
-  { name: 'Pelvis', x: 0.5, y: 0.5, width: 0.2, height: 0.06 },
-  { name: 'Right Hip', x: 0.43, y: 0.53, width: 0.08, height: 0.06 },
-  { name: 'Left Hip', x: 0.57, y: 0.53, width: 0.08, height: 0.06 },
+  // SHOULDER GIRDLE
+  { name: 'Right Clavicle', x: 0.41, y: 0.18, width: 0.11, height: 0.02 },
+  { name: 'Left Clavicle', x: 0.59, y: 0.18, width: 0.11, height: 0.02 },
+  { name: 'Right Acromion', x: 0.36, y: 0.185, width: 0.04, height: 0.04 },
+  { name: 'Left Acromion', x: 0.64, y: 0.185, width: 0.04, height: 0.04 },
+  { name: 'Right Scapula', x: 0.375, y: 0.24, width: 0.06, height: 0.1 },
+  { name: 'Left Scapula', x: 0.625, y: 0.24, width: 0.06, height: 0.1 },
   
-  // Lower Body
-  { name: 'Right Thigh', x: 0.43, y: 0.62, width: 0.08, height: 0.14 },
-  { name: 'Left Thigh', x: 0.57, y: 0.62, width: 0.08, height: 0.14 },
-  { name: 'Right Knee', x: 0.43, y: 0.74, width: 0.06, height: 0.04 },
-  { name: 'Left Knee', x: 0.57, y: 0.74, width: 0.06, height: 0.04 },
-  { name: 'Right Shin', x: 0.43, y: 0.82, width: 0.06, height: 0.12 },
-  { name: 'Left Shin', x: 0.57, y: 0.82, width: 0.06, height: 0.12 },
-  { name: 'Right Ankle', x: 0.43, y: 0.92, width: 0.05, height: 0.03 },
-  { name: 'Left Ankle', x: 0.57, y: 0.92, width: 0.05, height: 0.03 },
-  { name: 'Right Foot', x: 0.43, y: 0.96, width: 0.06, height: 0.04 },
-  { name: 'Left Foot', x: 0.57, y: 0.96, width: 0.06, height: 0.04 },
+  // THORACIC REGION
+  { name: 'Sternum', x: 0.5, y: 0.26, width: 0.02, height: 0.11 },
+  { name: 'Right Thorax (Chest)', x: 0.44, y: 0.26, width: 0.12, height: 0.15 },
+  { name: 'Left Thorax (Chest)', x: 0.56, y: 0.26, width: 0.12, height: 0.15 },
+  { name: 'Right Pectoral Region', x: 0.43, y: 0.22, width: 0.08, height: 0.06 },
+  { name: 'Left Pectoral Region', x: 0.57, y: 0.22, width: 0.08, height: 0.06 },
+  { name: 'Xiphoid Process', x: 0.5, y: 0.318, width: 0.015, height: 0.015 },
+  
+  // ABDOMINAL REGION
+  { name: 'Epigastric Region', x: 0.5, y: 0.39, width: 0.12, height: 0.06 },
+  { name: 'Right Hypochondriac', x: 0.41, y: 0.39, width: 0.08, height: 0.06 },
+  { name: 'Left Hypochondriac', x: 0.59, y: 0.39, width: 0.08, height: 0.06 },
+  { name: 'Umbilical Region', x: 0.5, y: 0.425, width: 0.12, height: 0.06 },
+  { name: 'Right Lumbar Region', x: 0.41, y: 0.425, width: 0.08, height: 0.06 },
+  { name: 'Left Lumbar Region', x: 0.59, y: 0.425, width: 0.08, height: 0.06 },
+  { name: 'Hypogastric Region', x: 0.5, y: 0.46, width: 0.12, height: 0.06 },
+  { name: 'Right Iliac Fossa', x: 0.41, y: 0.46, width: 0.08, height: 0.06 },
+  { name: 'Left Iliac Fossa', x: 0.59, y: 0.46, width: 0.08, height: 0.06 },
+  
+  // PELVIC REGION
+  { name: 'Pelvis', x: 0.5, y: 0.51, width: 0.17, height: 0.08 },
+  { name: 'Right Iliac Crest', x: 0.425, y: 0.5, width: 0.06, height: 0.03 },
+  { name: 'Left Iliac Crest', x: 0.575, y: 0.5, width: 0.06, height: 0.03 },
+  { name: 'Right Hip Joint', x: 0.44, y: 0.54, width: 0.04, height: 0.04 },
+  { name: 'Left Hip Joint', x: 0.56, y: 0.54, width: 0.04, height: 0.04 },
+  
+  // UPPER EXTREMITIES
+  { name: 'Right Deltoid', x: 0.36, y: 0.21, width: 0.08, height: 0.06 },
+  { name: 'Left Deltoid', x: 0.64, y: 0.21, width: 0.08, height: 0.06 },
+  { name: 'Right Humerus', x: 0.325, y: 0.275, width: 0.04, height: 0.09 },
+  { name: 'Left Humerus', x: 0.675, y: 0.275, width: 0.04, height: 0.09 },
+  { name: 'Right Bicep', x: 0.325, y: 0.3, width: 0.03, height: 0.075 },
+  { name: 'Left Bicep', x: 0.675, y: 0.3, width: 0.03, height: 0.075 },
+  { name: 'Right Elbow Joint', x: 0.29, y: 0.388, width: 0.05, height: 0.05 },
+  { name: 'Left Elbow Joint', x: 0.71, y: 0.388, width: 0.05, height: 0.05 },
+  { name: 'Right Radius', x: 0.275, y: 0.475, width: 0.025, height: 0.1 },
+  { name: 'Right Ulna', x: 0.31, y: 0.475, width: 0.025, height: 0.1 },
+  { name: 'Left Radius', x: 0.69, y: 0.475, width: 0.025, height: 0.1 },
+  { name: 'Left Ulna', x: 0.725, y: 0.475, width: 0.025, height: 0.1 },
+  { name: 'Right Wrist', x: 0.295, y: 0.595, width: 0.04, height: 0.015 },
+  { name: 'Left Wrist', x: 0.705, y: 0.595, width: 0.04, height: 0.015 },
+  { name: 'Right Hand', x: 0.295, y: 0.635, width: 0.04, height: 0.065 },
+  { name: 'Left Hand', x: 0.705, y: 0.635, width: 0.04, height: 0.065 },
+  
+  // LOWER EXTREMITIES
+  { name: 'Right Femur', x: 0.425, y: 0.625, width: 0.05, height: 0.125 },
+  { name: 'Left Femur', x: 0.575, y: 0.625, width: 0.05, height: 0.125 },
+  { name: 'Right Quadriceps', x: 0.425, y: 0.625, width: 0.06, height: 0.11 },
+  { name: 'Left Quadriceps', x: 0.575, y: 0.625, width: 0.06, height: 0.11 },
+  { name: 'Right Patella (Kneecap)', x: 0.41, y: 0.725, width: 0.03, height: 0.04 },
+  { name: 'Left Patella (Kneecap)', x: 0.59, y: 0.725, width: 0.03, height: 0.04 },
+  { name: 'Right Knee Joint', x: 0.41, y: 0.725, width: 0.06, height: 0.06 },
+  { name: 'Left Knee Joint', x: 0.59, y: 0.725, width: 0.06, height: 0.06 },
+  { name: 'Right Tibia', x: 0.41, y: 0.8, width: 0.03, height: 0.1 },
+  { name: 'Right Fibula', x: 0.43, y: 0.8, width: 0.02, height: 0.1 },
+  { name: 'Left Tibia', x: 0.59, y: 0.8, width: 0.03, height: 0.1 },
+  { name: 'Left Fibula', x: 0.57, y: 0.8, width: 0.02, height: 0.1 },
+  { name: 'Right Gastrocnemius (Calf)', x: 0.41, y: 0.8, width: 0.04, height: 0.075 },
+  { name: 'Left Gastrocnemius (Calf)', x: 0.59, y: 0.8, width: 0.04, height: 0.075 },
+  { name: 'Right Ankle Joint', x: 0.41, y: 0.888, width: 0.04, height: 0.04 },
+  { name: 'Left Ankle Joint', x: 0.59, y: 0.888, width: 0.04, height: 0.04 },
+  { name: 'Right Foot', x: 0.41, y: 0.94, width: 0.08, height: 0.065 },
+  { name: 'Left Foot', x: 0.59, y: 0.94, width: 0.08, height: 0.065 },
 ];
 
 export default function TraumaBodyDiagram({
@@ -235,7 +283,7 @@ export default function TraumaBodyDiagram({
             onPress={handleBodyPress}
             activeOpacity={1}
           >
-            {/* Professional Medical Body Diagram */}
+            {/* Anatomically Accurate Medical Body Diagram */}
             <Svg
               width={BODY_WIDTH}
               height={BODY_HEIGHT}
@@ -243,84 +291,245 @@ export default function TraumaBodyDiagram({
               style={styles.svgBody}
             >
               <G>
-                {/* Head */}
-                <Ellipse cx="100" cy="30" rx="22" ry="26" fill="#FFF5F0" stroke="#4A5568" strokeWidth="1.5" />
+                {/* CRANIUM AND HEAD */}
+                {/* Skull outline */}
+                <Path d="M 78 15 Q 100 8 122 15 Q 128 20 128 30 Q 128 40 125 45 Q 120 50 115 52 L 85 52 Q 80 50 75 45 Q 72 40 72 30 Q 72 20 78 15 Z" 
+                      fill="#FFF8F0" stroke="#2D3748" strokeWidth="1.2" />
                 
-                {/* Facial Features */}
-                <Circle cx="92" cy="26" r="2" fill="#718096" />
-                <Circle cx="108" cy="26" r="2" fill="#718096" />
-                <Path d="M 100 30 L 100 35" stroke="#718096" strokeWidth="1" />
-                <Path d="M 94 38 Q 100 40 106 38" stroke="#718096" strokeWidth="1" fill="none" />
+                {/* Temporal bones */}
+                <Path d="M 75 25 Q 70 30 70 35 Q 70 40 75 42" fill="none" stroke="#4A5568" strokeWidth="0.8" />
+                <Path d="M 125 25 Q 130 30 130 35 Q 130 40 125 42" fill="none" stroke="#4A5568" strokeWidth="0.8" />
                 
-                {/* Ears */}
-                <Ellipse cx="78" cy="30" rx="4" ry="8" fill="#FFF5F0" stroke="#4A5568" strokeWidth="1" />
-                <Ellipse cx="122" cy="30" rx="4" ry="8" fill="#FFF5F0" stroke="#4A5568" strokeWidth="1" />
+                {/* Facial bones structure */}
+                <Path d="M 85 35 L 85 45 Q 85 48 88 48 L 112 48 Q 115 48 115 45 L 115 35" 
+                      fill="#FFF8F0" stroke="#4A5568" strokeWidth="1" />
                 
-                {/* Neck */}
-                <Rect x="92" y="52" width="16" height="18" fill="#FFF5F0" stroke="#4A5568" strokeWidth="1.5" rx="2" />
+                {/* Mandible (jaw) */}
+                <Path d="M 88 48 Q 100 52 112 48" fill="none" stroke="#2D3748" strokeWidth="1.2" />
                 
-                {/* Shoulders and Clavicles */}
-                <Path d="M 70 70 Q 85 68 92 70" fill="none" stroke="#4A5568" strokeWidth="1.5" />
-                <Path d="M 108 70 Q 115 68 130 70" fill="none" stroke="#4A5568" strokeWidth="1.5" />
-                <Circle cx="70" cy="72" r="8" fill="#FFF5F0" stroke="#4A5568" strokeWidth="1.5" />
-                <Circle cx="130" cy="72" r="8" fill="#FFF5F0" stroke="#4A5568" strokeWidth="1.5" />
+                {/* Eye sockets (orbital cavities) */}
+                <Ellipse cx="90" cy="32" rx="6" ry="4" fill="none" stroke="#718096" strokeWidth="0.8" />
+                <Ellipse cx="110" cy="32" rx="6" ry="4" fill="none" stroke="#718096" strokeWidth="0.8" />
                 
-                {/* Torso - Chest */}
-                <Path d="M 75 75 L 75 140 Q 75 150 80 155 L 85 160 L 85 165 Q 85 170 90 170 L 110 170 Q 115 170 115 165 L 115 160 L 120 155 Q 125 150 125 140 L 125 75"
-                      fill="#FFF5F0" stroke="#4A5568" strokeWidth="1.5" />
+                {/* Nasal cavity */}
+                <Path d="M 98 35 L 98 42 M 102 35 L 102 42 M 96 40 L 104 40" stroke="#718096" strokeWidth="0.6" />
                 
-                {/* Chest Details - Ribs indication */}
-                <Path d="M 80 85 Q 100 82 120 85" stroke="#E2E8F0" strokeWidth="0.5" fill="none" />
-                <Path d="M 80 95 Q 100 92 120 95" stroke="#E2E8F0" strokeWidth="0.5" fill="none" />
-                <Path d="M 80 105 Q 100 102 120 105" stroke="#E2E8F0" strokeWidth="0.5" fill="none" />
+                {/* CERVICAL SPINE AND NECK */}
+                <Rect x="94" y="52" width="12" height="20" fill="#FFF8F0" stroke="#2D3748" strokeWidth="1.2" rx="2" />
                 
-                {/* Abdomen muscles indication */}
-                <Line x1="100" y1="120" x2="100" y2="160" stroke="#E2E8F0" strokeWidth="0.5" />
-                <Path d="M 85 125 L 115 125" stroke="#E2E8F0" strokeWidth="0.5" />
-                <Path d="M 85 140 L 115 140" stroke="#E2E8F0" strokeWidth="0.5" />
+                {/* Cervical vertebrae indication */}
+                <Line x1="100" y1="55" x2="100" y2="70" stroke="#E2E8F0" strokeWidth="0.6" />
+                <Circle cx="100" cy="58" r="1" fill="#E2E8F0" />
+                <Circle cx="100" cy="63" r="1" fill="#E2E8F0" />
+                <Circle cx="100" cy="68" r="1" fill="#E2E8F0" />
                 
-                {/* Arms */}
-                {/* Right Arm */}
-                <Path d="M 70 78 L 65 100 L 62 130 L 60 155" fill="none" stroke="#4A5568" strokeWidth="1.5" />
-                <Path d="M 60 155 L 58 180 L 56 200 L 55 220" fill="none" stroke="#4A5568" strokeWidth="1.5" />
-                <Circle cx="60" cy="155" r="5" fill="#FFF5F0" stroke="#4A5568" strokeWidth="1.5" />
-                <Ellipse cx="55" cy="225" rx="8" ry="12" fill="#FFF5F0" stroke="#4A5568" strokeWidth="1.5" />
+                {/* Sternocleidomastoid muscles */}
+                <Path d="M 94 60 Q 88 65 85 72" fill="none" stroke="#CBD5E0" strokeWidth="1" />
+                <Path d="M 106 60 Q 112 65 115 72" fill="none" stroke="#CBD5E0" strokeWidth="1" />
                 
-                {/* Left Arm */}
-                <Path d="M 130 78 L 135 100 L 138 130 L 140 155" fill="none" stroke="#4A5568" strokeWidth="1.5" />
-                <Path d="M 140 155 L 142 180 L 144 200 L 145 220" fill="none" stroke="#4A5568" strokeWidth="1.5" />
-                <Circle cx="140" cy="155" r="5" fill="#FFF5F0" stroke="#4A5568" strokeWidth="1.5" />
-                <Ellipse cx="145" cy="225" rx="8" ry="12" fill="#FFF5F0" stroke="#4A5568" strokeWidth="1.5" />
+                {/* SHOULDER GIRDLE */}
+                {/* Clavicles (collar bones) */}
+                <Path d="M 72 72 Q 85 68 94 70" fill="none" stroke="#2D3748" strokeWidth="1.5" />
+                <Path d="M 106 70 Q 115 68 128 72" fill="none" stroke="#2D3748" strokeWidth="1.5" />
                 
-                {/* Pelvis */}
-                <Path d="M 85 165 Q 85 175 90 180 L 95 185 Q 100 188 100 195"
-                      fill="none" stroke="#4A5568" strokeWidth="1.5" />
-                <Path d="M 115 165 Q 115 175 110 180 L 105 185 Q 100 188 100 195"
-                      fill="none" stroke="#4A5568" strokeWidth="1.5" />
+                {/* Acromion processes */}
+                <Circle cx="72" cy="74" r="4" fill="#FFF8F0" stroke="#2D3748" strokeWidth="1.2" />
+                <Circle cx="128" cy="74" r="4" fill="#FFF8F0" stroke="#2D3748" strokeWidth="1.2" />
                 
-                {/* Legs */}
-                {/* Right Leg */}
-                <Path d="M 90 180 L 88 220 L 86 260 L 85 290" fill="none" stroke="#4A5568" strokeWidth="1.5" />
-                <Circle cx="85" cy="290" r="6" fill="#FFF5F0" stroke="#4A5568" strokeWidth="1.5" />
-                <Path d="M 85 296 L 84 330 L 83 360" fill="none" stroke="#4A5568" strokeWidth="1.5" />
-                <Ellipse cx="83" cy="365" rx="5" ry="3" fill="#FFF5F0" stroke="#4A5568" strokeWidth="1.5" />
-                <Path d="M 78 365 L 78 375 L 88 375 L 88 365" fill="#FFF5F0" stroke="#4A5568" strokeWidth="1.5" />
+                {/* Scapulae (shoulder blades) outline */}
+                <Path d="M 75 75 L 82 85 L 82 105 L 75 115 L 70 110 L 70 80 Z" 
+                      fill="none" stroke="#CBD5E0" strokeWidth="0.8" />
+                <Path d="M 125 75 L 118 85 L 118 105 L 125 115 L 130 110 L 130 80 Z" 
+                      fill="none" stroke="#CBD5E0" strokeWidth="0.8" />
                 
-                {/* Left Leg */}
-                <Path d="M 110 180 L 112 220 L 114 260 L 115 290" fill="none" stroke="#4A5568" strokeWidth="1.5" />
-                <Circle cx="115" cy="290" r="6" fill="#FFF5F0" stroke="#4A5568" strokeWidth="1.5" />
-                <Path d="M 115 296 L 116 330 L 117 360" fill="none" stroke="#4A5568" strokeWidth="1.5" />
-                <Ellipse cx="117" cy="365" rx="5" ry="3" fill="#FFF5F0" stroke="#4A5568" strokeWidth="1.5" />
-                <Path d="M 112 365 L 112 375 L 122 375 L 122 365" fill="#FFF5F0" stroke="#4A5568" strokeWidth="1.5" />
+                {/* THORACIC CAVITY */}
+                {/* Ribcage outline */}
+                <Path d="M 78 78 Q 75 85 75 95 L 75 125 Q 75 135 80 140 L 85 145 Q 90 148 95 150 L 105 150 Q 110 148 115 145 L 120 140 Q 125 135 125 125 L 125 95 Q 125 85 122 78"
+                      fill="#FFF8F0" stroke="#2D3748" strokeWidth="1.5" />
                 
-                {/* Muscle groups for reference */}
+                {/* Individual ribs */}
+                <Path d="M 80 85 Q 100 82 120 85" stroke="#CBD5E0" strokeWidth="0.8" fill="none" />
+                <Path d="M 79 92 Q 100 89 121 92" stroke="#CBD5E0" strokeWidth="0.8" fill="none" />
+                <Path d="M 78 99 Q 100 96 122 99" stroke="#CBD5E0" strokeWidth="0.8" fill="none" />
+                <Path d="M 77 106 Q 100 103 123 106" stroke="#CBD5E0" strokeWidth="0.8" fill="none" />
+                <Path d="M 78 113 Q 100 110 122 113" stroke="#CBD5E0" strokeWidth="0.8" fill="none" />
+                <Path d="M 79 120 Q 100 117 121 120" stroke="#CBD5E0" strokeWidth="0.8" fill="none" />
+                
+                {/* Sternum */}
+                <Rect x="98" y="82" width="4" height="45" fill="none" stroke="#4A5568" strokeWidth="1" rx="1" />
+                
+                {/* Heart outline */}
+                <Path d="M 92 95 Q 88 92 88 98 Q 88 104 92 108 Q 96 112 100 115 Q 104 112 108 108 Q 112 104 112 98 Q 112 92 108 95 Q 104 92 100 95 Q 96 92 92 95 Z" 
+                      fill="none" stroke="#E53E3E" strokeWidth="0.8" strokeDasharray="2,1" />
+                
+                {/* Lungs outline */}
+                <Ellipse cx="88" cy="105" rx="12" ry="18" fill="none" stroke="#3182CE" strokeWidth="0.8" strokeDasharray="2,1" />
+                <Ellipse cx="112" cy="105" rx="12" ry="18" fill="none" stroke="#3182CE" strokeWidth="0.8" strokeDasharray="2,1" />
+                
+                {/* ABDOMINAL CAVITY */}
+                <Path d="M 85 145 Q 80 150 80 160 L 80 180 Q 80 190 85 195 L 90 200 Q 95 202 100 202 Q 105 202 110 200 L 115 195 Q 120 190 120 180 L 120 160 Q 120 150 115 145"
+                      fill="#FFF8F0" stroke="#2D3748" strokeWidth="1.5" />
+                
+                {/* Rectus abdominis (six-pack) */}
+                <Line x1="100" y1="150" x2="100" y2="195" stroke="#CBD5E0" strokeWidth="0.8" />
+                <Path d="M 88 158 L 112 158" stroke="#CBD5E0" strokeWidth="0.6" />
+                <Path d="M 88 168 L 112 168" stroke="#CBD5E0" strokeWidth="0.6" />
+                <Path d="M 88 178 L 112 178" stroke="#CBD5E0" strokeWidth="0.6" />
+                <Path d="M 88 188 L 112 188" stroke="#CBD5E0" strokeWidth="0.6" />
+                
+                {/* Liver outline */}
+                <Path d="M 102 152 Q 118 150 118 165 Q 118 175 110 178 Q 102 180 102 170 Z" 
+                      fill="none" stroke="#D69E2E" strokeWidth="0.8" strokeDasharray="2,1" />
+                
+                {/* Stomach outline */}
+                <Path d="M 85 155 Q 82 160 85 168 Q 88 175 95 175 Q 98 172 98 165 Q 98 158 95 155 Q 90 152 85 155 Z" 
+                      fill="none" stroke="#38A169" strokeWidth="0.8" strokeDasharray="2,1" />
+                
+                {/* PELVIC GIRDLE */}
+                <Path d="M 85 195 Q 82 205 85 215 L 90 220 Q 95 222 100 222 Q 105 222 110 220 L 115 215 Q 118 205 115 195"
+                      fill="#FFF8F0" stroke="#2D3748" strokeWidth="1.5" />
+                
+                {/* Iliac crests */}
+                <Path d="M 85 200 Q 80 205 80 210" fill="none" stroke="#4A5568" strokeWidth="1" />
+                <Path d="M 115 200 Q 120 205 120 210" fill="none" stroke="#4A5568" strokeWidth="1" />
+                
+                {/* Hip joints */}
+                <Circle cx="88" cy="215" r="4" fill="none" stroke="#4A5568" strokeWidth="1" />
+                <Circle cx="112" cy="215" r="4" fill="none" stroke="#4A5568" strokeWidth="1" />
+                
+                {/* UPPER EXTREMITIES */}
+                {/* Right arm */}
+                <Path d="M 72 78 Q 68 85 65 95 L 62 125 Q 60 140 58 155" fill="none" stroke="#2D3748" strokeWidth="1.8" />
+                
+                {/* Right humerus */}
+                <Ellipse cx="65" cy="110" rx="4" ry="18" fill="none" stroke="#CBD5E0" strokeWidth="0.8" />
+                
+                {/* Right elbow joint */}
+                <Circle cx="58" cy="155" r="5" fill="#FFF8F0" stroke="#2D3748" strokeWidth="1.2" />
+                
+                {/* Right forearm (radius and ulna) */}
+                <Path d="M 58 160 Q 56 175 54 190 L 52 210 Q 50 225 48 240" fill="none" stroke="#2D3748" strokeWidth="1.5" />
+                <Path d="M 58 160 Q 60 175 62 190 L 64 210 Q 66 225 68 240" fill="none" stroke="#CBD5E0" strokeWidth="0.8" />
+                
+                {/* Right wrist */}
+                <Rect x="55" y="238" width="8" height="6" fill="#FFF8F0" stroke="#2D3748" strokeWidth="1" rx="2" />
+                
+                {/* Right hand */}
+                <Path d="M 55 244 L 55 260 Q 55 265 58 265 L 60 265 Q 63 265 63 260 L 63 244"
+                      fill="#FFF8F0" stroke="#2D3748" strokeWidth="1.2" />
+                
+                {/* Right fingers */}
+                <Path d="M 56 265 L 56 272 M 58 265 L 58 274 M 60 265 L 60 274 M 62 265 L 62 272" 
+                      stroke="#2D3748" strokeWidth="0.8" />
+                
+                {/* Left arm */}
+                <Path d="M 128 78 Q 132 85 135 95 L 138 125 Q 140 140 142 155" fill="none" stroke="#2D3748" strokeWidth="1.8" />
+                
+                {/* Left humerus */}
+                <Ellipse cx="135" cy="110" rx="4" ry="18" fill="none" stroke="#CBD5E0" strokeWidth="0.8" />
+                
+                {/* Left elbow joint */}
+                <Circle cx="142" cy="155" r="5" fill="#FFF8F0" stroke="#2D3748" strokeWidth="1.2" />
+                
+                {/* Left forearm (radius and ulna) */}
+                <Path d="M 142 160 Q 144 175 146 190 L 148 210 Q 150 225 152 240" fill="none" stroke="#2D3748" strokeWidth="1.5" />
+                <Path d="M 142 160 Q 140 175 138 190 L 136 210 Q 134 225 132 240" fill="none" stroke="#CBD5E0" strokeWidth="0.8" />
+                
+                {/* Left wrist */}
+                <Rect x="137" y="238" width="8" height="6" fill="#FFF8F0" stroke="#2D3748" strokeWidth="1" rx="2" />
+                
+                {/* Left hand */}
+                <Path d="M 145 244 L 145 260 Q 145 265 142 265 L 140 265 Q 137 265 137 260 L 137 244"
+                      fill="#FFF8F0" stroke="#2D3748" strokeWidth="1.2" />
+                
+                {/* Left fingers */}
+                <Path d="M 144 265 L 144 272 M 142 265 L 142 274 M 140 265 L 140 274 M 138 265 L 138 272" 
+                      stroke="#2D3748" strokeWidth="0.8" />
+                
+                {/* LOWER EXTREMITIES */}
+                {/* Right leg */}
+                <Path d="M 88 220 Q 86 240 84 260 L 82 290" fill="none" stroke="#2D3748" strokeWidth="1.8" />
+                
+                {/* Right femur */}
+                <Ellipse cx="85" cy="250" rx="5" ry="25" fill="none" stroke="#CBD5E0" strokeWidth="0.8" />
+                
+                {/* Right knee joint */}
+                <Circle cx="82" cy="290" r="6" fill="#FFF8F0" stroke="#2D3748" strokeWidth="1.2" />
+                
+                {/* Right tibia and fibula */}
+                <Path d="M 82 296 Q 80 315 78 335 L 76 355" fill="none" stroke="#2D3748" strokeWidth="1.5" />
+                <Path d="M 82 296 Q 84 315 86 335 L 88 355" fill="none" stroke="#CBD5E0" strokeWidth="0.8" />
+                
+                {/* Right ankle */}
+                <Circle cx="82" cy="355" r="4" fill="#FFF8F0" stroke="#2D3748" strokeWidth="1" />
+                
+                {/* Right foot */}
+                <Path d="M 76 355 Q 70 360 70 365 L 70 375 Q 70 380 75 380 L 90 380 Q 95 380 95 375 L 95 365 Q 95 360 90 355"
+                      fill="#FFF8F0" stroke="#2D3748" strokeWidth="1.2" />
+                
+                {/* Right toes */}
+                <Path d="M 75 380 L 75 385 M 78 380 L 78 387 M 81 380 L 81 387 M 84 380 L 84 387 M 87 380 L 87 385" 
+                      stroke="#2D3748" strokeWidth="0.8" />
+                
+                {/* Left leg */}
+                <Path d="M 112 220 Q 114 240 116 260 L 118 290" fill="none" stroke="#2D3748" strokeWidth="1.8" />
+                
+                {/* Left femur */}
+                <Ellipse cx="115" cy="250" rx="5" ry="25" fill="none" stroke="#CBD5E0" strokeWidth="0.8" />
+                
+                {/* Left knee joint */}
+                <Circle cx="118" cy="290" r="6" fill="#FFF8F0" stroke="#2D3748" strokeWidth="1.2" />
+                
+                {/* Left tibia and fibula */}
+                <Path d="M 118 296 Q 120 315 122 335 L 124 355" fill="none" stroke="#2D3748" strokeWidth="1.5" />
+                <Path d="M 118 296 Q 116 315 114 335 L 112 355" fill="none" stroke="#CBD5E0" strokeWidth="0.8" />
+                
+                {/* Left ankle */}
+                <Circle cx="118" cy="355" r="4" fill="#FFF8F0" stroke="#2D3748" strokeWidth="1" />
+                
+                {/* Left foot */}
+                <Path d="M 124 355 Q 130 360 130 365 L 130 375 Q 130 380 125 380 L 110 380 Q 105 380 105 375 L 105 365 Q 105 360 110 355"
+                      fill="#FFF8F0" stroke="#2D3748" strokeWidth="1.2" />
+                
+                {/* Left toes */}
+                <Path d="M 125 380 L 125 385 M 122 380 L 122 387 M 119 380 L 119 387 M 116 380 L 116 387 M 113 380 L 113 385" 
+                      stroke="#2D3748" strokeWidth="0.8" />
+                
+                {/* MAJOR MUSCLE GROUPS */}
+                {/* Deltoids */}
+                <Ellipse cx="72" cy="85" rx="8" ry="12" fill="none" stroke="#E2E8F0" strokeWidth="0.6" strokeDasharray="1,1" />
+                <Ellipse cx="128" cy="85" rx="8" ry="12" fill="none" stroke="#E2E8F0" strokeWidth="0.6" strokeDasharray="1,1" />
+                
+                {/* Pectorals */}
+                <Path d="M 85 88 Q 95 85 100 88 Q 105 85 115 88 Q 112 95 100 98 Q 88 95 85 88" 
+                      fill="none" stroke="#E2E8F0" strokeWidth="0.6" strokeDasharray="1,1" />
+                
                 {/* Biceps */}
-                <Ellipse cx="65" cy="110" rx="6" ry="12" fill="none" stroke="#E2E8F0" strokeWidth="0.5" />
-                <Ellipse cx="135" cy="110" rx="6" ry="12" fill="none" stroke="#E2E8F0" strokeWidth="0.5" />
+                <Ellipse cx="65" cy="120" rx="3" ry="15" fill="none" stroke="#E2E8F0" strokeWidth="0.6" strokeDasharray="1,1" />
+                <Ellipse cx="135" cy="120" rx="3" ry="15" fill="none" stroke="#E2E8F0" strokeWidth="0.6" strokeDasharray="1,1" />
                 
                 {/* Quadriceps */}
-                <Ellipse cx="88" cy="240" rx="8" ry="20" fill="none" stroke="#E2E8F0" strokeWidth="0.5" />
-                <Ellipse cx="112" cy="240" rx="8" ry="20" fill="none" stroke="#E2E8F0" strokeWidth="0.5" />
+                <Ellipse cx="85" cy="250" rx="6" ry="22" fill="none" stroke="#E2E8F0" strokeWidth="0.6" strokeDasharray="1,1" />
+                <Ellipse cx="115" cy="250" rx="6" ry="22" fill="none" stroke="#E2E8F0" strokeWidth="0.6" strokeDasharray="1,1" />
+                
+                {/* Gastrocnemius (calf muscles) */}
+                <Ellipse cx="82" cy="320" rx="4" ry="15" fill="none" stroke="#E2E8F0" strokeWidth="0.6" strokeDasharray="1,1" />
+                <Ellipse cx="118" cy="320" rx="4" ry="15" fill="none" stroke="#E2E8F0" strokeWidth="0.6" strokeDasharray="1,1" />
+                
+                {/* ANATOMICAL LANDMARKS */}
+                {/* Xiphoid process */}
+                <Circle cx="100" cy="127" r="1.5" fill="#4A5568" />
+                
+                {/* Umbilicus (navel) */}
+                <Circle cx="100" cy="170" r="2" fill="none" stroke="#4A5568" strokeWidth="0.8" />
+                
+                {/* Anterior superior iliac spines */}
+                <Circle cx="85" cy="200" r="1" fill="#4A5568" />
+                <Circle cx="115" cy="200" r="1" fill="#4A5568" />
+                
+                {/* Patellae (kneecaps) */}
+                <Ellipse cx="82" cy="290" rx="3" ry="4" fill="none" stroke="#4A5568" strokeWidth="0.8" />
+                <Ellipse cx="118" cy="290" rx="3" ry="4" fill="none" stroke="#4A5568" strokeWidth="0.8" />
               </G>
             </Svg>
 
