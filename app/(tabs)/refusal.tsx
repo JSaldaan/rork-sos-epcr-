@@ -19,7 +19,23 @@ export default function RefusalForm() {
   const [activeSignature, setActiveSignature] = useState<string | null>(null);
 
   const handleSaveSignature = (field: string, signature: string) => {
-    updateRefusalInfo({ [field]: signature });
+    // Save both the signature and the paths for proper display
+    if (field === 'patientSignature') {
+      updateRefusalInfo({ 
+        patientSignature: signature,
+        patientSignaturePaths: signature 
+      });
+    } else if (field === 'witnessSignature') {
+      updateRefusalInfo({ 
+        witnessSignature: signature,
+        witnessSignaturePaths: signature 
+      });
+    } else if (field === 'paramedicSignature') {
+      updateRefusalInfo({ 
+        paramedicSignature: signature,
+        paramedicSignaturePaths: signature 
+      });
+    }
     setActiveSignature(null);
   };
 
@@ -33,7 +49,13 @@ export default function RefusalForm() {
           text: "Clear",
           style: "destructive",
           onPress: () => {
-            updateRefusalInfo({ [field]: "", [`${field}Paths`]: "" });
+            if (field === 'patientSignature') {
+              updateRefusalInfo({ patientSignature: "", patientSignaturePaths: "" });
+            } else if (field === 'witnessSignature') {
+              updateRefusalInfo({ witnessSignature: "", witnessSignaturePaths: "" });
+            } else if (field === 'paramedicSignature') {
+              updateRefusalInfo({ paramedicSignature: "", paramedicSignaturePaths: "" });
+            }
           },
         },
       ]

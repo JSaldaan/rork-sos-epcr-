@@ -402,9 +402,23 @@ export default function AdminScreen() {
     const relatedSignatures = signatures.filter(s => s.encounter_id === encounterId);
     
     // Convert signature paths to base64 images
-    const nurseSignatureImage = convertSvgPathToBase64(pcr.signatureInfo.nurseSignaturePaths);
-    const doctorSignatureImage = convertSvgPathToBase64(pcr.signatureInfo.doctorSignaturePaths);
-    const othersSignatureImage = convertSvgPathToBase64(pcr.signatureInfo.othersSignaturePaths);
+    const nurseSignatureImage = convertSvgPathToBase64(pcr.signatureInfo.nurseSignaturePaths || pcr.signatureInfo.nurseSignature);
+    const doctorSignatureImage = convertSvgPathToBase64(pcr.signatureInfo.doctorSignaturePaths || pcr.signatureInfo.doctorSignature);
+    const othersSignatureImage = convertSvgPathToBase64(pcr.signatureInfo.othersSignaturePaths || pcr.signatureInfo.othersSignature);
+    
+    // Convert refusal signatures to base64 images
+    const patientRefusalSignatureImage = pcr.refusalInfo?.patientSignature ? 
+      (pcr.refusalInfo.patientSignature.startsWith('data:image') ? 
+        pcr.refusalInfo.patientSignature : 
+        convertSvgPathToBase64(pcr.refusalInfo.patientSignaturePaths || pcr.refusalInfo.patientSignature)) : null;
+    const witnessRefusalSignatureImage = pcr.refusalInfo?.witnessSignature ? 
+      (pcr.refusalInfo.witnessSignature.startsWith('data:image') ? 
+        pcr.refusalInfo.witnessSignature : 
+        convertSvgPathToBase64(pcr.refusalInfo.witnessSignaturePaths || pcr.refusalInfo.witnessSignature)) : null;
+    const paramedicRefusalSignatureImage = pcr.refusalInfo?.paramedicSignature ? 
+      (pcr.refusalInfo.paramedicSignature.startsWith('data:image') ? 
+        pcr.refusalInfo.paramedicSignature : 
+        convertSvgPathToBase64(pcr.refusalInfo.paramedicSignaturePaths || pcr.refusalInfo.paramedicSignature)) : null;
     
     return `
       <!DOCTYPE html>
@@ -961,8 +975,10 @@ export default function AdminScreen() {
                 <div class="ecg-container">
                   <div class="ecg-title">📈 ECG Recording from Vitals</div>
                   ${vital.ecgCapture.startsWith('data:image') ? `
-                    <img src="${vital.ecgCapture}" class="ecg-image" alt="ECG from Vitals ${index + 1}" />
-                    <div class="ecg-info">✓ Digital ECG Capture Available - Timestamp: ${vital.ecgCaptureTimestamp || vital.timestamp}</div>
+                    <div style="border: 1px solid #ddd; padding: 10px; background: white; margin: 10px 0;">
+                      <img src="${vital.ecgCapture}" class="ecg-image" alt="ECG from Vitals ${index + 1}" style="width: 100%; max-width: 600px; height: auto; display: block; margin: 0 auto; border: 1px solid #333;" />
+                      <div class="ecg-info" style="text-align: center; margin-top: 10px; font-size: 10pt; color: #333;">✓ Digital ECG Capture - Timestamp: ${vital.ecgCaptureTimestamp || vital.timestamp}</div>
+                    </div>
                   ` : `
                     <div style="border: 2px solid #000; padding: 20px; margin: 10px 0; background: white; text-align: center; min-height: 200px; display: flex; flex-direction: column; justify-content: center;">
                       <div style="font-size: 14pt; font-weight: bold; margin-bottom: 10px;">📈 ECG RECORDING CAPTURED</div>
@@ -1086,6 +1102,54 @@ export default function AdminScreen() {
             <div class="narrative-text">${pcr.refusalInfo.additionalNotes}</div>
           </div>
           ` : ''}
+          
+          <!-- Refusal Signatures -->
+          <div class="signature-grid" style="margin-top: 20px;">
+            <div class="signature-box">
+              <div class="signature-label">PATIENT SIGNATURE</div>
+              <div class="signature-content">
+                ${patientRefusalSignatureImage ? `
+                  <img src="${patientRefusalSignatureImage}" class="signature-image" alt="Patient Refusal Signature" />
+                  <div style="font-size: 8pt; color: #000; text-align: center; margin-top: 5px;">✓ Refusal Signature Captured</div>
+                ` : '<div class="signature-line"></div><div style="font-size: 8pt; color: #999; text-align: center;">Not signed</div>'}
+              </div>
+              <div class="signature-info">
+                <strong>Name:</strong> ${anonymizeReport ? 'CONFIDENTIAL' : (pcr.refusalInfo.patientName || 'Not provided')}<br/>
+                <strong>Date:</strong> ${pcr.refusalInfo.dateOfRefusal || 'N/A'}<br/>
+                <strong>Time:</strong> ${pcr.refusalInfo.timeOfRefusal || 'N/A'}
+              </div>
+            </div>
+            
+            ${pcr.refusalInfo.witnessName || witnessRefusalSignatureImage ? `
+            <div class="signature-box">
+              <div class="signature-label">WITNESS SIGNATURE</div>
+              <div class="signature-content">
+                ${witnessRefusalSignatureImage ? `
+                  <img src="${witnessRefusalSignatureImage}" class="signature-image" alt="Witness Signature" />
+                  <div style="font-size: 8pt; color: #000; text-align: center; margin-top: 5px;">✓ Witness Signature Captured</div>
+                ` : '<div class="signature-line"></div><div style="font-size: 8pt; color: #999; text-align: center;">Not signed</div>'}
+              </div>
+              <div class="signature-info">
+                <strong>Name:</strong> ${anonymizeReport ? 'CONFIDENTIAL' : (pcr.refusalInfo.witnessName || 'Not provided')}<br/>
+                <strong>Date:</strong> ${pcr.refusalInfo.dateOfRefusal || 'N/A'}
+              </div>
+            </div>
+            ` : ''}
+            
+            <div class="signature-box">
+              <div class="signature-label">PARAMEDIC SIGNATURE</div>
+              <div class="signature-content">
+                ${paramedicRefusalSignatureImage ? `
+                  <img src="${paramedicRefusalSignatureImage}" class="signature-image" alt="Paramedic Signature" />
+                  <div style="font-size: 8pt; color: #000; text-align: center; margin-top: 5px;">✓ Paramedic Signature Captured</div>
+                ` : '<div class="signature-line"></div><div style="font-size: 8pt; color: #999; text-align: center;">Not signed</div>'}
+              </div>
+              <div class="signature-info">
+                <strong>Name:</strong> ${anonymizeReport ? 'CONFIDENTIAL' : (pcr.refusalInfo.paramedicName || 'Not provided')}<br/>
+                <strong>Date:</strong> ${pcr.refusalInfo.dateOfRefusal || 'N/A'}
+              </div>
+            </div>
+          </div>
         </div>
         ` : ''}
         
