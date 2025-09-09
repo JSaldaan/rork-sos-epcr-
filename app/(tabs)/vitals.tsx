@@ -163,9 +163,10 @@ export default function VitalsScreen() {
       if (cameraRef.current) {
         // Capture the actual photo from the camera
         const photo = await cameraRef.current.takePictureAsync({
-          quality: 0.8,
+          quality: 0.9, // Higher quality for medical documentation
           base64: true,
-          skipProcessing: true, // Keep the photo as-is without processing
+          skipProcessing: false, // Process for better quality
+          exif: false, // Don't need EXIF data
         });
         
         if (photo && photo.base64) {
@@ -178,8 +179,8 @@ export default function VitalsScreen() {
           setShowCamera(false);
           
           Alert.alert(
-            "ECG Photo Captured",
-            "ECG photo has been captured exactly as photographed and saved with the most recent vital signs."
+            "✅ ECG Photo Captured",
+            `ECG photo has been captured successfully.\n\nSize: ${Math.round(photo.base64.length / 1024)}KB\nTimestamp: ${new Date(timestamp).toLocaleTimeString()}\n\nThe photo is saved and will be included in the PDF report.`
           );
           
           console.log('ECG photo captured successfully, size:', photo.base64.length);
@@ -459,10 +460,15 @@ export default function VitalsScreen() {
           {showCamera && (
         <View style={styles.cameraContainer}>
           <View style={styles.cameraHeader}>
-            <Text style={styles.cameraTitle}>ECG Capture/Recording</Text>
-            <TouchableOpacity style={styles.closeButton} onPress={handleCameraClose}>
-              <Text style={styles.closeButtonText}>✕</Text>
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.cameraTitle}>📷 Capture ECG from Medical Device</Text>
+                <Text style={styles.cameraSubtitle}>Position camera to capture ECG display or printout</Text>
+              </View>
+              <TouchableOpacity style={styles.closeButton} onPress={handleCameraClose}>
+                <Text style={styles.closeButtonText}>✕</Text>
+              </TouchableOpacity>
+            </View>
           </View>
           <CameraView 
             ref={cameraRef}
@@ -684,9 +690,6 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
   cameraHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
     backgroundColor: "rgba(0,0,0,0.8)",
     padding: 16,
     paddingTop: Platform.OS === 'ios' ? 50 : 16,
@@ -695,6 +698,11 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 18,
     fontWeight: "600",
+  },
+  cameraSubtitle: {
+    color: "#ccc",
+    fontSize: 14,
+    marginTop: 4,
   },
   closeButton: {
     backgroundColor: "rgba(255,255,255,0.2)",

@@ -161,7 +161,11 @@ export default function AdminScreen() {
     // Enable debug helper in development
     if (__DEV__) {
       (global as any).DebugHelper = DebugHelper;
-      console.log('DebugHelper available - Use DebugHelper.listAllPCRs() or DebugHelper.verifyCompleteReport(pcrId)');
+      console.log('🔧 DebugHelper available - Use DebugHelper.listAllPCRs() or DebugHelper.verifyCompleteReport(pcrId)');
+      // Auto-run debug check on load
+      setTimeout(() => {
+        DebugHelper.listAllPCRs();
+      }, 2000);
     }
   }, []);
 
