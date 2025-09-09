@@ -1373,20 +1373,16 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
       notes: `Pain Scale: ${vital.painScale}`,
     }));
     
-    // Consolidate all ECG captures into a single record
+    // Store each ECG capture as a separate record
     const allECGCaptures = pcr.vitals.filter(vital => vital.ecgCapture);
-    const ecgRecords: ECG[] = allECGCaptures.length > 0 ? [{
-      ecg_id: `ECG_${pcr.id}_CONSOLIDATED`,
+    const ecgRecords: ECG[] = allECGCaptures.map((vital, index) => ({
+      ecg_id: `ECG_${pcr.id}_${index}`,
       encounter_id: encounterId,
-      captured_at: allECGCaptures[0].ecgCaptureTimestamp || allECGCaptures[0].timestamp,
-      rhythm_label: 'Consolidated ECG Report',
-      image_ecg: JSON.stringify(allECGCaptures.map(v => ({
-        timestamp: v.ecgCaptureTimestamp || v.timestamp,
-        image: v.ecgCapture,
-        vitalTimestamp: v.timestamp
-      }))),
-      notes: `Consolidated ${allECGCaptures.length} ECG capture(s) from vital signs`,
-    }] : [];
+      captured_at: vital.ecgCaptureTimestamp || vital.timestamp,
+      rhythm_label: `ECG Capture ${index + 1}`,
+      image_ecg: vital.ecgCapture || '', // Ensure it's never undefined
+      notes: `ECG captured with vital signs at ${vital.timestamp}`,
+    }));
     
     // Store signatures
     const signatureRecords: Signature[] = [];
