@@ -29,8 +29,39 @@ export default function SignatureModal({
 
   const handleSave = () => {
     if (signature) {
-      onSave(signature);
+      // Convert SVG paths to base64 image for better compatibility
+      const base64Image = convertSignatureToBase64(signature);
+      onSave(base64Image);
       setSignature('');
+    }
+  };
+
+  const convertSignatureToBase64 = (pathsString: string): string => {
+    if (!pathsString) return '';
+    
+    // If already base64, return as is
+    if (pathsString.startsWith('data:image')) {
+      return pathsString;
+    }
+    
+    const paths = pathsString.split('|').filter(p => p);
+    if (paths.length === 0) return '';
+    
+    // Create SVG with paths
+    const svgString = `<svg width="${screenWidth - 80}" height="200" viewBox="0 0 ${screenWidth - 80} 200" xmlns="http://www.w3.org/2000/svg" style="background: white;">
+      <rect width="100%" height="100%" fill="white"/>
+      ${paths.map(path => 
+        `<path d="${path}" stroke="#000" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`
+      ).join('')}
+    </svg>`;
+    
+    // Convert to base64
+    try {
+      const base64 = btoa(unescape(encodeURIComponent(svgString)));
+      return `data:image/svg+xml;base64,${base64}`;
+    } catch (error) {
+      console.error('Error converting signature to base64:', error);
+      return pathsString; // Return original if conversion fails
     }
   };
 

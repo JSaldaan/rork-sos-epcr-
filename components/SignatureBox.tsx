@@ -49,9 +49,17 @@ export default function SignatureBox({
   // Initialize paths from signature prop
   useEffect(() => {
     if (signature) {
-      const initialPaths = signature.split('|').filter(p => p);
-      setPaths(initialPaths);
-      pathsRef.current = initialPaths;
+      // If signature is already base64, we can't display it in SVG paths
+      // but we still mark it as having a signature
+      if (signature.startsWith('data:image')) {
+        // Set a placeholder path to indicate signature exists
+        setPaths(['SIGNATURE_EXISTS']);
+        pathsRef.current = ['SIGNATURE_EXISTS'];
+      } else {
+        const initialPaths = signature.split('|').filter(p => p);
+        setPaths(initialPaths);
+        pathsRef.current = initialPaths;
+      }
     }
   }, [signature]);
 
@@ -111,8 +119,12 @@ export default function SignatureBox({
             const newPaths = [...pathsRef.current, svgPath];
             pathsRef.current = newPaths;
             setPaths(newPaths);
-            onSignatureChange(newPaths.join('|'));
-            console.log('💾 Signature saved with', currentPathRef.current.length, 'points');
+            
+            // Convert to base64 immediately for better compatibility
+            const pathsString = newPaths.join('|');
+            const base64Image = convertPathsToBase64(pathsString);
+            onSignatureChange(base64Image);
+            console.log('💾 Signature saved as base64 with', currentPathRef.current.length, 'points');
           }
         }
         
@@ -135,6 +147,35 @@ export default function SignatureBox({
       });
     }
   }, [width, height]);
+
+  const convertPathsToBase64 = (pathsString: string): string => {
+    if (!pathsString) return '';
+    
+    // If already base64, return as is
+    if (pathsString.startsWith('data:image')) {
+      return pathsString;
+    }
+    
+    const paths = pathsString.split('|').filter(p => p);
+    if (paths.length === 0) return '';
+    
+    // Create SVG with paths
+    const svgString = `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg" style="background: white;">
+      <rect width="100%" height="100%" fill="white"/>
+      ${paths.map(path => 
+        `<path d="${path}" stroke="#000" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`
+      ).join('')}
+    </svg>`;
+    
+    // Convert to base64
+    try {
+      const base64 = btoa(unescape(encodeURIComponent(svgString)));
+      return `data:image/svg+xml;base64,${base64}`;
+    } catch (error) {
+      console.error('Error converting signature to base64:', error);
+      return pathsString; // Return original if conversion fails
+    }
+  };
 
   const clearSignature = useCallback(() => {
     setPaths([]);
@@ -176,7 +217,7 @@ export default function SignatureBox({
           style={styles.svg}
           pointerEvents="none"
         >
-          {paths.map((path, index) => (
+          {paths.filter(p => p !== 'SIGNATURE_EXISTS').map((path, index) => (
             <Path
               key={`path-${index}`}
               d={path}

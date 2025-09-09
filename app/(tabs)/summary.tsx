@@ -19,7 +19,25 @@ export default function SummaryScreen() {
   const [activeSignature, setActiveSignature] = useState<string | null>(null);
 
   const handleSaveSignature = (field: string, signature: string) => {
-    updateSignatureInfo({ [field]: signature });
+    // Save both the signature and the paths for proper display
+    if (field === 'nurseSignaturePaths') {
+      updateSignatureInfo({ 
+        nurseSignature: signature,
+        nurseSignaturePaths: signature 
+      });
+    } else if (field === 'doctorSignaturePaths') {
+      updateSignatureInfo({ 
+        doctorSignature: signature,
+        doctorSignaturePaths: signature 
+      });
+    } else if (field === 'othersSignaturePaths') {
+      updateSignatureInfo({ 
+        othersSignature: signature,
+        othersSignaturePaths: signature 
+      });
+    } else {
+      updateSignatureInfo({ [field]: signature });
+    }
     setActiveSignature(null);
   };
 
@@ -33,7 +51,15 @@ export default function SummaryScreen() {
           text: "Clear",
           style: "destructive",
           onPress: () => {
-            updateSignatureInfo({ [field]: "" });
+            if (field === 'nurseSignaturePaths') {
+              updateSignatureInfo({ nurseSignature: "", nurseSignaturePaths: "" });
+            } else if (field === 'doctorSignaturePaths') {
+              updateSignatureInfo({ doctorSignature: "", doctorSignaturePaths: "" });
+            } else if (field === 'othersSignaturePaths') {
+              updateSignatureInfo({ othersSignature: "", othersSignaturePaths: "" });
+            } else {
+              updateSignatureInfo({ [field]: "" });
+            }
           },
         },
       ]
