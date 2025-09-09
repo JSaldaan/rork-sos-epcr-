@@ -49,6 +49,7 @@ import {
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { DebugHelper } from '@/utils/debugHelper';
 
 type TabType = 'vault' | 'staff' | 'audit' | 'reports' | 'enterprise';
 type VaultSection = 'patients' | 'encounters' | 'vitals' | 'ecgs' | 'signatures' | 'attachments' | 'pcrs';
@@ -157,6 +158,11 @@ export default function AdminScreen() {
 
   useEffect(() => {
     loadData();
+    // Enable debug helper in development
+    if (__DEV__) {
+      (global as any).DebugHelper = DebugHelper;
+      console.log('DebugHelper available - Use DebugHelper.listAllPCRs() or DebugHelper.verifyCompleteReport(pcrId)');
+    }
   }, []);
 
   const loadData = async () => {

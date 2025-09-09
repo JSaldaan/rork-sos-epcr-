@@ -1373,25 +1373,44 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
       notes: `Pain Scale: ${vital.painScale}`,
     }));
     
-    // Store each ECG capture as a separate record
+    // Store ECG captures - consolidate all ECG images into a single record for printing
     const allECGCaptures = pcr.vitals.filter(vital => vital.ecgCapture);
-    const ecgRecords: ECG[] = allECGCaptures.map((vital, index) => ({
-      ecg_id: `ECG_${pcr.id}_${index}`,
-      encounter_id: encounterId,
-      captured_at: vital.ecgCaptureTimestamp || vital.timestamp,
-      rhythm_label: `ECG Capture ${index + 1}`,
-      image_ecg: vital.ecgCapture || '', // Ensure it's never undefined
-      notes: `ECG captured with vital signs at ${vital.timestamp}`,
-    }));
+    const ecgRecords: ECG[] = [];
     
-    // Store signatures
+    // Store individual ECG records
+    allECGCaptures.forEach((vital, index) => {
+      ecgRecords.push({
+        ecg_id: `ECG_${pcr.id}_${index}`,
+        encounter_id: encounterId,
+        captured_at: vital.ecgCaptureTimestamp || vital.timestamp,
+        rhythm_label: `ECG Capture ${index + 1}`,
+        image_ecg: vital.ecgCapture || '', // Store raw base64 image
+        notes: `ECG captured with vital signs at ${vital.timestamp}`,
+      });
+    });
+    
+    // Create consolidated ECG record for easy printing
+    if (allECGCaptures.length > 0) {
+      ecgRecords.push({
+        ecg_id: `ECG_${pcr.id}_CONSOLIDATED`,
+        encounter_id: encounterId,
+        captured_at: allECGCaptures[0].ecgCaptureTimestamp || allECGCaptures[0].timestamp,
+        rhythm_label: `Consolidated ECG Report - ${allECGCaptures.length} capture(s)`,
+        image_ecg: JSON.stringify(allECGCaptures.map(v => v.ecgCapture)), // Store all images
+        notes: `All ECG captures from this encounter consolidated for printing`,
+      });
+    }
+    
+    // Store signatures - ensure base64 format
     const signatureRecords: Signature[] = [];
+    
+    // Healthcare provider signatures
     if (pcr.signatureInfo.nurseSignaturePaths) {
       signatureRecords.push({
         signature_id: `SIG_${pcr.id}_NURSE`,
         encounter_id: encounterId,
         signer_role: 'Provider',
-        signer_name: pcr.signatureInfo.nurseSignature,
+        signer_name: pcr.signatureInfo.nurseSignature || 'Nurse',
         signed_at: pcr.submittedAt,
         signature_image: pcr.signatureInfo.nurseSignaturePaths,
       });
@@ -1401,7 +1420,7 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
         signature_id: `SIG_${pcr.id}_DOCTOR`,
         encounter_id: encounterId,
         signer_role: 'Provider',
-        signer_name: pcr.signatureInfo.doctorSignature,
+        signer_name: pcr.signatureInfo.doctorSignature || 'Doctor',
         signed_at: pcr.submittedAt,
         signature_image: pcr.signatureInfo.doctorSignaturePaths,
       });
@@ -1411,9 +1430,41 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
         signature_id: `SIG_${pcr.id}_OTHER`,
         encounter_id: encounterId,
         signer_role: pcr.signatureInfo.othersRole === 'Family Member' ? 'Guardian' : 'Patient',
-        signer_name: pcr.signatureInfo.othersSignature,
+        signer_name: pcr.signatureInfo.othersSignature || pcr.signatureInfo.othersRole || 'Other',
         signed_at: pcr.submittedAt,
         signature_image: pcr.signatureInfo.othersSignaturePaths,
+      });
+    }
+    
+    // Store refusal signatures separately
+    if (pcr.refusalInfo.patientSignaturePaths) {
+      signatureRecords.push({
+        signature_id: `SIG_${pcr.id}_REFUSAL_PATIENT`,
+        encounter_id: encounterId,
+        signer_role: 'Patient',
+        signer_name: pcr.refusalInfo.patientName || 'Patient',
+        signed_at: pcr.refusalInfo.dateOfRefusal || pcr.submittedAt,
+        signature_image: pcr.refusalInfo.patientSignaturePaths,
+      });
+    }
+    if (pcr.refusalInfo.witnessSignaturePaths) {
+      signatureRecords.push({
+        signature_id: `SIG_${pcr.id}_REFUSAL_WITNESS`,
+        encounter_id: encounterId,
+        signer_role: 'Guardian',
+        signer_name: pcr.refusalInfo.witnessName || 'Witness',
+        signed_at: pcr.refusalInfo.dateOfRefusal || pcr.submittedAt,
+        signature_image: pcr.refusalInfo.witnessSignaturePaths,
+      });
+    }
+    if (pcr.refusalInfo.paramedicSignaturePaths) {
+      signatureRecords.push({
+        signature_id: `SIG_${pcr.id}_REFUSAL_PARAMEDIC`,
+        encounter_id: encounterId,
+        signer_role: 'Provider',
+        signer_name: pcr.refusalInfo.paramedicName || 'Paramedic',
+        signed_at: pcr.refusalInfo.dateOfRefusal || pcr.submittedAt,
+        signature_image: pcr.refusalInfo.paramedicSignaturePaths,
       });
     }
     
