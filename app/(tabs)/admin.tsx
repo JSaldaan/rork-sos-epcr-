@@ -1827,7 +1827,7 @@ export default function AdminScreen() {
                     {feature.plans.map(plan => (
                       <View key={plan} style={styles.featurePlanBadge}>
                         <Text style={styles.featurePlanText}>
-                          {(enterpriseConfig.pricing as any)[plan]?.name || plan}
+                          {enterpriseConfig.pricing[plan as keyof typeof enterpriseConfig.pricing]?.name || plan}
                         </Text>
                       </View>
                     ))}
@@ -2284,7 +2284,7 @@ export default function AdminScreen() {
                   onPress={() => {
                     const currentPlans = editingFeature?.plans || [];
                     const newPlans = currentPlans.includes(key)
-                      ? currentPlans.filter((p: string) => p !== key)
+                      ? currentPlans.filter(p => p !== key)
                       : [...currentPlans, key];
                     setEditingFeature({ ...editingFeature, plans: newPlans });
                   }}
