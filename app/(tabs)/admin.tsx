@@ -94,7 +94,17 @@ export default function AdminScreen() {
 
   const [activeTab, setActiveTab] = useState<TabType>('vault');
   const [showEnterpriseModal, setShowEnterpriseModal] = useState(false);
-  const [editingFeature, setEditingFeature] = useState<any>(null);
+  interface Feature {
+    id: string;
+    name: string;
+    description: string;
+    plans: string[];
+    enabled: boolean;
+  }
+  
+  type PricingPlan = 'basic' | 'professional' | 'enterprise' | 'custom';
+  
+  const [editingFeature, setEditingFeature] = useState<Feature | null>(null);
   const [enterpriseConfig, setEnterpriseConfig] = useState({
     pricing: {
       basic: { name: 'Basic', price: 99, currency: 'USD', period: 'month' },
@@ -1827,7 +1837,7 @@ export default function AdminScreen() {
                     {feature.plans.map(plan => (
                       <View key={plan} style={styles.featurePlanBadge}>
                         <Text style={styles.featurePlanText}>
-                          {enterpriseConfig.pricing[plan as keyof typeof enterpriseConfig.pricing]?.name || plan}
+                          {(enterpriseConfig.pricing as any)[plan]?.name || plan}
                         </Text>
                       </View>
                     ))}
@@ -2260,14 +2270,20 @@ export default function AdminScreen() {
               style={styles.modalInput}
               placeholder="Feature Name"
               value={editingFeature?.name || ''}
-              onChangeText={(text) => setEditingFeature({ ...editingFeature, name: text })}
+              onChangeText={(text) => {
+                if (!editingFeature) return;
+                setEditingFeature({ ...editingFeature, name: text });
+              }}
             />
 
             <TextInput
               style={[styles.modalInput, styles.textArea]}
               placeholder="Feature Description"
               value={editingFeature?.description || ''}
-              onChangeText={(text) => setEditingFeature({ ...editingFeature, description: text })}
+              onChangeText={(text) => {
+                if (!editingFeature) return;
+                setEditingFeature({ ...editingFeature, description: text });
+              }}
               multiline
               numberOfLines={3}
             />
@@ -2284,8 +2300,9 @@ export default function AdminScreen() {
                   onPress={() => {
                     const currentPlans = editingFeature?.plans || [];
                     const newPlans = currentPlans.includes(key)
-                      ? currentPlans.filter(p => p !== key)
+                      ? currentPlans.filter((p: string) => p !== key)
                       : [...currentPlans, key];
+                    if (!editingFeature) return;
                     setEditingFeature({ ...editingFeature, plans: newPlans });
                   }}
                 >
