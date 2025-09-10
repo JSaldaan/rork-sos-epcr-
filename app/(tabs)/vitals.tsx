@@ -239,7 +239,7 @@ export default function VitalsScreen() {
   return (
     <ResponsiveContainer maxWidth="large" padding="medium">
       <KeyboardAvoidingView 
-        style={{ flex: 1 }}
+        style={styles.keyboardAvoidingView}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 0}
       >
@@ -247,7 +247,7 @@ export default function VitalsScreen() {
           style={styles.container} 
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ paddingBottom: 120 }}
+          contentContainerStyle={styles.scrollViewContent}
           automaticallyAdjustKeyboardInsets={true}
         >
       <View style={styles.section}>
@@ -460,8 +460,8 @@ export default function VitalsScreen() {
           {showCamera && (
         <View style={styles.cameraContainer}>
           <View style={styles.cameraHeader}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <View style={{ flex: 1 }}>
+            <View style={styles.cameraHeaderRow}>
+              <View style={styles.cameraHeaderContent}>
                 <Text style={styles.cameraTitle}>📷 Capture ECG from Medical Device</Text>
                 <Text style={styles.cameraSubtitle}>Position camera to capture ECG display or printout</Text>
               </View>
@@ -785,5 +785,19 @@ const styles = StyleSheet.create({
   column: {
     flex: 1,
     paddingHorizontal: 8,
+  },
+  keyboardAvoidingView: {
+    flex: 1,
+  },
+  scrollViewContent: {
+    paddingBottom: 120,
+  },
+  cameraHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  cameraHeaderContent: {
+    flex: 1,
   },
 });
