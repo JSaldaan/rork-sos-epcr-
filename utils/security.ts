@@ -367,7 +367,7 @@ export class BruteForceProtection {
         true
       );
       
-      console.warn(`Account ${corporationId} locked due to brute force attempts`);
+      console.log(`Security: Account ${corporationId} temporarily locked for protection`);
     }
   }
   

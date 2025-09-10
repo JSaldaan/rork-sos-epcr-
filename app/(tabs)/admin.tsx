@@ -1788,13 +1788,13 @@ export default function AdminScreen() {
                   {enterpriseConfig.features
                     .filter((f: any) => f.plans.includes(key) && f.enabled)
                     .slice(0, 3)
-                    .map((feature: any) => (
+                    .map((feature: any, index: number) => (
                       <Text key={feature.id} style={styles.pricingFeatureItem}>
                         • {feature.name}
                       </Text>
                     ))}
                   {enterpriseConfig.features.filter((f: any) => f.plans.includes(key)).length > 3 && (
-                    <Text style={styles.pricingFeatureMore}>
+                    <Text key="more-features" style={styles.pricingFeatureMore}>
                       +{enterpriseConfig.features.filter((f: any) => f.plans.includes(key)).length - 3} more features
                     </Text>
                   )}
@@ -1827,7 +1827,7 @@ export default function AdminScreen() {
                     {feature.plans.map(plan => (
                       <View key={plan} style={styles.featurePlanBadge}>
                         <Text style={styles.featurePlanText}>
-                          {enterpriseConfig.pricing[plan as keyof typeof enterpriseConfig.pricing]?.name || plan}
+                          {(enterpriseConfig.pricing as any)[plan]?.name || plan}
                         </Text>
                       </View>
                     ))}
