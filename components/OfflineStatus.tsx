@@ -114,16 +114,16 @@ export function OfflineStatus({ showDetails = false, onToggleDetails }: OfflineS
             <Text style={styles.statusText}>
               {isOnline ? 'Online' : 'Offline'}
             </Text>
-            {queueStats.total > 0 && (
+            {queueStats.total > 0 ? (
               <View style={styles.queueBadge}>
                 <Text style={styles.queueBadgeText}>{queueStats.total}</Text>
               </View>
-            )}
+            ) : null}
           </View>
           
-          {syncInProgress && (
+          {syncInProgress ? (
             <RefreshCw size={16} color="#fff" style={styles.spinning} />
-          )}
+          ) : null}
         </View>
       </TouchableOpacity>
 
@@ -149,7 +149,7 @@ export function OfflineStatus({ showDetails = false, onToggleDetails }: OfflineS
             </Text>
           </View>
 
-          {queueStats.total > 0 && (
+          {queueStats.total > 0 ? (
             <View style={styles.queueDetails}>
               <Text style={styles.queueTitle}>Queued Items:</Text>
               <View style={styles.queueStats}>
@@ -159,7 +159,7 @@ export function OfflineStatus({ showDetails = false, onToggleDetails }: OfflineS
                 </View>
                 <View style={styles.queueStat}>
                   <Text style={styles.queueStatLabel}>Failed</Text>
-                  <Text style={[styles.queueStatValue, queueStats.failed > 0 && styles.errorText]}>
+                  <Text style={[styles.queueStatValue, queueStats.failed > 0 ? styles.errorText : null]}>
                     {queueStats.failed}
                   </Text>
                 </View>
@@ -169,7 +169,7 @@ export function OfflineStatus({ showDetails = false, onToggleDetails }: OfflineS
                 </View>
               </View>
             </View>
-          )}
+          ) : null}
 
           {/* Action Buttons */}
           <View style={styles.actions}>
@@ -203,7 +203,7 @@ export function OfflineStatus({ showDetails = false, onToggleDetails }: OfflineS
               <Text style={styles.secondaryButtonText}>Cleanup</Text>
             </TouchableOpacity>
 
-            {queueStats.total > 0 && (
+            {queueStats.total > 0 ? (
               <TouchableOpacity
                 style={[styles.actionButton, styles.dangerButton]}
                 onPress={handleClearQueue}
@@ -212,7 +212,7 @@ export function OfflineStatus({ showDetails = false, onToggleDetails }: OfflineS
                 <Trash2 size={16} color="#fff" />
                 <Text style={styles.actionButtonText}>Clear Queue</Text>
               </TouchableOpacity>
-            )}
+            ) : null}
           </View>
         </View>
       )}

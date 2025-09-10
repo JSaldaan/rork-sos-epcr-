@@ -47,11 +47,12 @@ export const scaleFont = (size: number): number => {
   const scale = Math.min(SCREEN_WIDTH / BASE_WIDTH, SCREEN_HEIGHT / BASE_HEIGHT);
   const newSize = size * scale;
   
-  // Ensure minimum readable font size
-  if (Platform.OS === 'ios') {
-    return Math.max(newSize, 12);
-  }
-  return Math.max(newSize, 14);
+  // Ensure minimum readable font size and return a valid number
+  const minSize = Platform.OS === 'ios' ? 12 : 14;
+  const result = Math.max(newSize, minSize);
+  
+  // Ensure we return a finite number
+  return isFinite(result) ? result : minSize;
 };
 
 // Responsive spacing

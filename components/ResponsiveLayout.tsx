@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, ViewStyle } from 'react-native';
+import { View, Text, StyleSheet, ViewStyle } from 'react-native';
 import { spacing, dimensions, getResponsiveValue, isTablet, isDesktop } from '@/utils/responsive';
 
 interface ResponsiveContainerProps {
@@ -31,7 +31,16 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
     style,
   ];
 
-  return <View style={containerStyle}>{children}</View>;
+  return (
+    <View style={containerStyle}>
+      {React.Children.map(children, (child, index) => {
+        if (typeof child === 'string' || typeof child === 'number') {
+          return <Text key={`container-text-${index}`}>{child}</Text>;
+        }
+        return child;
+      })}
+    </View>
+  );
 };
 
 interface ResponsiveGridProps {
@@ -61,20 +70,40 @@ export const ResponsiveGrid: React.FC<ResponsiveGridProps> = ({
   
   return (
     <View style={gridStyle}>
-      {childArray.map((child, index) => (
-        <View
-          key={index}
-          style={[
-            styles.gridItem,
-            {
-              width: `${(100 / responsiveColumns) - (gap * (responsiveColumns - 1)) / responsiveColumns}%`,
-              marginBottom: gap,
-            },
-          ]}
-        >
-          {child as React.ReactElement}
-        </View>
-      ))}
+      {childArray.map((child, index) => {
+        // Ensure child is a valid React element and not a text node
+        if (typeof child === 'string' || typeof child === 'number') {
+          return (
+            <View
+              key={index}
+              style={[
+                styles.gridItem,
+                {
+                  width: `${(100 / responsiveColumns) - (gap * (responsiveColumns - 1)) / responsiveColumns}%`,
+                  marginBottom: gap,
+                },
+              ]}
+            >
+              <Text>{child}</Text>
+            </View>
+          );
+        }
+        
+        return (
+          <View
+            key={index}
+            style={[
+              styles.gridItem,
+              {
+                width: `${(100 / responsiveColumns) - (gap * (responsiveColumns - 1)) / responsiveColumns}%`,
+                marginBottom: gap,
+              },
+            ]}
+          >
+            {child as React.ReactElement}
+          </View>
+        );
+      })}
     </View>
   );
 };
@@ -107,7 +136,16 @@ export const ResponsiveRow: React.FC<ResponsiveRowProps> = ({
     style,
   ];
 
-  return <View style={rowStyle}>{children}</View>;
+  return (
+    <View style={rowStyle}>
+      {React.Children.map(children, (child, index) => {
+        if (typeof child === 'string' || typeof child === 'number') {
+          return <Text key={`row-text-${index}`}>{child}</Text>;
+        }
+        return child;
+      })}
+    </View>
+  );
 };
 
 interface ResponsiveColumnProps {
@@ -135,7 +173,16 @@ export const ResponsiveColumn: React.FC<ResponsiveColumnProps> = ({
     style,
   ];
 
-  return <View style={columnStyle}>{children}</View>;
+  return (
+    <View style={columnStyle}>
+      {React.Children.map(children, (child, index) => {
+        if (typeof child === 'string' || typeof child === 'number') {
+          return <Text key={`col-text-${index}`}>{child}</Text>;
+        }
+        return child;
+      })}
+    </View>
+  );
 };
 
 interface AdaptiveLayoutProps {

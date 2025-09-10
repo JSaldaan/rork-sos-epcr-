@@ -354,12 +354,12 @@ Format your response in clear, organized sections. Be concise but thorough. Focu
           {/* Recording Controls */}
           <View style={styles.recordingSection}>
             <View style={styles.recordingControls}>
-              {isRecording && (
+              {isRecording ? (
                 <View style={styles.durationContainer}>
                   <Clock size={16} color="#DC3545" />
                   <Text style={styles.durationText}>{formatDuration(recordingDuration)}</Text>
                 </View>
-              )}
+              ) : null}
               
               <Animated.View style={[styles.recordButton, { transform: [{ scale: pulseAnim }] }]}>
                 <TouchableOpacity
