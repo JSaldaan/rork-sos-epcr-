@@ -2284,7 +2284,7 @@ export default function AdminScreen() {
                   onPress={() => {
                     const currentPlans = editingFeature?.plans || [];
                     const newPlans = currentPlans.includes(key)
-                      ? currentPlans.filter(p => p !== key)
+                      ? currentPlans.filter((p: string) => p !== key)
                       : [...currentPlans, key];
                     setEditingFeature({ ...editingFeature, plans: newPlans });
                   }}
