@@ -9,16 +9,20 @@ import {
   Switch,
   Alert,
   Platform,
+  Modal,
+  FlatList,
 } from "react-native";
 import { usePCRStore } from "@/store/pcrStore";
-import { AlertTriangle, FileX, Check } from "lucide-react-native";
+import { AlertTriangle, FileX, Check, Users } from "lucide-react-native";
 import SignatureModal from "@/components/SignatureModal";
 
 export default function RefusalForm() {
-  const { refusalInfo, updateRefusalInfo, patientInfo, saveRefusalData, saveTabDataWithNotification } = usePCRStore();
+  const { refusalInfo, updateRefusalInfo, patientInfo, saveRefusalData, saveTabDataWithNotification, staffMembers } = usePCRStore();
   const [activeSignature, setActiveSignature] = useState<string | null>(null);
+  const [showParamedicSelector, setShowParamedicSelector] = useState<boolean>(false);
 
   const handleSaveSignature = (field: string, signature: string) => {
+    console.log('💾 Saving refusal signature for field:', field);
     // Save both the signature and the paths for proper display
     if (field === 'patientSignature') {
       updateRefusalInfo({ 
@@ -37,25 +41,27 @@ export default function RefusalForm() {
       });
     }
     setActiveSignature(null);
+    console.log('✅ Refusal signature saved and modal closed');
   };
 
   const handleClearSignature = (field: string) => {
     Alert.alert(
       "Clear Signature",
-      "Are you sure you want to clear this signature?",
+      "Are you sure you want to clear this signature? The name will be kept.",
       [
         { text: "Cancel", style: "cancel" },
         {
-          text: "Clear",
+          text: "Clear Signature Only",
           style: "destructive",
           onPress: () => {
             if (field === 'patientSignature') {
-              updateRefusalInfo({ patientSignature: "", patientSignaturePaths: "" });
+              updateRefusalInfo({ patientSignaturePaths: "" }); // Keep name, clear signature
             } else if (field === 'witnessSignature') {
-              updateRefusalInfo({ witnessSignature: "", witnessSignaturePaths: "" });
+              updateRefusalInfo({ witnessSignaturePaths: "" }); // Keep name, clear signature
             } else if (field === 'paramedicSignature') {
-              updateRefusalInfo({ paramedicSignature: "", paramedicSignaturePaths: "" });
+              updateRefusalInfo({ paramedicSignaturePaths: "" }); // Keep name, clear signature
             }
+            console.log('🗑️ Refusal signature cleared for field:', field);
           },
         },
       ]
@@ -334,13 +340,24 @@ export default function RefusalForm() {
 
         <View style={styles.signatureSection}>
           <Text style={styles.signatureLabel}>Paramedic Information *</Text>
-          <TextInput
-            style={[styles.input, { marginBottom: 12 }]}
-            value={refusalInfo.paramedicName}
-            onChangeText={(text) => updateRefusalInfo({ paramedicName: text })}
-            placeholder="Paramedic name"
-            placeholderTextColor="#999"
-          />
+          <View style={styles.paramedicInputRow}>
+            <View style={styles.paramedicInputContainer}>
+              <TextInput
+                style={[styles.input, { marginBottom: 12 }]}
+                value={refusalInfo.paramedicName}
+                onChangeText={(text) => updateRefusalInfo({ paramedicName: text })}
+                placeholder="Paramedic name"
+                placeholderTextColor="#999"
+              />
+            </View>
+            <TouchableOpacity 
+              style={styles.paramedicSelectorButton}
+              onPress={() => setShowParamedicSelector(true)}
+            >
+              <Users size={16} color="#0066CC" />
+              <Text style={styles.paramedicSelectorText}>Select</Text>
+            </TouchableOpacity>
+          </View>
           
           {refusalInfo.paramedicSignature ? (
             <View style={styles.signaturePreview}>
@@ -377,7 +394,10 @@ export default function RefusalForm() {
       {activeSignature && (
         <SignatureModal
           visible={true}
-          onClose={() => setActiveSignature(null)}
+          onClose={() => {
+            console.log('❌ Refusal signature modal closed without saving');
+            setActiveSignature(null);
+          }}
           onSave={(signature: string) => handleSaveSignature(activeSignature, signature)}
           title={
             activeSignature === "patientSignature"
@@ -386,8 +406,65 @@ export default function RefusalForm() {
               ? "Witness Signature"
               : "Paramedic Signature"
           }
+          initialSignature={
+            activeSignature === "patientSignature" ? refusalInfo.patientSignaturePaths :
+            activeSignature === "witnessSignature" ? refusalInfo.witnessSignaturePaths :
+            refusalInfo.paramedicSignaturePaths
+          }
         />
       )}
+      
+      {/* Paramedic Selector Modal */}
+      <Modal
+        visible={showParamedicSelector}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowParamedicSelector(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.paramedicModal}>
+            <View style={styles.paramedicModalHeader}>
+              <Text style={styles.paramedicModalTitle}>Select Paramedic</Text>
+              <TouchableOpacity onPress={() => setShowParamedicSelector(false)}>
+                <Text style={styles.paramedicModalClose}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+            
+            <FlatList
+              data={staffMembers.filter(staff => 
+                staff.isActive && 
+                (staff.role.toLowerCase().includes('paramedic') || staff.role.toLowerCase().includes('emt'))
+              )}
+              keyExtractor={(item) => item.corporationId}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.paramedicItem}
+                  onPress={() => {
+                    updateRefusalInfo({ paramedicName: item.name });
+                    setShowParamedicSelector(false);
+                    console.log('👨‍⚕️ Paramedic selected:', item.name);
+                  }}
+                >
+                  <View>
+                    <Text style={styles.paramedicName}>{item.name}</Text>
+                    <Text style={styles.paramedicDetails}>
+                      {item.corporationId} • {item.role} • {item.department}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              )}
+              ListEmptyComponent={
+                <View style={styles.emptyParamedicList}>
+                  <Text style={styles.emptyParamedicText}>
+                    No paramedic staff members found.
+                    You can still enter the information manually.
+                  </Text>
+                </View>
+              }
+            />
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -591,5 +668,92 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     marginLeft: 8,
+  },
+  paramedicInputRow: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    gap: 12,
+    marginBottom: 8,
+  },
+  paramedicInputContainer: {
+    flex: 1,
+  },
+  paramedicSelectorButton: {
+    backgroundColor: "#F0F7FF",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 6,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    borderWidth: 1,
+    borderColor: "#B3D9FF",
+    marginBottom: 12,
+  },
+  paramedicSelectorText: {
+    color: "#0066CC",
+    fontSize: 12,
+    fontWeight: "500",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  paramedicModal: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    width: "90%",
+    maxWidth: 400,
+    maxHeight: "70%",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  paramedicModalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E5E5",
+  },
+  paramedicModalTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#333",
+  },
+  paramedicModalClose: {
+    color: "#0066CC",
+    fontSize: 16,
+    fontWeight: "500",
+  },
+  paramedicItem: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0F0F0",
+  },
+  paramedicName: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#333",
+    marginBottom: 4,
+  },
+  paramedicDetails: {
+    fontSize: 14,
+    color: "#666",
+  },
+  emptyParamedicList: {
+    padding: 20,
+    alignItems: "center",
+  },
+  emptyParamedicText: {
+    fontSize: 14,
+    color: "#999",
+    textAlign: "center",
+    lineHeight: 20,
   },
 });

@@ -7,59 +7,65 @@ import {
   TouchableOpacity,
   Alert,
   TextInput,
+  Modal,
+  FlatList,
 } from "react-native";
-import { FileText, Send, User, Activity, Truck, Clock, UserCheck } from "lucide-react-native";
+import { FileText, Send, User, Activity, Truck, Clock, UserCheck, ChevronDown, Users } from "lucide-react-native";
 import { usePCRStore } from "@/store/pcrStore";
 import SignatureModal from "@/components/SignatureModal";
 
 export default function SummaryScreen() {
-  const { patientInfo, incidentInfo, vitals, transportInfo, signatureInfo, updateSignatureInfo, saveCurrentPCRDraft, saveTabDataWithNotification, submitReportWithNotification } = usePCRStore();
+  const { patientInfo, incidentInfo, vitals, transportInfo, signatureInfo, updateSignatureInfo, saveCurrentPCRDraft, saveTabDataWithNotification, submitReportWithNotification, staffMembers, currentSession } = usePCRStore();
   const get = usePCRStore.getState;
   const scrollViewRef = useRef<ScrollView>(null);
   const [activeSignature, setActiveSignature] = useState<string | null>(null);
+  const [showStaffSelector, setShowStaffSelector] = useState<string | null>(null);
 
   const handleSaveSignature = (field: string, signature: string) => {
+    console.log('💾 Saving signature for field:', field);
     // Save both the signature and the paths for proper display
     if (field === 'nurseSignaturePaths') {
       updateSignatureInfo({ 
-        nurseSignature: signature,
+        nurseSignature: signatureInfo.nurseSignature || 'Nurse', // Keep existing name or default
         nurseSignaturePaths: signature 
       });
     } else if (field === 'doctorSignaturePaths') {
       updateSignatureInfo({ 
-        doctorSignature: signature,
+        doctorSignature: signatureInfo.doctorSignature || 'Doctor', // Keep existing name or default
         doctorSignaturePaths: signature 
       });
     } else if (field === 'othersSignaturePaths') {
       updateSignatureInfo({ 
-        othersSignature: signature,
+        othersSignature: signatureInfo.othersSignature || 'Other Staff', // Keep existing name or default
         othersSignaturePaths: signature 
       });
     } else {
       updateSignatureInfo({ [field]: signature });
     }
     setActiveSignature(null);
+    console.log('✅ Signature saved and modal closed');
   };
 
   const handleClearSignature = (field: string) => {
     Alert.alert(
       "Clear Signature",
-      "Are you sure you want to clear this signature?",
+      "Are you sure you want to clear this signature? The practitioner name will be kept.",
       [
         { text: "Cancel", style: "cancel" },
         {
-          text: "Clear",
+          text: "Clear Signature Only",
           style: "destructive",
           onPress: () => {
             if (field === 'nurseSignaturePaths') {
-              updateSignatureInfo({ nurseSignature: "", nurseSignaturePaths: "" });
+              updateSignatureInfo({ nurseSignaturePaths: "" }); // Keep name, clear signature
             } else if (field === 'doctorSignaturePaths') {
-              updateSignatureInfo({ doctorSignature: "", doctorSignaturePaths: "" });
+              updateSignatureInfo({ doctorSignaturePaths: "" }); // Keep name, clear signature
             } else if (field === 'othersSignaturePaths') {
-              updateSignatureInfo({ othersSignature: "", othersSignaturePaths: "" });
+              updateSignatureInfo({ othersSignaturePaths: "" }); // Keep name, clear signature
             } else {
               updateSignatureInfo({ [field]: "" });
             }
+            console.log('🗑️ Signature cleared for field:', field);
           },
         },
       ]
@@ -168,6 +174,32 @@ export default function SummaryScreen() {
       minute: '2-digit' 
     });
   }, []);
+  
+  const handleStaffSelection = (staffMember: any, field: string) => {
+    console.log('👤 Staff selected:', staffMember.name, 'for field:', field);
+    if (field === 'nurse') {
+      updateSignatureInfo({ 
+        nurseSignature: staffMember.name,
+        nurseCorporationId: staffMember.corporationId 
+      });
+    } else if (field === 'doctor') {
+      updateSignatureInfo({ 
+        doctorSignature: staffMember.name,
+        doctorCorporationId: staffMember.corporationId 
+      });
+    }
+    setShowStaffSelector(null);
+  };
+  
+  const getFilteredStaffMembers = (role: string) => {
+    return staffMembers.filter(staff => 
+      staff.isActive && 
+      (role === 'nurse' ? 
+        (staff.role.toLowerCase().includes('nurse') || staff.role.toLowerCase().includes('rn')) :
+        (staff.role.toLowerCase().includes('doctor') || staff.role.toLowerCase().includes('dr') || staff.role.toLowerCase().includes('physician'))
+      )
+    );
+  };
 
   return (
     <ScrollView 
@@ -381,23 +413,37 @@ export default function SummaryScreen() {
             </TouchableOpacity>
           )}
           
-          <Text style={styles.label}>Nurse Full Name</Text>
-          <TextInput
-            style={styles.input}
-            value={signatureInfo.nurseSignature}
-            onChangeText={(text) => updateSignatureInfo({ nurseSignature: text })}
-            placeholder="Enter receiving nurse full name"
-            placeholderTextColor="#999"
-          />
-          
-          <Text style={styles.label}>Nurse Corporation ID</Text>
-          <TextInput
-            style={styles.input}
-            value={signatureInfo.nurseCorporationId}
-            onChangeText={(text) => updateSignatureInfo({ nurseCorporationId: text })}
-            placeholder="Enter nurse corporation ID"
-            placeholderTextColor="#999"
-          />
+          <View style={styles.staffInputSection}>
+            <Text style={styles.label}>Nurse Information</Text>
+            <View style={styles.staffInputRow}>
+              <View style={styles.staffInputContainer}>
+                <Text style={styles.subLabel}>Full Name</Text>
+                <TextInput
+                  style={styles.input}
+                  value={signatureInfo.nurseSignature}
+                  onChangeText={(text) => updateSignatureInfo({ nurseSignature: text })}
+                  placeholder="Enter receiving nurse full name"
+                  placeholderTextColor="#999"
+                />
+              </View>
+              <TouchableOpacity 
+                style={styles.staffSelectorButton}
+                onPress={() => setShowStaffSelector('nurse')}
+              >
+                <Users size={16} color="#0066CC" />
+                <Text style={styles.staffSelectorText}>Select</Text>
+              </TouchableOpacity>
+            </View>
+            
+            <Text style={styles.subLabel}>Corporation ID</Text>
+            <TextInput
+              style={styles.input}
+              value={signatureInfo.nurseCorporationId}
+              onChangeText={(text) => updateSignatureInfo({ nurseCorporationId: text })}
+              placeholder="Enter nurse corporation ID"
+              placeholderTextColor="#999"
+            />
+          </View>
         </View>
         
         <View style={styles.signatureSection}>
@@ -421,23 +467,37 @@ export default function SummaryScreen() {
             </TouchableOpacity>
           )}
           
-          <Text style={styles.label}>Doctor Full Name</Text>
-          <TextInput
-            style={styles.input}
-            value={signatureInfo.doctorSignature}
-            onChangeText={(text) => updateSignatureInfo({ doctorSignature: text })}
-            placeholder="Enter receiving doctor full name"
-            placeholderTextColor="#999"
-          />
-          
-          <Text style={styles.label}>Doctor Corporation ID</Text>
-          <TextInput
-            style={styles.input}
-            value={signatureInfo.doctorCorporationId}
-            onChangeText={(text) => updateSignatureInfo({ doctorCorporationId: text })}
-            placeholder="Enter doctor corporation ID"
-            placeholderTextColor="#999"
-          />
+          <View style={styles.staffInputSection}>
+            <Text style={styles.label}>Doctor Information</Text>
+            <View style={styles.staffInputRow}>
+              <View style={styles.staffInputContainer}>
+                <Text style={styles.subLabel}>Full Name</Text>
+                <TextInput
+                  style={styles.input}
+                  value={signatureInfo.doctorSignature}
+                  onChangeText={(text) => updateSignatureInfo({ doctorSignature: text })}
+                  placeholder="Enter receiving doctor full name"
+                  placeholderTextColor="#999"
+                />
+              </View>
+              <TouchableOpacity 
+                style={styles.staffSelectorButton}
+                onPress={() => setShowStaffSelector('doctor')}
+              >
+                <Users size={16} color="#0066CC" />
+                <Text style={styles.staffSelectorText}>Select</Text>
+              </TouchableOpacity>
+            </View>
+            
+            <Text style={styles.subLabel}>Corporation ID</Text>
+            <TextInput
+              style={styles.input}
+              value={signatureInfo.doctorCorporationId}
+              onChangeText={(text) => updateSignatureInfo({ doctorCorporationId: text })}
+              placeholder="Enter doctor corporation ID"
+              placeholderTextColor="#999"
+            />
+          </View>
         </View>
         
         <View style={styles.signatureSection}>
@@ -507,7 +567,10 @@ export default function SummaryScreen() {
       {activeSignature && (
         <SignatureModal
           visible={true}
-          onClose={() => setActiveSignature(null)}
+          onClose={() => {
+            console.log('❌ Signature modal closed without saving');
+            setActiveSignature(null);
+          }}
           onSave={(signature: string) => handleSaveSignature(activeSignature, signature)}
           title={
             activeSignature === "nurseSignaturePaths"
@@ -516,8 +579,60 @@ export default function SummaryScreen() {
               ? "Doctor Signature"
               : "Others Signature"
           }
+          initialSignature={
+            activeSignature === "nurseSignaturePaths" ? signatureInfo.nurseSignaturePaths :
+            activeSignature === "doctorSignaturePaths" ? signatureInfo.doctorSignaturePaths :
+            signatureInfo.othersSignaturePaths
+          }
         />
       )}
+      
+      {/* Staff Selector Modal */}
+      <Modal
+        visible={!!showStaffSelector}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowStaffSelector(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.staffModal}>
+            <View style={styles.staffModalHeader}>
+              <Text style={styles.staffModalTitle}>
+                Select {showStaffSelector === 'nurse' ? 'Nurse' : 'Doctor'}
+              </Text>
+              <TouchableOpacity onPress={() => setShowStaffSelector(null)}>
+                <Text style={styles.staffModalClose}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+            
+            <FlatList
+              data={getFilteredStaffMembers(showStaffSelector || '')}
+              keyExtractor={(item) => item.corporationId}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.staffItem}
+                  onPress={() => handleStaffSelection(item, showStaffSelector || '')}
+                >
+                  <View>
+                    <Text style={styles.staffName}>{item.name}</Text>
+                    <Text style={styles.staffDetails}>
+                      {item.corporationId} • {item.role} • {item.department}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              )}
+              ListEmptyComponent={
+                <View style={styles.emptyStaffList}>
+                  <Text style={styles.emptyStaffText}>
+                    No {showStaffSelector} staff members found.
+                    You can still enter the information manually.
+                  </Text>
+                </View>
+              }
+            />
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -759,5 +874,101 @@ const styles = StyleSheet.create({
     color: "#DC2626",
     fontSize: 14,
     fontWeight: "500",
+  },
+  staffInputSection: {
+    marginTop: 8,
+  },
+  staffInputRow: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    gap: 12,
+    marginBottom: 8,
+  },
+  staffInputContainer: {
+    flex: 1,
+  },
+  subLabel: {
+    fontSize: 13,
+    fontWeight: "500",
+    color: "#666",
+    marginBottom: 4,
+  },
+  staffSelectorButton: {
+    backgroundColor: "#F0F7FF",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 6,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    borderWidth: 1,
+    borderColor: "#B3D9FF",
+    marginBottom: 16,
+  },
+  staffSelectorText: {
+    color: "#0066CC",
+    fontSize: 12,
+    fontWeight: "500",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  staffModal: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    width: "90%",
+    maxWidth: 400,
+    maxHeight: "70%",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  staffModalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E5E5",
+  },
+  staffModalTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#333",
+  },
+  staffModalClose: {
+    color: "#0066CC",
+    fontSize: 16,
+    fontWeight: "500",
+  },
+  staffItem: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0F0F0",
+  },
+  staffName: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#333",
+    marginBottom: 4,
+  },
+  staffDetails: {
+    fontSize: 14,
+    color: "#666",
+  },
+  emptyStaffList: {
+    padding: 20,
+    alignItems: "center",
+  },
+  emptyStaffText: {
+    fontSize: 14,
+    color: "#999",
+    textAlign: "center",
+    lineHeight: 20,
   },
 });

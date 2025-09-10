@@ -6,8 +6,9 @@ import {
   StyleSheet,
   TouchableOpacity,
   Dimensions,
+  Alert,
 } from 'react-native';
-import { X, Check } from 'lucide-react-native';
+import { X, Check, AlertCircle } from 'lucide-react-native';
 import SignatureBox from './SignatureBox';
 
 interface SignatureModalProps {
@@ -15,6 +16,7 @@ interface SignatureModalProps {
   onClose: () => void;
   onSave: (signature: string) => void;
   title: string;
+  initialSignature?: string;
 }
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -24,15 +26,32 @@ export default function SignatureModal({
   onClose,
   onSave,
   title,
+  initialSignature = '',
 }: SignatureModalProps) {
-  const [signature, setSignature] = React.useState('');
+  const [signature, setSignature] = React.useState(initialSignature);
+  
+  // Update signature when modal opens with initial value
+  React.useEffect(() => {
+    if (visible) {
+      setSignature(initialSignature);
+      console.log('📝 SignatureModal opened with initial signature:', !!initialSignature);
+    }
+  }, [visible, initialSignature]);
 
   const handleSave = () => {
     if (signature) {
+      console.log('💾 Saving signature from modal:', signature.substring(0, 50) + '...');
       // Convert SVG paths to base64 image for better compatibility
       const base64Image = convertSignatureToBase64(signature);
       onSave(base64Image);
       setSignature('');
+      console.log('✅ Signature saved and modal will close');
+    } else {
+      Alert.alert(
+        'No Signature',
+        'Please draw a signature before saving.',
+        [{ text: 'OK' }]
+      );
     }
   };
 
@@ -66,8 +85,26 @@ export default function SignatureModal({
   };
 
   const handleClose = () => {
-    setSignature('');
-    onClose();
+    if (signature && signature !== initialSignature) {
+      Alert.alert(
+        'Unsaved Changes',
+        'You have an unsaved signature. Do you want to discard it?',
+        [
+          { text: 'Keep Editing', style: 'cancel' },
+          { 
+            text: 'Discard', 
+            style: 'destructive',
+            onPress: () => {
+              setSignature('');
+              onClose();
+            }
+          }
+        ]
+      );
+    } else {
+      setSignature('');
+      onClose();
+    }
   };
 
   return (
@@ -87,9 +124,20 @@ export default function SignatureModal({
           </View>
 
           <View style={styles.content}>
+            {!signature && (
+              <View style={styles.instructionBox}>
+                <AlertCircle size={16} color="#0066CC" />
+                <Text style={styles.instructionText}>
+                  Draw your signature in the area below using your finger or stylus
+                </Text>
+              </View>
+            )}
             <SignatureBox
               title="Draw your signature below"
-              onSignatureChange={setSignature}
+              onSignatureChange={(newSignature) => {
+                console.log('📝 Signature changed in modal:', !!newSignature);
+                setSignature(newSignature);
+              }}
               signature={signature}
               height={200}
               width={screenWidth - 80}
@@ -113,8 +161,10 @@ export default function SignatureModal({
               onPress={handleSave}
               disabled={!signature}
             >
-              <Check size={20} color="#fff" />
-              <Text style={styles.saveButtonText}>Save Signature</Text>
+              <Check size={20} color={signature ? "#fff" : "#999"} />
+              <Text style={[styles.saveButtonText, !signature && styles.saveButtonTextDisabled]}>
+                {signature ? 'Save Signature' : 'Draw Signature First'}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -194,5 +244,25 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginLeft: 8,
+  },
+  saveButtonTextDisabled: {
+    color: '#999',
+  },
+  instructionBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F0F7FF',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#B3D9FF',
+  },
+  instructionText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#0066CC',
+    marginLeft: 8,
+    lineHeight: 18,
   },
 });

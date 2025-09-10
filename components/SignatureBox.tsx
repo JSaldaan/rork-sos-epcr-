@@ -46,20 +46,28 @@ export default function SignatureBox({
   const pathsRef = useRef<string[]>([]);
   const viewRef = useRef<View>(null);
 
-  // Initialize paths from signature prop
+  // Initialize paths from signature prop with better persistence
   useEffect(() => {
     if (signature) {
+      console.log('🔄 Initializing signature from prop:', signature.substring(0, 50) + '...');
       // If signature is already base64, we can't display it in SVG paths
       // but we still mark it as having a signature
       if (signature.startsWith('data:image')) {
         // Set a placeholder path to indicate signature exists
         setPaths(['SIGNATURE_EXISTS']);
         pathsRef.current = ['SIGNATURE_EXISTS'];
+        console.log('📷 Base64 signature detected and preserved');
       } else {
         const initialPaths = signature.split('|').filter(p => p);
         setPaths(initialPaths);
         pathsRef.current = initialPaths;
+        console.log('🎨 SVG paths signature loaded:', initialPaths.length, 'paths');
       }
+    } else {
+      // Clear paths if no signature
+      setPaths([]);
+      pathsRef.current = [];
+      console.log('🗑️ No signature prop, clearing paths');
     }
   }, [signature]);
 
@@ -109,23 +117,30 @@ export default function SignatureBox({
         setCurrentPath(updatedPath);
       },
       onPanResponderRelease: () => {
-        console.log('✅ Touch ended');
+        console.log('✅ Touch ended with', currentPathRef.current.length, 'points');
         onDrawEnd?.();
         setIsDrawing(false);
         
-        if (currentPathRef.current.length > 3) {
+        if (currentPathRef.current.length > 2) { // Reduced threshold for better responsiveness
           const svgPath = pointsToSvgPath(currentPathRef.current);
           if (svgPath) {
             const newPaths = [...pathsRef.current, svgPath];
             pathsRef.current = newPaths;
             setPaths(newPaths);
             
-            // Convert to base64 immediately for better compatibility
+            // Convert to base64 immediately for better compatibility and persistence
             const pathsString = newPaths.join('|');
             const base64Image = convertPathsToBase64(pathsString);
-            onSignatureChange(base64Image);
-            console.log('💾 Signature saved as base64 with', currentPathRef.current.length, 'points');
+            
+            // Ensure the signature is saved immediately
+            setTimeout(() => {
+              onSignatureChange(base64Image);
+              console.log('💾 Signature saved as base64 with', currentPathRef.current.length, 'points');
+              console.log('🔒 Signature data length:', base64Image.length, 'characters');
+            }, 100);
           }
+        } else {
+          console.log('⚠️ Path too short, not saving (', currentPathRef.current.length, 'points)');
         }
         
         currentPathRef.current = [];
@@ -178,16 +193,32 @@ export default function SignatureBox({
   };
 
   const clearSignature = useCallback(() => {
+    console.log('🗑️ Clearing signature...');
     setPaths([]);
     setCurrentPath([]);
     currentPathRef.current = [];
     pathsRef.current = [];
-    onSignatureChange('');
-    console.log('🗑️ Signature cleared');
+    
+    // Ensure the signature is cleared in the parent component
+    setTimeout(() => {
+      onSignatureChange('');
+      console.log('✅ Signature cleared and parent notified');
+    }, 50);
   }, [onSignatureChange]);
 
-  const hasSignature = paths.length > 0 || currentPath.length > 0;
+  const hasSignature = paths.length > 0 || currentPath.length > 0 || !!signature;
   const currentSvgPath = pointsToSvgPath(currentPath);
+  
+  // Debug logging for signature state
+  useEffect(() => {
+    console.log('📊 Signature state:', {
+      pathsCount: paths.length,
+      currentPathLength: currentPath.length,
+      hasSignatureProp: !!signature,
+      hasSignature,
+      signatureLength: signature?.length || 0
+    });
+  }, [paths.length, currentPath.length, signature, hasSignature]);
 
   return (
     <View style={styles.container}>

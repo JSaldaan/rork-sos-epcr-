@@ -42,11 +42,22 @@ export default function TouchSignature({
   const containerRef = useRef<View>(null);
   const isDrawingRef = useRef(false);
 
-  // Initialize paths from signature prop
+  // Initialize paths from signature prop with better persistence
   useEffect(() => {
     if (signature) {
-      const initialPaths = signature.split('|').filter(p => p);
-      setPaths(initialPaths);
+      console.log('🔄 TouchSignature initializing from prop:', signature.substring(0, 50) + '...');
+      if (signature.startsWith('data:image')) {
+        // Base64 signature - mark as existing
+        setPaths(['SIGNATURE_EXISTS']);
+        console.log('📷 Base64 signature preserved in TouchSignature');
+      } else {
+        const initialPaths = signature.split('|').filter(p => p);
+        setPaths(initialPaths);
+        console.log('🎨 SVG paths loaded in TouchSignature:', initialPaths.length, 'paths');
+      }
+    } else {
+      setPaths([]);
+      console.log('🗑️ No signature prop in TouchSignature, clearing');
     }
   }, [signature]);
 
@@ -117,7 +128,7 @@ export default function TouchSignature({
       },
       
       onPanResponderRelease: () => {
-        console.log('✅ Drawing ended with', currentPoints.current.length, 'points');
+        console.log('✅ TouchSignature drawing ended with', currentPoints.current.length, 'points');
         isDrawingRef.current = false;
         setIsDrawing(false);
         
@@ -126,12 +137,23 @@ export default function TouchSignature({
           const finalPath = pointsToPath(currentPoints.current);
           if (finalPath) {
             setPaths(prevPaths => {
-              const newPaths = [...prevPaths, finalPath];
-              onSignatureChange(newPaths.join('|'));
-              console.log('💾 Signature saved with', currentPoints.current.length, 'points');
+              const filteredPrevPaths = prevPaths.filter(p => p !== 'SIGNATURE_EXISTS');
+              const newPaths = [...filteredPrevPaths, finalPath];
+              
+              // Convert to base64 for better persistence
+              const pathsString = newPaths.join('|');
+              const base64Image = convertPathsToBase64(pathsString);
+              
+              setTimeout(() => {
+                onSignatureChange(base64Image);
+                console.log('💾 TouchSignature saved as base64 with', currentPoints.current.length, 'points');
+              }, 100);
+              
               return newPaths;
             });
           }
+        } else {
+          console.log('⚠️ TouchSignature path too short, not saving');
         }
         
         // Clear current path
@@ -158,14 +180,56 @@ export default function TouchSignature({
   }, []);
 
   const clearSignature = useCallback(() => {
+    console.log('🗑️ TouchSignature clearing signature...');
     setPaths([]);
     setCurrentPath('');
     currentPoints.current = [];
-    onSignatureChange('');
-    console.log('🗑️ Signature cleared');
+    
+    setTimeout(() => {
+      onSignatureChange('');
+      console.log('✅ TouchSignature cleared and parent notified');
+    }, 50);
   }, [onSignatureChange]);
+  
+  // Convert paths to base64 for better compatibility
+  const convertPathsToBase64 = (pathsString: string): string => {
+    if (!pathsString) return '';
+    
+    if (pathsString.startsWith('data:image')) {
+      return pathsString;
+    }
+    
+    const paths = pathsString.split('|').filter(p => p);
+    if (paths.length === 0) return '';
+    
+    const svgString = `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg" style="background: white;">
+      <rect width="100%" height="100%" fill="white"/>
+      ${paths.map(path => 
+        `<path d="${path}" stroke="#000" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`
+      ).join('')}
+    </svg>`;
+    
+    try {
+      const base64 = btoa(unescape(encodeURIComponent(svgString)));
+      return `data:image/svg+xml;base64,${base64}`;
+    } catch (error) {
+      console.error('TouchSignature base64 conversion error:', error);
+      return pathsString;
+    }
+  };
 
-  const hasSignature = paths.length > 0 || currentPath.length > 0;
+  const hasSignature = paths.length > 0 || currentPath.length > 0 || !!signature;
+  
+  // Debug logging for TouchSignature state
+  useEffect(() => {
+    console.log('📊 TouchSignature state:', {
+      pathsCount: paths.length,
+      currentPathLength: currentPath.length,
+      hasSignatureProp: !!signature,
+      hasSignature,
+      signatureLength: signature?.length || 0
+    });
+  }, [paths.length, currentPath.length, signature, hasSignature]);
 
   if (Platform.OS === 'web') {
     return (
@@ -214,7 +278,7 @@ export default function TouchSignature({
           style={styles.svg}
           pointerEvents="none"
         >
-          {paths.map((path, index) => (
+          {paths.filter(p => p !== 'SIGNATURE_EXISTS').map((path, index) => (
             <Path
               key={`path-${index}`}
               d={path}
