@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
-import { usePCRStore, CompletedPCR, StaffMember, AuthSession } from '@/store/pcrStore';
+import type { CompletedPCR, StaffMember } from '@/store/types';
 import { Platform } from 'react-native';
 import React from 'react';
 
@@ -247,6 +247,8 @@ class OfflineManager {
    * Process individual queue item
    */
   private async processQueueItem(item: OfflineQueueItem): Promise<boolean> {
+    // Lazy load store to avoid circular dependency
+    const { usePCRStore } = await import('@/store/pcrStore');
     const store = usePCRStore.getState();
     
     try {
@@ -292,6 +294,8 @@ class OfflineManager {
    */
   private async performFullDataSync(): Promise<void> {
     console.log('Performing full data sync...');
+    // Lazy load store to avoid circular dependency
+    const { usePCRStore } = await import('@/store/pcrStore');
     const store = usePCRStore.getState();
     
     try {
@@ -314,6 +318,8 @@ class OfflineManager {
    * Process admin actions
    */
   private async processAdminAction(action: { action: string; payload: any }): Promise<void> {
+    // Lazy load store to avoid circular dependency
+    const { usePCRStore } = await import('@/store/pcrStore');
     const store = usePCRStore.getState();
     
     switch (action.action) {
@@ -403,6 +409,8 @@ class OfflineManager {
       console.log(`Removed ${initialQueueLength - this.state.queuedItems.length} old queue items`);
       
       // Clean up old audit logs
+      // Lazy load store to avoid circular dependency
+      const { usePCRStore } = await import('@/store/pcrStore');
       const store = usePCRStore.getState();
       const oldAuditCount = store.auditLogs.length;
       const recentAuditLogs = store.auditLogs.filter(log => {
@@ -500,6 +508,8 @@ class OfflineManager {
       await this.calculateStorageUsage();
       
       // Reload store data
+      // Lazy load store to avoid circular dependency
+      const { usePCRStore } = await import('@/store/pcrStore');
       const store = usePCRStore.getState();
       await store.loadCompletedPCRs();
       await store.loadStaffMembers();
