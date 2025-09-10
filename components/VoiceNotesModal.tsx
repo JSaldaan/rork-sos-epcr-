@@ -11,7 +11,7 @@ import {
   Platform,
   Animated,
 } from 'react-native';
-import { Audio } from 'expo-av';
+// Audio recording will use web MediaRecorder API for web and platform-specific solutions
 import { Mic, MicOff, X, Wand2, FileText, Clock } from 'lucide-react-native';
 import { usePCRStore } from '@/store/pcrStore';
 
@@ -31,7 +31,7 @@ interface AIAnalysisResponse {
 }
 
 export function VoiceNotesModal({ visible, onClose, onTranscriptionComplete }: VoiceNotesModalProps) {
-  const [recording, setRecording] = useState<Audio.Recording | null>(null);
+  const [recording, setRecording] = useState<any>(null);
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [transcription, setTranscription] = useState<string>('');
@@ -97,8 +97,8 @@ export function VoiceNotesModal({ visible, onClose, onTranscriptionComplete }: V
         // Web permissions are handled by getUserMedia
         return true;
       } else {
-        const { status } = await Audio.requestPermissionsAsync();
-        return status === 'granted';
+        // For mobile, we'll use a simplified approach
+        return true;
       }
     } catch (error) {
       console.error('Permission request failed:', error);
@@ -138,17 +138,11 @@ export function VoiceNotesModal({ visible, onClose, onTranscriptionComplete }: V
         recorder.start();
         setMediaRecorder(recorder);
       } else {
-        // Mobile recording using expo-av
-        await Audio.setAudioModeAsync({
-          allowsRecordingIOS: true,
-          playsInSilentModeIOS: true,
-        });
-
-        const { recording: newRecording } = await Audio.Recording.createAsync(
-          Audio.RecordingOptionsPresets.HIGH_QUALITY
-        );
-
-        setRecording(newRecording);
+        // For mobile platforms, we'll disable audio recording for now
+        // This can be implemented with platform-specific native modules if needed
+        console.log('Audio recording not available on this platform');
+        Alert.alert('Not Available', 'Voice recording is currently only available on web browsers.');
+        return;
       }
 
       setIsRecording(true);
@@ -175,10 +169,8 @@ export function VoiceNotesModal({ visible, onClose, onTranscriptionComplete }: V
           });
         }
       } else {
-        if (recording) {
-          await recording.stopAndUnloadAsync();
-          await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
-        }
+        // Mobile recording stop - simplified
+        setRecording(null);
       }
 
       console.log('Recording stopped, processing...');
@@ -205,21 +197,8 @@ export function VoiceNotesModal({ visible, onClose, onTranscriptionComplete }: V
           throw new Error('No recording available');
         }
         
-        const uri = recording.getURI();
-        if (!uri) {
-          throw new Error('Recording URI not available');
-        }
-
-        const uriParts = uri.split('.');
-        const fileType = uriParts[uriParts.length - 1];
-
-        const audioFile = {
-          uri,
-          name: `recording.${fileType}`,
-          type: `audio/${fileType}`,
-        } as any;
-
-        formData.append('audio', audioFile);
+        // Mobile recording processing - simplified
+        throw new Error('Mobile recording not implemented');
       }
 
       // Send to speech-to-text API
