@@ -525,6 +525,24 @@ const LoginScreen: React.FC = () => {
             <TestTube size={16} color="#6b7280" />
             <Text style={styles.debugButtonText}>Test Logout State</Text>
           </Pressable>
+          
+          <Pressable
+            style={[styles.debugButton, styles.warningButton]}
+            onPress={async () => {
+              try {
+                console.log('=== CLEARING ALL ACCOUNT LOCKS ===');
+                await BruteForceProtection.clearAllLocks();
+                alert('✅ All account locks cleared successfully');
+                console.log('=== END CLEARING ACCOUNT LOCKS ===');
+              } catch (error) {
+                console.error('Error clearing locks:', error);
+                alert('Error clearing locks: ' + error);
+              }
+            }}
+          >
+            <Shield size={16} color="#f59e0b" />
+            <Text style={[styles.debugButtonText, styles.warningButtonText]}>Clear Account Locks</Text>
+          </Pressable>
         </View>
         
         {/* Account Lockout Warning */}
@@ -846,6 +864,13 @@ const styles = StyleSheet.create({
   testButton: {
     backgroundColor: '#fef3c7',
     borderColor: '#f59e0b',
+  },
+  warningButton: {
+    backgroundColor: '#fef3c7',
+    borderColor: '#f59e0b',
+  },
+  warningButtonText: {
+    color: '#f59e0b',
   },
   securityButton: {
     backgroundColor: '#eff6ff',

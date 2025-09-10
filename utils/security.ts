@@ -363,11 +363,11 @@ export class BruteForceProtection {
       await SecurityLogger.logEvent(
         'BRUTE_FORCE_DETECTED',
         `Account ${corporationId} locked due to ${failedAttempts.length} failed attempts`,
-        'CRITICAL',
+        'HIGH',
         true
       );
       
-      console.log(`Account ${corporationId} locked due to brute force attempts`);
+      console.warn(`Account ${corporationId} locked due to brute force attempts`);
     }
   }
   
@@ -384,6 +384,48 @@ export class BruteForceProtection {
     } catch (error) {
       console.error('Error getting lockout time:', error);
       return 0;
+    }
+  }
+  
+  // Clear all account locks (admin function)
+  static async clearAllLocks(): Promise<void> {
+    try {
+      const allKeys = await AsyncStorage.getAllKeys();
+      const lockKeys = allKeys.filter(key => key.startsWith('lock_') || key.startsWith('attempts_'));
+      
+      if (lockKeys.length > 0) {
+        await AsyncStorage.multiRemove(lockKeys);
+        console.log(`Cleared ${lockKeys.length} account locks and attempt records`);
+        
+        await SecurityLogger.logEvent(
+          'SUSPICIOUS_ACTIVITY',
+          `Admin cleared ${lockKeys.length} account locks`,
+          'MEDIUM'
+        );
+      }
+    } catch (error) {
+      console.error('Error clearing account locks:', error);
+      throw error;
+    }
+  }
+  
+  // Clear specific account lock
+  static async clearAccountLock(corporationId: string): Promise<void> {
+    try {
+      const sanitizedId = InputValidator.sanitizeString(corporationId);
+      await AsyncStorage.removeItem(`lock_${sanitizedId}`);
+      await AsyncStorage.removeItem(`attempts_${sanitizedId}`);
+      
+      console.log(`Cleared lock for account: ${sanitizedId}`);
+      
+      await SecurityLogger.logEvent(
+        'SUSPICIOUS_ACTIVITY',
+        `Admin cleared lock for account: ${sanitizedId}`,
+        'MEDIUM'
+      );
+    } catch (error) {
+      console.error('Error clearing account lock:', error);
+      throw error;
     }
   }
 }
@@ -420,12 +462,14 @@ export class SecurityLogger {
       
       await AsyncStorage.setItem('security_logs', JSON.stringify(logs));
       
-      // Log to console for debugging
-      console.log(`[SECURITY ${severity}] ${event}: ${details}`);
-      
-      // Handle critical events
+      // Log to console for debugging (use appropriate log level)
       if (severity === 'CRITICAL') {
+        console.error(`[SECURITY ${severity}] ${event}: ${details}`);
         await this.handleCriticalEvent(log);
+      } else if (severity === 'HIGH') {
+        console.warn(`[SECURITY ${severity}] ${event}: ${details}`);
+      } else {
+        console.log(`[SECURITY ${severity}] ${event}: ${details}`);
       }
     } catch (error) {
       console.error('Failed to log security event:', error);
@@ -445,7 +489,7 @@ export class SecurityLogger {
   
   // Handle critical security events
   private static async handleCriticalEvent(log: SecurityLog): Promise<void> {
-    console.error('CRITICAL SECURITY EVENT:', log);
+    console.warn('SECURITY EVENT:', log);
     
     // In production, you might want to:
     // - Send alert to security team
@@ -553,7 +597,6 @@ export class SecurityMiddleware {
   // Validate and sanitize API request
   static validateApiRequest(data: any): { valid: boolean; sanitized: any; errors: string[] } {
     const errors: string[] = [];
-    let sanitized: any = {};
     
     try {
       // Recursively sanitize object

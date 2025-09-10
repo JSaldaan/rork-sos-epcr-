@@ -11,7 +11,7 @@ import { Shield, AlertTriangle, CheckCircle, XCircle, Eye, Lock, Activity } from
 import {
   SecurityManager,
   SecurityLogger,
-
+  BruteForceProtection,
   type SecurityLog,
 } from '@/utils/security';
 
@@ -99,6 +99,30 @@ export const SecurityDashboard: React.FC<SecurityDashboardProps> = ({ onClose })
             } catch (error) {
               console.error('Failed to clear logs:', error);
               Alert.alert('Error', 'Failed to clear security logs');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const clearAccountLocks = async () => {
+    Alert.alert(
+      'Clear Account Locks',
+      'Are you sure you want to clear all account locks? This will unlock all locked accounts.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear Locks',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await BruteForceProtection.clearAllLocks();
+              await loadSecurityData();
+              Alert.alert('Success', 'All account locks cleared successfully');
+            } catch (error) {
+              console.error('Failed to clear locks:', error);
+              Alert.alert('Error', 'Failed to clear account locks');
             }
           },
         },
@@ -200,6 +224,11 @@ export const SecurityDashboard: React.FC<SecurityDashboardProps> = ({ onClose })
           <Pressable style={styles.actionButton} onPress={loadSecurityData}>
             <Activity size={20} color="#10b981" />
             <Text style={styles.actionButtonText}>Refresh Status</Text>
+          </Pressable>
+          
+          <Pressable style={[styles.actionButton, styles.warningButton]} onPress={clearAccountLocks}>
+            <Lock size={20} color="#f59e0b" />
+            <Text style={[styles.actionButtonText, styles.warningButtonText]}>Clear Locks</Text>
           </Pressable>
           
           <Pressable style={[styles.actionButton, styles.dangerButton]} onPress={clearSecurityLogs}>
@@ -397,6 +426,13 @@ const styles = StyleSheet.create({
   },
   dangerButtonText: {
     color: '#ef4444',
+  },
+  warningButton: {
+    backgroundColor: '#fef3c7',
+    borderColor: '#f59e0b',
+  },
+  warningButtonText: {
+    color: '#f59e0b',
   },
   logsCard: {
     backgroundColor: '#fff',
