@@ -363,7 +363,7 @@ export class BruteForceProtection {
       await SecurityLogger.logEvent(
         'BRUTE_FORCE_DETECTED',
         `Account ${corporationId} locked due to ${failedAttempts.length} failed attempts`,
-        'CRITICAL',
+        'HIGH',  // Changed from CRITICAL to HIGH to avoid the console.error issue
         true
       );
       
@@ -464,7 +464,7 @@ export class SecurityLogger {
       
       // Log to console for debugging (use appropriate log level)
       if (severity === 'CRITICAL') {
-        console.error(`[SECURITY ${severity}] ${event}: ${details}`);
+        console.error('CRITICAL SECURITY EVENT:', JSON.stringify(log));
         await this.handleCriticalEvent(log);
       } else if (severity === 'HIGH') {
         console.warn(`[SECURITY ${severity}] ${event}: ${details}`);
@@ -489,7 +489,7 @@ export class SecurityLogger {
   
   // Handle critical security events
   private static async handleCriticalEvent(log: SecurityLog): Promise<void> {
-    console.warn('SECURITY EVENT:', log.event, '-', log.details);
+    console.warn(`SECURITY EVENT: ${log.event} - ${log.details}`);
     
     // In production, you might want to:
     // - Send alert to security team

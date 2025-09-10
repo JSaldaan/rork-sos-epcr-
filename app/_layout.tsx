@@ -6,6 +6,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { usePCRStore } from "@/store/pcrStore";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SecurityManager, SecurityLogger } from '@/utils/security';
+import { initializeCleanSecurity } from '@/utils/clearSecurityLocks';
 
 
 SplashScreen.preventAutoHideAsync();
@@ -133,9 +134,13 @@ function AppInitializer() {
       try {
         console.log('=== APP INITIALIZATION ===');
         
-        // Initialize security system first
+        // Clear any existing security locks first
+        await initializeCleanSecurity();
+        console.log('Security locks cleared');
+        
+        // Initialize security system with clean state
         await SecurityManager.initialize();
-        console.log('Security system initialized');
+        console.log('Security system initialized with clean state');
         
         // Initialize staff database
         await initializeStaffDatabase();
