@@ -772,7 +772,7 @@ export default function NewPCRScreen() {
             </View>
             
             <Text style={styles.adminHintText}>
-              Hint: Default password is &quot;admin123&quot;
+              Hint: Default password is "admin123"
             </Text>
           </View>
         </View>
