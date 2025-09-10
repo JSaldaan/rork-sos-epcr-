@@ -1827,7 +1827,7 @@ export default function AdminScreen() {
                     {feature.plans.map(plan => (
                       <View key={plan} style={styles.featurePlanBadge}>
                         <Text style={styles.featurePlanText}>
-                          {enterpriseConfig.pricing[plan as keyof typeof enterpriseConfig.pricing]?.name || plan}
+                          {(enterpriseConfig.pricing as any)[plan]?.name || plan}
                         </Text>
                       </View>
                     ))}
