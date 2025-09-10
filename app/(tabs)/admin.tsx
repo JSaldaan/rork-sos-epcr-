@@ -390,7 +390,7 @@ export default function AdminScreen() {
       } else {
         // SVG path data, create SVG
         console.log('Converting SVG paths to full SVG');
-        pathElements = svgPaths.split('|').filter(p => p.trim()).map(path => 
+        pathElements = svgPaths.split('|').filter((p: string) => p.trim()).map(path => 
           `<path d="${path.trim()}" stroke="#000" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`
         ).join('');
       }

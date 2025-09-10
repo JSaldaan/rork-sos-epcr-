@@ -489,7 +489,7 @@ export class SecurityLogger {
   
   // Handle critical security events
   private static async handleCriticalEvent(log: SecurityLog): Promise<void> {
-    console.error('CRITICAL SECURITY EVENT:', JSON.stringify(log));
+    console.warn('SECURITY EVENT:', log.event, '-', log.details);
     
     // In production, you might want to:
     // - Send alert to security team
