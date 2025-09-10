@@ -284,7 +284,7 @@ export const SecurityDashboard: React.FC<SecurityDashboardProps> = ({ onClose })
           <Text style={styles.tipItem}>• Log out when finished using the app</Text>
           <Text style={styles.tipItem}>• Report suspicious activity immediately</Text>
           <Text style={styles.tipItem}>• Keep the app updated to the latest version</Text>
-          <Text style={styles.tipItem}>• Don&apos;t share login credentials with others</Text>
+          <Text style={styles.tipItem}>• Don't share login credentials with others</Text>
           <Text style={styles.tipItem}>• Use the app only on trusted devices</Text>
         </View>
       </View>
