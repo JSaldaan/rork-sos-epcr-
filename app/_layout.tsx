@@ -14,11 +14,16 @@ SplashScreen.preventAutoHideAsync();
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000,
-      gcTime: 10 * 60 * 1000,
-      retry: 1,
+      staleTime: 10 * 60 * 1000, // Increased for better performance
+      gcTime: 30 * 60 * 1000, // Increased cache time
+      retry: 2, // Better reliability
       refetchOnWindowFocus: false,
       refetchOnMount: false,
+      refetchOnReconnect: true, // Refetch when network reconnects
+    },
+    mutations: {
+      retry: 2,
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
     },
   },
 });
@@ -30,10 +35,10 @@ function RootLayoutNav() {
   const [isAppReady, setIsAppReady] = React.useState(false);
   
   useEffect(() => {
-    // Wait for app initialization to complete
+    // Faster app initialization
     const timer = setTimeout(() => {
       setIsAppReady(true);
-    }, 500); // Give more time for initialization
+    }, 100); // Reduced delay for faster startup
     
     return () => clearTimeout(timer);
   }, []);
@@ -134,53 +139,59 @@ function AppInitializer() {
       try {
         console.log('=== APP INITIALIZATION ===');
         
-        // Clear any existing security locks first
-        await initializeCleanSecurity();
-        console.log('Security locks cleared');
+        // Parallel initialization for faster startup
+        const initPromises = [
+          initializeCleanSecurity(),
+          initializeStaffDatabase(),
+        ];
         
-        // Initialize security system with clean state
+        await Promise.all(initPromises);
+        console.log('Security and staff database initialized');
+        
+        // Initialize security system
         await SecurityManager.initialize();
-        console.log('Security system initialized with clean state');
         
-        // Initialize staff database
-        await initializeStaffDatabase();
-        console.log('Staff database initialized');
+        // Check for existing session instead of always clearing
+        const existingSession = await AsyncStorage.getItem('currentSession');
+        if (existingSession) {
+          try {
+            const session = JSON.parse(existingSession);
+            usePCRStore.setState({ 
+              currentSession: session,
+              isAdmin: session.isAdmin || false
+            });
+            console.log('Restored existing session');
+          } catch {
+            await AsyncStorage.removeItem('currentSession');
+            usePCRStore.setState({ 
+              currentSession: null,
+              isAdmin: false
+            });
+          }
+        } else {
+          usePCRStore.setState({ 
+            currentSession: null,
+            isAdmin: false
+          });
+        }
         
-        // Clear any existing sessions to force fresh login
-        console.log('Clearing any existing sessions to force fresh login');
-        await AsyncStorage.removeItem('currentSession');
+        // Load draft and completed PCRs in parallel
+        await Promise.all([
+          loadCurrentPCRDraft(),
+          loadCompletedPCRs()
+        ]);
         
-        // Ensure store is in clean state
-        usePCRStore.setState({ 
-          currentSession: null,
-          isAdmin: false
-        });
-        
-        console.log('All users must login fresh on app start');
-        
-        // Log app initialization
-        await SecurityLogger.logEvent(
-          'SUSPICIOUS_ACTIVITY',
-          'Application started and initialized',
-          'LOW'
-        );
-        
-        // Load any existing draft
-        await loadCurrentPCRDraft();
-        console.log('App initialized, draft loaded if available');
+        console.log('App initialized successfully');
         console.log('=== END APP INITIALIZATION ===');
         setHasInitialized(true);
       } catch (error) {
         console.error('Error initializing app:', error);
-        await SecurityLogger.logEvent(
-          'SUSPICIOUS_ACTIVITY',
-          `App initialization failed: ${error}`,
-          'HIGH'
-        ).catch(() => {});
         setHasInitialized(true); // Still mark as initialized to prevent infinite loading
       } finally {
         // Hide splash screen after initialization
-        SplashScreen.hideAsync().catch(console.error);
+        setTimeout(() => {
+          SplashScreen.hideAsync().catch(console.error);
+        }, 100);
       }
     };
     

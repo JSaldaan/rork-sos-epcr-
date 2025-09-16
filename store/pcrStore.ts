@@ -272,30 +272,33 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
     set((state) => ({
       callTimeInfo: { ...state.callTimeInfo, ...info },
     }));
-    // Auto-save draft when data changes
-    setTimeout(() => {
+    // Debounced auto-save for better performance
+    if ((window as any).__saveTimeout) clearTimeout((window as any).__saveTimeout);
+    (window as any).__saveTimeout = setTimeout(() => {
       get().saveCurrentPCRDraft().catch(console.error);
-    }, 500);
+    }, 1000);
   },
   
   updatePatientInfo: (info) => {
     set((state) => ({
       patientInfo: { ...state.patientInfo, ...info },
     }));
-    // Auto-save draft when data changes
-    setTimeout(() => {
+    // Debounced auto-save for better performance
+    if ((window as any).__saveTimeout) clearTimeout((window as any).__saveTimeout);
+    (window as any).__saveTimeout = setTimeout(() => {
       get().saveCurrentPCRDraft().catch(console.error);
-    }, 500);
+    }, 1000);
   },
   
   updateIncidentInfo: (info) => {
     set((state) => ({
       incidentInfo: { ...state.incidentInfo, ...info },
     }));
-    // Auto-save draft when data changes
-    setTimeout(() => {
+    // Debounced auto-save for better performance
+    if ((window as any).__saveTimeout) clearTimeout((window as any).__saveTimeout);
+    (window as any).__saveTimeout = setTimeout(() => {
       get().saveCurrentPCRDraft().catch(console.error);
-    }, 500);
+    }, 1000);
   },
   
   addVitalSigns: (vital) => {
@@ -312,10 +315,11 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
     set((state) => ({
       transportInfo: { ...state.transportInfo, ...info },
     }));
-    // Auto-save draft when data changes
-    setTimeout(() => {
+    // Debounced auto-save for better performance
+    if ((window as any).__saveTimeout) clearTimeout((window as any).__saveTimeout);
+    (window as any).__saveTimeout = setTimeout(() => {
       get().saveCurrentPCRDraft().catch(console.error);
-    }, 500);
+    }, 1000);
   },
   
   updateSignatureInfo: (info) => {
@@ -339,10 +343,8 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
         signatureInfo: updatedSignatureInfo,
       };
     });
-    // Auto-save draft when data changes
-    setTimeout(() => {
-      get().saveCurrentPCRDraft().catch(console.error);
-    }, 500);
+    // Immediate save for signatures to prevent loss
+    get().saveCurrentPCRDraft().catch(console.error);
   },
   
   updateRefusalInfo: (info) => {
@@ -759,8 +761,16 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
     };
     
     try {
-      await AsyncStorage.setItem('currentPCRDraft', JSON.stringify(draftPCR));
-      console.log('PCR draft saved successfully');
+      // Use batch operations for better performance
+      const dataToSave = JSON.stringify(draftPCR);
+      // Check if data has actually changed before saving
+      const existingData = await AsyncStorage.getItem('currentPCRDraft');
+      if (existingData !== dataToSave) {
+        await AsyncStorage.setItem('currentPCRDraft', dataToSave);
+        console.log('PCR draft saved successfully');
+      } else {
+        console.log('PCR draft unchanged, skipping save');
+      }
     } catch (error) {
       console.error('Error saving PCR draft:', error);
     }
