@@ -258,7 +258,7 @@ export default function VitalsScreen() {
 
         <View style={styles.twoColumnContainer}>
           <View style={styles.column}>
-            <View style={[styles.inputContainer, isTablet() && styles.tabletInput]}>
+            <View style={styles.inputContainer}>
               <Text style={styles.label}>Systolic BP</Text>
               <TextInput
                 style={styles.input}
@@ -266,9 +266,10 @@ export default function VitalsScreen() {
                 onChangeText={(text) => setCurrentVitals(prev => ({ ...prev, bloodPressureSystolic: text }))}
                 placeholder="120"
                 keyboardType="numeric"
+                textAlign="center"
               />
             </View>
-            <View style={[styles.inputContainer, isTablet() && styles.tabletInput]}>
+            <View style={styles.inputContainer}>
               <Text style={styles.label}>Heart Rate (bpm)</Text>
               <TextInput
                 style={styles.input}
@@ -276,9 +277,10 @@ export default function VitalsScreen() {
                 onChangeText={(text) => setCurrentVitals(prev => ({ ...prev, heartRate: text }))}
                 placeholder="72"
                 keyboardType="numeric"
+                textAlign="center"
               />
             </View>
-            <View style={[styles.inputContainer, isTablet() && styles.tabletInput]}>
+            <View style={styles.inputContainer}>
               <Text style={styles.label}>O2 Saturation (%)</Text>
               <TextInput
                 style={styles.input}
@@ -286,9 +288,10 @@ export default function VitalsScreen() {
                 onChangeText={(text) => setCurrentVitals(prev => ({ ...prev, oxygenSaturation: text }))}
                 placeholder="98"
                 keyboardType="numeric"
+                textAlign="center"
               />
             </View>
-            <View style={[styles.inputContainer, isTablet() && styles.tabletInput]}>
+            <View style={styles.inputContainer}>
               <Text style={styles.label}>Blood Glucose</Text>
               <TextInput
                 style={styles.input}
@@ -296,12 +299,13 @@ export default function VitalsScreen() {
                 onChangeText={(text) => setCurrentVitals(prev => ({ ...prev, bloodGlucose: text }))}
                 placeholder="5.5"
                 keyboardType="numeric"
+                textAlign="center"
               />
             </View>
           </View>
           
           <View style={styles.column}>
-            <View style={[styles.inputContainer, isTablet() && styles.tabletInput]}>
+            <View style={styles.inputContainer}>
               <Text style={styles.label}>Diastolic BP</Text>
               <TextInput
                 style={styles.input}
@@ -309,9 +313,10 @@ export default function VitalsScreen() {
                 onChangeText={(text) => setCurrentVitals(prev => ({ ...prev, bloodPressureDiastolic: text }))}
                 placeholder="80"
                 keyboardType="numeric"
+                textAlign="center"
               />
             </View>
-            <View style={[styles.inputContainer, isTablet() && styles.tabletInput]}>
+            <View style={styles.inputContainer}>
               <Text style={styles.label}>Respiratory Rate</Text>
               <TextInput
                 style={styles.input}
@@ -319,9 +324,10 @@ export default function VitalsScreen() {
                 onChangeText={(text) => setCurrentVitals(prev => ({ ...prev, respiratoryRate: text }))}
                 placeholder="16"
                 keyboardType="numeric"
+                textAlign="center"
               />
             </View>
-            <View style={[styles.inputContainer, isTablet() && styles.tabletInput]}>
+            <View style={styles.inputContainer}>
               <Text style={styles.label}>Temperature (°C)</Text>
               <TextInput
                 style={styles.input}
@@ -329,9 +335,10 @@ export default function VitalsScreen() {
                 onChangeText={(text) => setCurrentVitals(prev => ({ ...prev, temperature: text }))}
                 placeholder="36.5"
                 keyboardType="numeric"
+                textAlign="center"
               />
             </View>
-            <View style={[styles.inputContainer, isTablet() && styles.tabletInput]}>
+            <View style={styles.inputContainer}>
               <Text style={styles.label}>Pain Scale (0-10)</Text>
               <TextInput
                 style={styles.input}
@@ -339,6 +346,7 @@ export default function VitalsScreen() {
                 onChangeText={(text) => setCurrentVitals(prev => ({ ...prev, painScale: text }))}
                 placeholder="0"
                 keyboardType="numeric"
+                textAlign="center"
               />
             </View>
           </View>
@@ -528,20 +536,21 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   label: {
-    fontSize: 14,
-    fontWeight: "500",
+    fontSize: 13,
+    fontWeight: "600",
     color: "#333",
-    marginBottom: 8,
+    marginBottom: 6,
+    textAlign: "center",
   },
   input: {
     borderWidth: 1,
     borderColor: "#E0E0E0",
     borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
+    padding: 10,
+    fontSize: 15,
     backgroundColor: "#fff",
-    marginBottom: 12,
-    minHeight: 44,
+    minHeight: 42,
+    textAlign: "center",
   },
   row: {
     flexDirection: "row",
@@ -769,9 +778,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   inputContainer: {
-    flex: 1,
-    minWidth: 150,
-    marginBottom: 16,
+    marginBottom: 12,
   },
   tabletInput: {
     minWidth: 200,
@@ -779,12 +786,11 @@ const styles = StyleSheet.create({
   },
   twoColumnContainer: {
     flexDirection: "row",
-    gap: 16,
     marginBottom: 16,
   },
   column: {
     flex: 1,
-    paddingHorizontal: 8,
+    paddingHorizontal: 4,
   },
   keyboardAvoidingView: {
     flex: 1,
