@@ -30,22 +30,24 @@ export default function SignatureModal({
 }: SignatureModalProps) {
   const [signature, setSignature] = React.useState(initialSignature);
   
-  // Update signature when modal opens with initial value
+  // Update signature when modal opens with initial value - preserve existing signatures
   React.useEffect(() => {
     if (visible) {
-      setSignature(initialSignature);
+      setSignature(initialSignature || '');
       console.log('📝 SignatureModal opened with initial signature:', !!initialSignature);
+      console.log('🔐 Signature will be preserved during input changes');
     }
   }, [visible, initialSignature]);
 
   const handleSave = () => {
     if (signature) {
       console.log('💾 Saving signature from modal:', signature.substring(0, 50) + '...');
-      // Convert SVG paths to base64 image for better compatibility
+      // Convert SVG paths to base64 image for better compatibility and persistence
       const base64Image = convertSignatureToBase64(signature);
       onSave(base64Image);
-      setSignature('');
       console.log('✅ Signature saved and modal will close');
+      console.log('🔒 Signature persisted as base64 for better stability');
+      // Don't clear signature here - let parent handle it
     } else {
       Alert.alert(
         'No Signature',
@@ -95,6 +97,7 @@ export default function SignatureModal({
             text: 'Discard', 
             style: 'destructive',
             onPress: () => {
+              console.log('🗑️ User chose to discard signature changes');
               setSignature('');
               onClose();
             }
@@ -102,7 +105,7 @@ export default function SignatureModal({
         ]
       );
     } else {
-      setSignature('');
+      console.log('❌ Modal closed without changes');
       onClose();
     }
   };

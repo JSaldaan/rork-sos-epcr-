@@ -23,20 +23,21 @@ export default function SummaryScreen() {
 
   const handleSaveSignature = (field: string, signature: string) => {
     console.log('💾 Saving signature for field:', field);
-    // Save both the signature and the paths for proper display
+    console.log('🔒 Signature will persist during input changes');
+    // Save both the signature and the paths for proper display and persistence
     if (field === 'nurseSignaturePaths') {
       updateSignatureInfo({ 
-        nurseSignature: signatureInfo.nurseSignature || 'Nurse', // Keep existing name or default
+        nurseSignature: signatureInfo.nurseSignature || '', // Keep existing name - staff must input
         nurseSignaturePaths: signature 
       });
     } else if (field === 'doctorSignaturePaths') {
       updateSignatureInfo({ 
-        doctorSignature: signatureInfo.doctorSignature || 'Doctor', // Keep existing name or default
+        doctorSignature: signatureInfo.doctorSignature || '', // Keep existing name - staff must input
         doctorSignaturePaths: signature 
       });
     } else if (field === 'othersSignaturePaths') {
       updateSignatureInfo({ 
-        othersSignature: signatureInfo.othersSignature || 'Other Staff', // Keep existing name or default
+        othersSignature: signatureInfo.othersSignature || '', // Keep existing name - staff must input
         othersSignaturePaths: signature 
       });
     } else {
@@ -44,12 +45,13 @@ export default function SummaryScreen() {
     }
     setActiveSignature(null);
     console.log('✅ Signature saved and modal closed');
+    console.log('👥 Staff must input practitioner name manually');
   };
 
   const handleClearSignature = (field: string) => {
     Alert.alert(
       "Clear Signature",
-      "Are you sure you want to clear this signature? The practitioner name will be kept.",
+      "Are you sure you want to clear this signature? The practitioner name will be kept for staff to re-enter.",
       [
         { text: "Cancel", style: "cancel" },
         {
@@ -66,6 +68,7 @@ export default function SummaryScreen() {
               updateSignatureInfo({ [field]: "" });
             }
             console.log('🗑️ Signature cleared for field:', field);
+            console.log('👥 Practitioner name preserved for staff input');
           },
         },
       ]
@@ -396,7 +399,7 @@ export default function SummaryScreen() {
           <Text style={styles.signatureLabel}>Nurse Signature</Text>
           {signatureInfo.nurseSignaturePaths ? (
             <View style={styles.signaturePreview}>
-              <Text style={styles.signedText}>✓ Signed</Text>
+              <Text style={styles.signedText}>✓ Signature Captured</Text>
               <TouchableOpacity
                 onPress={() => handleClearSignature("nurseSignaturePaths")}
                 style={styles.clearButton}
@@ -450,7 +453,7 @@ export default function SummaryScreen() {
           <Text style={styles.signatureLabel}>Doctor Signature</Text>
           {signatureInfo.doctorSignaturePaths ? (
             <View style={styles.signaturePreview}>
-              <Text style={styles.signedText}>✓ Signed</Text>
+              <Text style={styles.signedText}>✓ Signature Captured</Text>
               <TouchableOpacity
                 onPress={() => handleClearSignature("doctorSignaturePaths")}
                 style={styles.clearButton}
@@ -504,7 +507,7 @@ export default function SummaryScreen() {
           <Text style={styles.signatureLabel}>Others Signature</Text>
           {signatureInfo.othersSignaturePaths ? (
             <View style={styles.signaturePreview}>
-              <Text style={styles.signedText}>✓ Signed</Text>
+              <Text style={styles.signedText}>✓ Signature Captured</Text>
               <TouchableOpacity
                 onPress={() => handleClearSignature("othersSignaturePaths")}
                 style={styles.clearButton}

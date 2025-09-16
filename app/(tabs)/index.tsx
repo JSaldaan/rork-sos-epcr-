@@ -304,60 +304,63 @@ export default function NewPCRScreen() {
           <Text style={styles.sectionTitle}>Call Time Information</Text>
         </View>
         
-        <View style={styles.twoColumnContainer}>
-          <View style={styles.column}>
-            <View style={[styles.inputContainer, isTablet() && styles.tabletInput]}>
-              <Text style={styles.label}>Time of Call</Text>
+        <View style={styles.callTimeGrid}>
+          <View style={styles.callTimeRow}>
+            <View style={styles.callTimeItem}>
+              <Text style={styles.callTimeLabel}>Date</Text>
               <TextInput
-                style={styles.input}
-                value={callTimeInfo.timeOfCall}
-                onChangeText={handleCallTimeChange('timeOfCall')}
-                placeholder="HH:MM"
-              />
-            </View>
-            <View style={[styles.inputContainer, isTablet() && styles.tabletInput]}>
-              <Text style={styles.label}>Arrival on Scene</Text>
-              <TextInput
-                style={styles.input}
-                value={callTimeInfo.arrivalOnScene}
-                onChangeText={handleCallTimeChange('arrivalOnScene')}
-                placeholder="HH:MM"
-              />
-            </View>
-            <View style={[styles.inputContainer, isTablet() && styles.tabletInput]}>
-              <Text style={styles.label}>To Destination</Text>
-              <TextInput
-                style={styles.input}
-                value={callTimeInfo.toDestination}
-                onChangeText={handleCallTimeChange('toDestination')}
-                placeholder="HH:MM"
-              />
-            </View>
-          </View>
-          
-          <View style={styles.column}>
-            <View style={[styles.inputContainer, isTablet() && styles.tabletInput]}>
-              <Text style={styles.label}>Date</Text>
-              <TextInput
-                style={styles.input}
+                style={styles.callTimeInput}
                 value={callTimeInfo.date}
                 onChangeText={handleCallTimeChange('date')}
                 placeholder="DD/MM/YYYY"
               />
             </View>
-            <View style={[styles.inputContainer, isTablet() && styles.tabletInput]}>
-              <Text style={styles.label}>At Patient Side</Text>
+            <View style={styles.callTimeItem}>
+              <Text style={styles.callTimeLabel}>Time of Call</Text>
               <TextInput
-                style={styles.input}
+                style={styles.callTimeInput}
+                value={callTimeInfo.timeOfCall}
+                onChangeText={handleCallTimeChange('timeOfCall')}
+                placeholder="HH:MM"
+              />
+            </View>
+          </View>
+          
+          <View style={styles.callTimeRow}>
+            <View style={styles.callTimeItem}>
+              <Text style={styles.callTimeLabel}>Arrival on Scene</Text>
+              <TextInput
+                style={styles.callTimeInput}
+                value={callTimeInfo.arrivalOnScene}
+                onChangeText={handleCallTimeChange('arrivalOnScene')}
+                placeholder="HH:MM"
+              />
+            </View>
+            <View style={styles.callTimeItem}>
+              <Text style={styles.callTimeLabel}>At Patient Side</Text>
+              <TextInput
+                style={styles.callTimeInput}
                 value={callTimeInfo.atPatientSide}
                 onChangeText={handleCallTimeChange('atPatientSide')}
                 placeholder="HH:MM"
               />
             </View>
-            <View style={[styles.inputContainer, isTablet() && styles.tabletInput]}>
-              <Text style={styles.label}>At Destination</Text>
+          </View>
+          
+          <View style={styles.callTimeRow}>
+            <View style={styles.callTimeItem}>
+              <Text style={styles.callTimeLabel}>To Destination</Text>
               <TextInput
-                style={styles.input}
+                style={styles.callTimeInput}
+                value={callTimeInfo.toDestination}
+                onChangeText={handleCallTimeChange('toDestination')}
+                placeholder="HH:MM"
+              />
+            </View>
+            <View style={styles.callTimeItem}>
+              <Text style={styles.callTimeLabel}>At Destination</Text>
+              <TextInput
+                style={styles.callTimeInput}
                 value={callTimeInfo.atDestination}
                 onChangeText={handleCallTimeChange('atDestination')}
                 placeholder="HH:MM"
@@ -1283,6 +1286,35 @@ const styles = StyleSheet.create({
   column: {
     flex: 1,
     paddingHorizontal: 8,
+  },
+  callTimeGrid: {
+    marginBottom: 16,
+  },
+  callTimeRow: {
+    flexDirection: 'row',
+    marginBottom: 12,
+    gap: 12,
+  },
+  callTimeItem: {
+    flex: 1,
+  },
+  callTimeLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#333',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  callTimeInput: {
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    backgroundColor: '#fff',
+    minHeight: 44,
+    color: '#333',
+    textAlign: 'center',
   },
   traumaSection: {
     backgroundColor: '#FFF5F5',

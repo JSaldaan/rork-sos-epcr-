@@ -63,12 +63,8 @@ export default function SignatureBox({
         pathsRef.current = initialPaths;
         console.log('🎨 SVG paths signature loaded:', initialPaths.length, 'paths');
       }
-    } else {
-      // Clear paths if no signature
-      setPaths([]);
-      pathsRef.current = [];
-      console.log('🗑️ No signature prop, clearing paths');
     }
+    // Don't clear paths when signature is empty - preserve existing signature
   }, [signature]);
 
   // Convert points array to SVG path string
@@ -132,11 +128,12 @@ export default function SignatureBox({
             const pathsString = newPaths.join('|');
             const base64Image = convertPathsToBase64(pathsString);
             
-            // Ensure the signature is saved immediately
+            // Ensure the signature is saved immediately and persistently
             setTimeout(() => {
               onSignatureChange(base64Image);
               console.log('💾 Signature saved as base64 with', currentPathRef.current.length, 'points');
               console.log('🔒 Signature data length:', base64Image.length, 'characters');
+              console.log('🔐 Signature will persist during input changes');
             }, 100);
           }
         } else {
@@ -203,6 +200,7 @@ export default function SignatureBox({
     setTimeout(() => {
       onSignatureChange('');
       console.log('✅ Signature cleared and parent notified');
+      console.log('🗑️ User explicitly cleared signature');
     }, 50);
   }, [onSignatureChange]);
 
