@@ -319,9 +319,26 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
   },
   
   updateSignatureInfo: (info) => {
-    set((state) => ({
-      signatureInfo: { ...state.signatureInfo, ...info },
-    }));
+    set((state) => {
+      // Preserve existing signatures when updating
+      const updatedSignatureInfo = { ...state.signatureInfo };
+      
+      // Only update fields that are provided, preserve others
+      Object.keys(info).forEach(key => {
+        const value = info[key as keyof SignatureInfo];
+        // Only update if value is provided (not empty string unless explicitly clearing)
+        if (value !== undefined) {
+          (updatedSignatureInfo as any)[key] = value;
+        }
+      });
+      
+      console.log('📝 Updating signature info:', Object.keys(info));
+      console.log('🔒 Preserving existing signatures');
+      
+      return {
+        signatureInfo: updatedSignatureInfo,
+      };
+    });
     // Auto-save draft when data changes
     setTimeout(() => {
       get().saveCurrentPCRDraft().catch(console.error);

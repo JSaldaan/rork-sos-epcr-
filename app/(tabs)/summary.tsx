@@ -24,28 +24,41 @@ export default function SummaryScreen() {
   const handleSaveSignature = (field: string, signature: string) => {
     console.log('💾 Saving signature for field:', field);
     console.log('🔒 Signature will persist during input changes');
+    
     // Save both the signature and the paths for proper display and persistence
     if (field === 'nurseSignaturePaths') {
       updateSignatureInfo({ 
-        nurseSignature: signatureInfo.nurseSignature || '', // Keep existing name - staff must input
         nurseSignaturePaths: signature 
       });
+      // Note: Name must be entered separately by staff
     } else if (field === 'doctorSignaturePaths') {
       updateSignatureInfo({ 
-        doctorSignature: signatureInfo.doctorSignature || '', // Keep existing name - staff must input
         doctorSignaturePaths: signature 
       });
+      // Note: Name must be entered separately by staff
     } else if (field === 'othersSignaturePaths') {
       updateSignatureInfo({ 
-        othersSignature: signatureInfo.othersSignature || '', // Keep existing name - staff must input
         othersSignaturePaths: signature 
       });
+      // Note: Name must be entered separately by staff
     } else {
       updateSignatureInfo({ [field]: signature });
     }
+    
+    // Force save to ensure persistence
+    setTimeout(async () => {
+      try {
+        const { saveCurrentPCRDraft } = usePCRStore.getState();
+        await saveCurrentPCRDraft();
+        console.log('✅ Signature persisted to storage');
+      } catch (error) {
+        console.error('Error persisting signature:', error);
+      }
+    }, 100);
+    
     setActiveSignature(null);
-    console.log('✅ Signature saved and modal closed');
-    console.log('👥 Staff must input practitioner name manually');
+    console.log('✅ Signature saved and will not disappear');
+    console.log('👥 Staff must input practitioner name in the text field');
   };
 
   const handleClearSignature = (field: string) => {

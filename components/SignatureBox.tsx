@@ -7,9 +7,11 @@ import {
   TouchableOpacity,
   PanResponder,
   GestureResponderEvent,
+  Platform,
 } from 'react-native';
 import { Trash2, Edit3 } from 'lucide-react-native';
 import Svg, { Path } from 'react-native-svg';
+import { scaleWidth, scaleHeight, scaleFont } from '@/utils/responsive';
 
 interface SignatureBoxProps {
   title: string;
@@ -48,20 +50,24 @@ export default function SignatureBox({
 
   // Initialize paths from signature prop with better persistence
   useEffect(() => {
-    if (signature) {
+    if (signature && signature !== pathsRef.current.join('|')) {
       console.log('🔄 Initializing signature from prop:', signature.substring(0, 50) + '...');
       // If signature is already base64, we can't display it in SVG paths
       // but we still mark it as having a signature
       if (signature.startsWith('data:image')) {
-        // Set a placeholder path to indicate signature exists
-        setPaths(['SIGNATURE_EXISTS']);
-        pathsRef.current = ['SIGNATURE_EXISTS'];
-        console.log('📷 Base64 signature detected and preserved');
+        // Don't override if we already have paths
+        if (pathsRef.current.length === 0 || pathsRef.current[0] === 'SIGNATURE_EXISTS') {
+          setPaths(['SIGNATURE_EXISTS']);
+          pathsRef.current = ['SIGNATURE_EXISTS'];
+          console.log('📷 Base64 signature detected and preserved');
+        }
       } else {
-        const initialPaths = signature.split('|').filter(p => p);
-        setPaths(initialPaths);
-        pathsRef.current = initialPaths;
-        console.log('🎨 SVG paths signature loaded:', initialPaths.length, 'paths');
+        const initialPaths = signature.split('|').filter(p => p && p !== 'SIGNATURE_EXISTS');
+        if (initialPaths.length > 0) {
+          setPaths(initialPaths);
+          pathsRef.current = initialPaths;
+          console.log('🎨 SVG paths signature loaded:', initialPaths.length, 'paths');
+        }
       }
     }
     // Don't clear paths when signature is empty - preserve existing signature
@@ -124,17 +130,14 @@ export default function SignatureBox({
             pathsRef.current = newPaths;
             setPaths(newPaths);
             
-            // Convert to base64 immediately for better compatibility and persistence
+            // Save paths directly for better persistence
             const pathsString = newPaths.join('|');
-            const base64Image = convertPathsToBase64(pathsString);
             
             // Ensure the signature is saved immediately and persistently
-            setTimeout(() => {
-              onSignatureChange(base64Image);
-              console.log('💾 Signature saved as base64 with', currentPathRef.current.length, 'points');
-              console.log('🔒 Signature data length:', base64Image.length, 'characters');
-              console.log('🔐 Signature will persist during input changes');
-            }, 100);
+            onSignatureChange(pathsString);
+            console.log('💾 Signature saved with', currentPathRef.current.length, 'points');
+            console.log('🔒 Signature data length:', pathsString.length, 'characters');
+            console.log('🔐 Signature will persist during input changes');
           }
         } else {
           console.log('⚠️ Path too short, not saving (', currentPathRef.current.length, 'points)');
@@ -168,7 +171,7 @@ export default function SignatureBox({
       return pathsString;
     }
     
-    const paths = pathsString.split('|').filter(p => p);
+    const paths = pathsString.split('|').filter(p => p && p !== 'SIGNATURE_EXISTS');
     if (paths.length === 0) return '';
     
     // Create SVG with paths
@@ -179,14 +182,18 @@ export default function SignatureBox({
       ).join('')}
     </svg>`;
     
-    // Convert to base64
-    try {
-      const base64 = btoa(unescape(encodeURIComponent(svgString)));
-      return `data:image/svg+xml;base64,${base64}`;
-    } catch (error) {
-      console.error('Error converting signature to base64:', error);
-      return pathsString; // Return original if conversion fails
+    // Convert to base64 only on web platform for compatibility
+    if (Platform.OS === 'web') {
+      try {
+        const base64 = btoa(unescape(encodeURIComponent(svgString)));
+        return `data:image/svg+xml;base64,${base64}`;
+      } catch (error) {
+        console.error('Error converting signature to base64:', error);
+        return pathsString; // Return original if conversion fails
+      }
     }
+    
+    return pathsString; // Return paths string for mobile platforms
   };
 
   const clearSignature = useCallback(() => {
