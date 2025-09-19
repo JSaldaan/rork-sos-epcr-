@@ -100,7 +100,7 @@ export const ResponsiveGrid: React.FC<ResponsiveGridProps> = ({
               },
             ]}
           >
-            {child as React.ReactElement}
+            {React.isValidElement(child) ? child : <Text>{String(child)}</Text>}
           </View>
         );
       })}
