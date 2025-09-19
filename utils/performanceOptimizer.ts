@@ -11,7 +11,7 @@ export function debounce<T extends (...args: any[]) => any>(
   func: T,
   wait: number
 ): (...args: Parameters<T>) => void {
-  let timeout: NodeJS.Timeout | null = null;
+  let timeout: ReturnType<typeof setTimeout> | null = null;
   
   return function executedFunction(...args: Parameters<T>) {
     const later = () => {
@@ -47,7 +47,7 @@ export function throttle<T extends (...args: any[]) => any>(
 // Batch async storage operations for better performance
 export class BatchedStorage {
   private static pendingWrites: Map<string, any> = new Map();
-  private static writeTimer: NodeJS.Timeout | null = null;
+  private static writeTimer: ReturnType<typeof setTimeout> | null = null;
   private static readonly BATCH_DELAY = 100; // ms
 
   static async setItem(key: string, value: string): Promise<void> {
@@ -136,7 +136,7 @@ export class MemoryCache {
     this.cache.clear();
   }
 
-  private static cleanupTimer: NodeJS.Timeout | null = null;
+  private static cleanupTimer: ReturnType<typeof setTimeout> | null = null;
   
   private static scheduleCleanup(): void {
     if (this.cleanupTimer) return;
@@ -266,7 +266,7 @@ export function optimizeImageUri(uri: string, width?: number, height?: number): 
 // Batch state updates
 export class BatchedStateUpdater<T> {
   private pendingUpdates: Partial<T>[] = [];
-  private updateTimer: NodeJS.Timeout | null = null;
+  private updateTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly batchDelay: number;
   private readonly updateFunction: (updates: Partial<T>) => void;
 
