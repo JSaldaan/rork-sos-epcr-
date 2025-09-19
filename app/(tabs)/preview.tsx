@@ -349,7 +349,7 @@ export default function PreviewScreen() {
           <View>
             <View style={styles.refusalHeader}>
               <Text style={styles.refusalTitle}>TREATMENT REFUSAL DOCUMENTATION</Text>
-              <Text style={styles.refusalSubtitle}>This form documents the patient&apos;s refusal of medical treatment or transport</Text>
+              <Text style={styles.refusalSubtitle}>This form documents the patient's refusal of medical treatment or transport</Text>
             </View>
             {renderField("Patient Name", refusalInfo.patientName)}
             {renderField("Date of Refusal", refusalInfo.dateOfRefusal)}
@@ -432,14 +432,14 @@ export default function PreviewScreen() {
           disabled={isSubmitting}
         >
           {isSubmitting ? (
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <View style={styles.buttonContent}>
               <ActivityIndicator size="small" color="#fff" />
-              <Text style={[styles.submitButtonText, { marginLeft: 8 }]}>Submitting Report...</Text>
+              <Text style={[styles.submitButtonText, styles.buttonTextMargin]}>Submitting Report...</Text>
             </View>
           ) : (
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <View style={styles.buttonContent}>
               <Send size={20} color="#fff" />
-              <Text style={[styles.submitButtonText, { marginLeft: 8 }]}>Submit to My Reports & Admin</Text>
+              <Text style={[styles.submitButtonText, styles.buttonTextMargin]}>Submit to My Reports & Admin</Text>
             </View>
           )}
         </TouchableOpacity>
@@ -666,5 +666,11 @@ const styles = StyleSheet.create({
     marginTop: 2,
     fontStyle: "italic" as const,
   },
-
+  buttonContent: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  buttonTextMargin: {
+    marginLeft: 8,
+  },
 });
