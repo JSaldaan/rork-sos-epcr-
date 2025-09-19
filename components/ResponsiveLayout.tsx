@@ -35,7 +35,7 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
     <View style={containerStyle}>
       {React.Children.map(children, (child, index) => {
         if (typeof child === 'string' || typeof child === 'number') {
-          return <Text key={`container-text-${index}`}>{child}</Text>;
+          return <Text key={`container-text-${index}`}>{String(child)}</Text>;
         }
         return child;
       })}
@@ -84,7 +84,7 @@ export const ResponsiveGrid: React.FC<ResponsiveGridProps> = ({
                 },
               ]}
             >
-              <Text>{child}</Text>
+              <Text>{String(child)}</Text>
             </View>
           );
         }
@@ -140,7 +140,7 @@ export const ResponsiveRow: React.FC<ResponsiveRowProps> = ({
     <View style={rowStyle}>
       {React.Children.map(children, (child, index) => {
         if (typeof child === 'string' || typeof child === 'number') {
-          return <Text key={`row-text-${index}`}>{child}</Text>;
+          return <Text key={`row-text-${index}`}>{String(child)}</Text>;
         }
         return child;
       })}
@@ -177,7 +177,7 @@ export const ResponsiveColumn: React.FC<ResponsiveColumnProps> = ({
     <View style={columnStyle}>
       {React.Children.map(children, (child, index) => {
         if (typeof child === 'string' || typeof child === 'number') {
-          return <Text key={`col-text-${index}`}>{child}</Text>;
+          return <Text key={`col-text-${index}`}>{String(child)}</Text>;
         }
         return child;
       })}
