@@ -5,9 +5,9 @@ import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { usePCRStore } from "@/store/pcrStore";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { SecurityManager, SecurityLogger } from '@/utils/security';
+import { SecurityManager } from '@/utils/security';
 import { initializeCleanSecurity } from '@/utils/clearSecurityLocks';
-
+import { StyleSheet } from 'react-native';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -38,7 +38,7 @@ function RootLayoutNav() {
     // Faster app initialization
     const timer = setTimeout(() => {
       setIsAppReady(true);
-    }, 100); // Reduced delay for faster startup
+    }, 100);
     
     return () => clearTimeout(timer);
   }, []);
@@ -135,6 +135,9 @@ function AppInitializer() {
   const [hasInitialized, setHasInitialized] = React.useState(false);
   
   useEffect(() => {
+    let isMounted = true;
+    let splashTimeout: NodeJS.Timeout | null = null;
+    
     const initializeApp = async () => {
       try {
         console.log('=== APP INITIALIZATION ===');
@@ -183,13 +186,17 @@ function AppInitializer() {
         
         console.log('App initialized successfully');
         console.log('=== END APP INITIALIZATION ===');
-        setHasInitialized(true);
+        if (isMounted) {
+          setHasInitialized(true);
+        }
       } catch (error) {
         console.error('Error initializing app:', error);
-        setHasInitialized(true); // Still mark as initialized to prevent infinite loading
+        if (isMounted) {
+          setHasInitialized(true); // Still mark as initialized to prevent infinite loading
+        }
       } finally {
         // Hide splash screen after initialization
-        setTimeout(() => {
+        splashTimeout = setTimeout(() => {
           SplashScreen.hideAsync().catch(console.error);
         }, 100);
       }
@@ -198,10 +205,23 @@ function AppInitializer() {
     if (!hasInitialized) {
       initializeApp();
     }
+    
+    return () => {
+      isMounted = false;
+      if (splashTimeout) {
+        clearTimeout(splashTimeout);
+      }
+    };
   }, [loadCurrentPCRDraft, initializeStaffDatabase, loadCompletedPCRs, hasInitialized]);
   
   return <RootLayoutNav />;
 }
+
+const styles = StyleSheet.create({
+  rootContainer: {
+    flex: 1,
+  },
+});
 
 export default function RootLayout() {
   // Cleanup security system on app unmount
@@ -213,7 +233,7 @@ export default function RootLayout() {
   
   return (
     <QueryClientProvider client={queryClient}>
-      <GestureHandlerRootView style={{ flex: 1 }}>
+      <GestureHandlerRootView style={styles.rootContainer}>
         <AppInitializer />
       </GestureHandlerRootView>
     </QueryClientProvider>
