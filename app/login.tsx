@@ -556,7 +556,6 @@ const LoginScreen: React.FC = () => {
           </View>
         )}
         </View>
-        
         {/* Security Dashboard Modal */}
         {showSecurityDashboard && (
           <View style={styles.modalOverlay}>
