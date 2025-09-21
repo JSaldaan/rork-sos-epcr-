@@ -55,6 +55,7 @@ type TabType = 'vault' | 'staff' | 'audit' | 'reports' | 'enterprise';
 type VaultSection = 'patients' | 'encounters' | 'vitals' | 'ecgs' | 'signatures' | 'attachments' | 'pcrs';
 
 export default function AdminScreen() {
+  const store = usePCRStore();
   const { 
     currentSession, 
     completedPCRs,
@@ -77,7 +78,7 @@ export default function AdminScreen() {
     addAuditLog,
     generateComprehensiveReport,
     exportAllData,
-  } = usePCRStore();
+  } = store;
   
   // Route guard: Only admin users should access this screen
   const isAdminUser = currentSession?.role === 'admin' || 
@@ -1517,6 +1518,253 @@ export default function AdminScreen() {
     }
   };
 
+  const handleDeleteAllData = async () => {
+    Alert.alert(
+      '⚠️ DELETE ALL DATA',
+      'This will permanently delete ALL data from the system including:\n\n• All PCR reports\n• Patient records\n• Staff members\n• Vitals and ECGs\n• Signatures\n• Audit logs\n\nThis action CANNOT be undone!',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'DELETE ALL',
+          style: 'destructive',
+          onPress: () => {
+            Alert.alert(
+              'Final Confirmation',
+              'Are you absolutely sure? This will delete EVERYTHING and cannot be recovered.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'YES, DELETE ALL',
+                  style: 'destructive',
+                  onPress: performDeleteAllData
+                }
+              ]
+            );
+          }
+        }
+      ]
+    );
+  };
+
+  const performDeleteAllData = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Clear all AsyncStorage data
+      const keys = [
+        'completedPCRs',
+        'staffMembers',
+        'admin_patients',
+        'admin_encounters',
+        'admin_vitals',
+        'admin_ecgs',
+        'admin_signatures',
+        'admin_attachments',
+        'admin_audit_logs',
+        'currentPCRDraft',
+        'vitalsData',
+        'transportData',
+        'refusalData'
+      ];
+      
+      await Promise.all(keys.map(key => AsyncStorage.removeItem(key)));
+      
+      // Reset store state
+      Object.assign(store, {
+        completedPCRs: [],
+        patients: [],
+        encounters: [],
+        allVitals: [],
+        ecgs: [],
+        signatures: [],
+        attachments: [],
+        auditLogs: [],
+        staffMembers: []
+      });
+      
+      // Add audit log for this action
+      await addAuditLog('DELETE_ALL_DATA', 'System', 'ALL', 'Deleted all system data');
+      
+      Alert.alert(
+        '✅ Data Deleted',
+        'All system data has been permanently deleted.',
+        [{ text: 'OK' }]
+      );
+      
+      // Reload data to show empty state
+      await loadData();
+    } catch (error) {
+      console.error('Error deleting all data:', error);
+      Alert.alert('Error', 'Failed to delete all data');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteVaultSection = async () => {
+    const sectionNames = {
+      pcrs: 'PCR Reports',
+      patients: 'Patient Records',
+      encounters: 'Encounters',
+      vitals: 'Vital Signs',
+      ecgs: 'ECG Records',
+      signatures: 'Signatures',
+      attachments: 'Attachments'
+    };
+    
+    const sectionName = sectionNames[vaultSection];
+    const data = getVaultData();
+    
+    if (data.length === 0) {
+      Alert.alert('No Data', `No ${sectionName.toLowerCase()} to delete.`);
+      return;
+    }
+    
+    Alert.alert(
+      `Delete All ${sectionName}`,
+      `This will permanently delete all ${data.length} ${sectionName.toLowerCase()} from the system. This action cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete All',
+          style: 'destructive',
+          onPress: () => performDeleteVaultSection()
+        }
+      ]
+    );
+  };
+
+  const performDeleteVaultSection = async () => {
+    try {
+      setIsLoading(true);
+      
+      switch (vaultSection) {
+        case 'pcrs':
+          await AsyncStorage.removeItem('completedPCRs');
+          Object.assign(store, { completedPCRs: [] });
+          await addAuditLog('DELETE_ALL_PCRS', 'PCR', 'ALL', 'Deleted all PCR reports');
+          break;
+        case 'patients':
+          await AsyncStorage.removeItem('admin_patients');
+          Object.assign(store, { patients: [] });
+          await addAuditLog('DELETE_ALL_PATIENTS', 'Patient', 'ALL', 'Deleted all patient records');
+          break;
+        case 'encounters':
+          await AsyncStorage.removeItem('admin_encounters');
+          Object.assign(store, { encounters: [] });
+          await addAuditLog('DELETE_ALL_ENCOUNTERS', 'Encounter', 'ALL', 'Deleted all encounters');
+          break;
+        case 'vitals':
+          await AsyncStorage.removeItem('admin_vitals');
+          Object.assign(store, { allVitals: [] });
+          await addAuditLog('DELETE_ALL_VITALS', 'Vitals', 'ALL', 'Deleted all vital signs');
+          break;
+        case 'ecgs':
+          await AsyncStorage.removeItem('admin_ecgs');
+          Object.assign(store, { ecgs: [] });
+          await addAuditLog('DELETE_ALL_ECGS', 'ECG', 'ALL', 'Deleted all ECG records');
+          break;
+        case 'signatures':
+          await AsyncStorage.removeItem('admin_signatures');
+          Object.assign(store, { signatures: [] });
+          await addAuditLog('DELETE_ALL_SIGNATURES', 'Signature', 'ALL', 'Deleted all signatures');
+          break;
+        case 'attachments':
+          await AsyncStorage.removeItem('admin_attachments');
+          Object.assign(store, { attachments: [] });
+          await addAuditLog('DELETE_ALL_ATTACHMENTS', 'Attachment', 'ALL', 'Deleted all attachments');
+          break;
+      }
+      
+      Alert.alert('Success', `All ${vaultSection} have been deleted.`);
+      setSelectedItems([]);
+    } catch (error) {
+      console.error(`Error deleting ${vaultSection}:`, error);
+      Alert.alert('Error', `Failed to delete ${vaultSection}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedItems.length === 0) {
+      Alert.alert('No Selection', 'Please select items to delete.');
+      return;
+    }
+    
+    Alert.alert(
+      'Delete Selected Items',
+      `This will permanently delete ${selectedItems.length} selected items. This action cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: performDeleteSelected
+        }
+      ]
+    );
+  };
+
+  const performDeleteSelected = async () => {
+    try {
+      setIsLoading(true);
+      
+      switch (vaultSection) {
+        case 'pcrs':
+          const updatedPCRs = completedPCRs.filter(pcr => !selectedItems.includes(pcr.id));
+          await AsyncStorage.setItem('completedPCRs', JSON.stringify(updatedPCRs));
+          Object.assign(store, { completedPCRs: updatedPCRs });
+          await addAuditLog('DELETE_SELECTED_PCRS', 'PCR', selectedItems.join(','), `Deleted ${selectedItems.length} PCR reports`);
+          break;
+        case 'patients':
+          const updatedPatients = patients.filter(p => !selectedItems.includes(p.patient_id));
+          await AsyncStorage.setItem('admin_patients', JSON.stringify(updatedPatients));
+          Object.assign(store, { patients: updatedPatients });
+          await addAuditLog('DELETE_SELECTED_PATIENTS', 'Patient', selectedItems.join(','), `Deleted ${selectedItems.length} patients`);
+          break;
+        case 'encounters':
+          const updatedEncounters = encounters.filter(e => !selectedItems.includes(e.encounter_id));
+          await AsyncStorage.setItem('admin_encounters', JSON.stringify(updatedEncounters));
+          Object.assign(store, { encounters: updatedEncounters });
+          await addAuditLog('DELETE_SELECTED_ENCOUNTERS', 'Encounter', selectedItems.join(','), `Deleted ${selectedItems.length} encounters`);
+          break;
+        case 'vitals':
+          const updatedVitals = allVitals.filter(v => !selectedItems.includes(v.vitals_id));
+          await AsyncStorage.setItem('admin_vitals', JSON.stringify(updatedVitals));
+          Object.assign(store, { allVitals: updatedVitals });
+          await addAuditLog('DELETE_SELECTED_VITALS', 'Vitals', selectedItems.join(','), `Deleted ${selectedItems.length} vital signs`);
+          break;
+        case 'ecgs':
+          const updatedECGs = ecgs.filter(e => !selectedItems.includes(e.ecg_id));
+          await AsyncStorage.setItem('admin_ecgs', JSON.stringify(updatedECGs));
+          Object.assign(store, { ecgs: updatedECGs });
+          await addAuditLog('DELETE_SELECTED_ECGS', 'ECG', selectedItems.join(','), `Deleted ${selectedItems.length} ECG records`);
+          break;
+        case 'signatures':
+          const updatedSignatures = signatures.filter(s => !selectedItems.includes(s.signature_id));
+          await AsyncStorage.setItem('admin_signatures', JSON.stringify(updatedSignatures));
+          Object.assign(store, { signatures: updatedSignatures });
+          await addAuditLog('DELETE_SELECTED_SIGNATURES', 'Signature', selectedItems.join(','), `Deleted ${selectedItems.length} signatures`);
+          break;
+        case 'attachments':
+          const updatedAttachments = attachments.filter(a => !selectedItems.includes(a.attachment_id));
+          await AsyncStorage.setItem('admin_attachments', JSON.stringify(updatedAttachments));
+          Object.assign(store, { attachments: updatedAttachments });
+          await addAuditLog('DELETE_SELECTED_ATTACHMENTS', 'Attachment', selectedItems.join(','), `Deleted ${selectedItems.length} attachments`);
+          break;
+      }
+      
+      Alert.alert('Success', `${selectedItems.length} items have been deleted.`);
+      setSelectedItems([]);
+    } catch (error) {
+      console.error('Error deleting selected items:', error);
+      Alert.alert('Error', 'Failed to delete selected items');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const renderVaultSection = () => {
     const data = getVaultData();
 
@@ -1652,21 +1900,39 @@ export default function AdminScreen() {
           }
         />
 
-        {selectedItems.length > 0 && (
-          <View style={styles.bulkActions}>
-            <Text style={styles.bulkActionsText}>{selectedItems.length} selected</Text>
-            <View style={styles.bulkActionButtons}>
-              <TouchableOpacity style={styles.bulkActionButton} onPress={() => handleCopyReport('csv')}>
-                <Copy size={16} color="#fff" />
-                <Text style={styles.bulkActionButtonText}>CSV</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.bulkActionButton, styles.comprehensiveButton]} onPress={handleExportAllData}>
-                <Download size={16} color="#fff" />
-                <Text style={styles.bulkActionButtonText}>All Data</Text>
-              </TouchableOpacity>
-            </View>
+        <View style={styles.vaultFooter}>
+          <View style={styles.vaultActions}>
+            <TouchableOpacity style={styles.deleteAllButton} onPress={handleDeleteVaultSection}>
+              <Trash2 size={16} color="#fff" />
+              <Text style={styles.deleteAllButtonText}>Delete All {vaultSection.toUpperCase()}</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={styles.deleteAllSystemButton} onPress={handleDeleteAllData}>
+              <Trash2 size={16} color="#fff" />
+              <Text style={styles.deleteAllSystemButtonText}>DELETE ALL DATA</Text>
+            </TouchableOpacity>
           </View>
-        )}
+          
+          {selectedItems.length > 0 && (
+            <View style={styles.bulkActions}>
+              <Text style={styles.bulkActionsText}>{selectedItems.length} selected</Text>
+              <View style={styles.bulkActionButtons}>
+                <TouchableOpacity style={styles.bulkActionButton} onPress={() => handleCopyReport('csv')}>
+                  <Copy size={16} color="#fff" />
+                  <Text style={styles.bulkActionButtonText}>CSV</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.bulkActionButton, styles.comprehensiveButton]} onPress={handleExportAllData}>
+                  <Download size={16} color="#fff" />
+                  <Text style={styles.bulkActionButtonText}>All Data</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.bulkActionButton, styles.deleteButton]} onPress={handleDeleteSelected}>
+                  <Trash2 size={16} color="#fff" />
+                  <Text style={styles.bulkActionButtonText}>Delete</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+        </View>
       </View>
     );
   };
@@ -2661,10 +2927,53 @@ const styles = StyleSheet.create({
   comprehensiveButton: {
     backgroundColor: '#28A745',
   },
+  deleteButton: {
+    backgroundColor: '#FF3B30',
+  },
   bulkActionButtonText: {
     color: '#fff',
     fontSize: 14,
     fontWeight: '600',
+  },
+  vaultFooter: {
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderTopColor: '#E5E5E5',
+  },
+  vaultActions: {
+    flexDirection: 'row',
+    padding: 15,
+    gap: 10,
+  },
+  deleteAllButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    backgroundColor: '#FF9500',
+    borderRadius: 8,
+    gap: 6,
+  },
+  deleteAllButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  deleteAllSystemButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    backgroundColor: '#FF3B30',
+    borderRadius: 8,
+    gap: 6,
+  },
+  deleteAllSystemButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 'bold',
   },
   staffContainer: {
     flex: 1,
