@@ -272,45 +272,30 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
     set((state) => ({
       callTimeInfo: { ...state.callTimeInfo, ...info },
     }));
-    // Debounced auto-save for better performance
-    if ((window as any).__saveTimeout) clearTimeout((window as any).__saveTimeout);
-    (window as any).__saveTimeout = setTimeout(() => {
-      get().saveCurrentPCRDraft().catch(error => {
-        if (__DEV__) {
-          console.error(error);
-        }
-      });
-    }, 1000);
+    // Simplified auto-save for iOS stability
+    setTimeout(() => {
+      get().saveCurrentPCRDraft().catch(() => {});
+    }, 2000);
   },
   
   updatePatientInfo: (info) => {
     set((state) => ({
       patientInfo: { ...state.patientInfo, ...info },
     }));
-    // Debounced auto-save for better performance
-    if ((window as any).__saveTimeout) clearTimeout((window as any).__saveTimeout);
-    (window as any).__saveTimeout = setTimeout(() => {
-      get().saveCurrentPCRDraft().catch(error => {
-        if (__DEV__) {
-          console.error(error);
-        }
-      });
-    }, 1000);
+    // Simplified auto-save for iOS stability
+    setTimeout(() => {
+      get().saveCurrentPCRDraft().catch(() => {});
+    }, 2000);
   },
   
   updateIncidentInfo: (info) => {
     set((state) => ({
       incidentInfo: { ...state.incidentInfo, ...info },
     }));
-    // Debounced auto-save for better performance
-    if ((window as any).__saveTimeout) clearTimeout((window as any).__saveTimeout);
-    (window as any).__saveTimeout = setTimeout(() => {
-      get().saveCurrentPCRDraft().catch(error => {
-        if (__DEV__) {
-          console.error(error);
-        }
-      });
-    }, 1000);
+    // Simplified auto-save for iOS stability
+    setTimeout(() => {
+      get().saveCurrentPCRDraft().catch(() => {});
+    }, 2000);
   },
   
   addVitalSigns: (vital) => {
@@ -319,27 +304,18 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
     }));
     // Auto-save draft when vitals are added
     setTimeout(() => {
-      get().saveCurrentPCRDraft().catch(error => {
-        if (__DEV__) {
-          console.error(error);
-        }
-      });
-    }, 500);
+      get().saveCurrentPCRDraft().catch(() => {});
+    }, 1000);
   },
   
   updateTransportInfo: (info) => {
     set((state) => ({
       transportInfo: { ...state.transportInfo, ...info },
     }));
-    // Debounced auto-save for better performance
-    if ((window as any).__saveTimeout) clearTimeout((window as any).__saveTimeout);
-    (window as any).__saveTimeout = setTimeout(() => {
-      get().saveCurrentPCRDraft().catch(error => {
-        if (__DEV__) {
-          console.error(error);
-        }
-      });
-    }, 1000);
+    // Simplified auto-save for iOS stability
+    setTimeout(() => {
+      get().saveCurrentPCRDraft().catch(() => {});
+    }, 2000);
   },
   
   updateSignatureInfo: (info) => {
@@ -853,12 +829,8 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
       console.log('ECG capture added to most recent vital signs');
       // Auto-save after ECG capture
       setTimeout(() => {
-        get().saveCurrentPCRDraft().catch(error => {
-        if (__DEV__) {
-          console.error(error);
-        }
-      });
-      }, 500);
+        get().saveCurrentPCRDraft().catch(() => {});
+      }, 1000);
     } else {
       console.log('No vital signs available to attach ECG capture');
     }

@@ -8,25 +8,26 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StyleSheet, Platform, View, Text } from 'react-native';
 import { Shield } from 'lucide-react-native';
 
-// Prevent auto-hide splash screen
-SplashScreen.preventAutoHideAsync().catch((error) => {
-  console.log('SplashScreen.preventAutoHideAsync error:', error);
-  // Ignore errors on web or if already called
-});
+// Prevent auto-hide splash screen with better error handling
+if (Platform.OS !== 'web') {
+  SplashScreen.preventAutoHideAsync().catch(() => {
+    // Silently ignore - splash screen might already be prevented
+  });
+}
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 10 * 60 * 1000, // Increased for better performance
-      gcTime: 30 * 60 * 1000, // Increased cache time
-      retry: 2, // Better reliability
+      staleTime: 5 * 60 * 1000, // Reduced for iOS stability
+      gcTime: 10 * 60 * 1000, // Reduced cache time
+      retry: 1, // Reduced retries for iOS
       refetchOnWindowFocus: false,
       refetchOnMount: false,
-      refetchOnReconnect: true, // Refetch when network reconnects
+      refetchOnReconnect: false, // Disabled for iOS stability
     },
     mutations: {
-      retry: 2,
-      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+      retry: 1,
+      retryDelay: 1000,
     },
   },
 });
@@ -86,43 +87,38 @@ function RootLayoutNav() {
 function AppInitializer() {
   const { loadCurrentPCRDraft, initializeStaffDatabase, loadCompletedPCRs } = usePCRStore();
   const [hasInitialized, setHasInitialized] = React.useState(false);
-  const [showFallback, setShowFallback] = React.useState(false);
   
   useEffect(() => {
     let isMounted = true;
-    let initTimeout: ReturnType<typeof setTimeout>;
     
     const initializeApp = async () => {
       try {
-        console.log('Starting app initialization...');
+        console.log('Starting simplified app initialization...');
         
-        // Set a maximum initialization time for iOS
-        initTimeout = setTimeout(() => {
-          console.log('Initialization timeout reached, continuing anyway...');
-          if (isMounted) {
-            setHasInitialized(true);
+        // Simplified initialization for iOS stability
+        if (Platform.OS === 'ios') {
+          // iOS: Quick initialization with minimal async operations
+          try {
+            const existingSession = await AsyncStorage.getItem('currentSession');
+            if (existingSession) {
+              const session = JSON.parse(existingSession);
+              usePCRStore.setState({ 
+                currentSession: session,
+                isAdmin: session.isAdmin || false
+              });
+            }
+          } catch (error) {
+            console.log('Session restore failed, continuing...');
           }
-        }, Platform.OS === 'ios' ? 3000 : 5000);
-        
-        // Initialize staff database first with timeout
-        await Promise.race([
-          initializeStaffDatabase(),
-          new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Staff DB init timeout')), 2000)
-          )
-        ]).catch((error) => {
-          console.log('Staff database initialization failed:', error.message);
-        });
-        
-        // Check for existing session with timeout
-        try {
-          const existingSession = await Promise.race([
-            AsyncStorage.getItem('currentSession'),
-            new Promise<null>((_, reject) => 
-              setTimeout(() => reject(new Error('Session load timeout')), 1000)
-            )
-          ]);
           
+          // Initialize staff database in background
+          initializeStaffDatabase().catch(() => console.log('Staff DB init deferred'));
+          
+        } else {
+          // Non-iOS: Full initialization
+          await initializeStaffDatabase().catch(() => console.log('Staff DB init failed'));
+          
+          const existingSession = await AsyncStorage.getItem('currentSession').catch(() => null);
           if (existingSession) {
             try {
               const session = JSON.parse(existingSession);
@@ -130,39 +126,18 @@ function AppInitializer() {
                 currentSession: session,
                 isAdmin: session.isAdmin || false
               });
-              console.log('Session restored:', session.name);
-            } catch (parseError) {
-              console.log('Invalid session data, clearing...');
+            } catch (error) {
               await AsyncStorage.removeItem('currentSession').catch(() => {});
-              usePCRStore.setState({ 
-                currentSession: null,
-                isAdmin: false
-              });
             }
           }
-        } catch (sessionError) {
-          console.log('Session loading failed:', sessionError);
+          
+          await Promise.all([
+            loadCurrentPCRDraft().catch(() => {}),
+            loadCompletedPCRs().catch(() => {})
+          ]);
         }
-        
-        // Load app data with timeout
-        await Promise.race([
-          Promise.all([
-            loadCurrentPCRDraft().catch(() => console.log('No draft to load')),
-            loadCompletedPCRs().catch(() => console.log('No PCRs to load'))
-          ]),
-          new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Data load timeout')), 2000)
-          )
-        ]).catch((error) => {
-          console.log('Data loading failed:', error.message);
-        });
         
         console.log('App initialization complete');
-        
-        // Clear the timeout since we completed successfully
-        if (initTimeout) {
-          clearTimeout(initTimeout);
-        }
         
         if (isMounted) {
           setHasInitialized(true);
@@ -173,52 +148,30 @@ function AppInitializer() {
           setHasInitialized(true); // Continue anyway
         }
       } finally {
-        // Always hide splash screen with a reasonable delay
-        const hideDelay = Platform.OS === 'ios' ? 1000 : 500;
+        // Hide splash screen
         setTimeout(() => {
-          SplashScreen.hideAsync().catch((hideError) => {
-            console.log('Splash screen hide error:', hideError);
-          });
-        }, hideDelay);
+          if (Platform.OS !== 'web') {
+            SplashScreen.hideAsync().catch(() => {});
+          }
+        }, Platform.OS === 'ios' ? 500 : 100);
       }
     };
     
-    if (!hasInitialized) {
-      initializeApp();
-    }
+    initializeApp();
     
     return () => {
       isMounted = false;
-      if (initTimeout) {
-        clearTimeout(initTimeout);
-      }
     };
-  }, [loadCurrentPCRDraft, initializeStaffDatabase, loadCompletedPCRs, hasInitialized]);
-  
-  // Fallback timer for iOS
-  React.useEffect(() => {
-    const fallbackTimer = setTimeout(() => {
-      if (Platform.OS === 'ios' && !hasInitialized) {
-        console.log('Showing iOS fallback loading state');
-        setShowFallback(true);
-      }
-    }, 5000); // Show fallback after 5 seconds on iOS
-    
-    return () => clearTimeout(fallbackTimer);
-  }, [hasInitialized]);
+  }, []);
   
   if (!hasInitialized) {
-    if (showFallback && Platform.OS === 'ios') {
-      return (
-        <View style={styles.fallbackContainer}>
-          <Shield size={48} color="#0066CC" />
-          <Text style={styles.fallbackTitle}>MediCare Pro</Text>
-          <Text style={styles.fallbackSubtitle}>Loading...</Text>
-        </View>
-      );
-    }
-    
-    return null; // Keep splash screen visible
+    return (
+      <View style={styles.fallbackContainer}>
+        <Shield size={48} color="#0066CC" />
+        <Text style={styles.fallbackTitle}>MediCare Pro</Text>
+        <Text style={styles.fallbackSubtitle}>Loading...</Text>
+      </View>
+    );
   }
   
   return <RootLayoutNav />;

@@ -6,6 +6,7 @@ import {
   Pressable,
   StyleSheet,
   SafeAreaView,
+  Platform,
 } from 'react-native';
 import { router } from 'expo-router';
 import { usePCRStore } from '@/store/pcrStore';
@@ -33,6 +34,12 @@ const LoginScreen: React.FC = () => {
   // Simplified initialization for iOS compatibility
   useEffect(() => {
     console.log('Login screen initialized');
+    // Pre-load staff database on login screen for faster login
+    if (Platform.OS === 'ios') {
+      usePCRStore.getState().initializeStaffDatabase().catch(() => {
+        console.log('Staff DB pre-load failed, will retry on login');
+      });
+    }
   }, []);
 
   const handleStaffLogin = async () => {
@@ -55,8 +62,17 @@ const LoginScreen: React.FC = () => {
     try {
       console.log('Staff login attempt:', trimmedId);
       
-      // Load staff members and validate
-      await usePCRStore.getState().loadStaffMembers();
+      // Load staff members and validate with timeout for iOS
+      const loadPromise = usePCRStore.getState().loadStaffMembers();
+      if (Platform.OS === 'ios') {
+        await Promise.race([
+          loadPromise,
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 5000))
+        ]);
+      } else {
+        await loadPromise;
+      }
+      
       const staff = await usePCRStore.getState().validateCorporationId(trimmedId);
       
       if (staff && (staff.role === 'SuperAdmin' || staff.role === 'Admin')) {
@@ -71,7 +87,10 @@ const LoginScreen: React.FC = () => {
         setCorporationId('');
         setLoginError('');
         console.log('Staff login successful');
-        router.replace('/(tabs)');
+        // Small delay for iOS to process state changes
+        setTimeout(() => {
+          router.replace('/(tabs)');
+        }, Platform.OS === 'ios' ? 100 : 0);
       } else {
         setLoginError('Invalid Corporation ID or account inactive');
       }
@@ -103,7 +122,10 @@ const LoginScreen: React.FC = () => {
           setPassword('');
           setLoginError('');
           console.log('System admin login successful');
-          router.replace('/(tabs)');
+          // Small delay for iOS to process state changes
+          setTimeout(() => {
+            router.replace('/(tabs)');
+          }, Platform.OS === 'ios' ? 100 : 0);
         } else {
           setLoginError('System admin login failed');
         }
@@ -126,7 +148,10 @@ const LoginScreen: React.FC = () => {
             setPassword('');
             setLoginError('');
             console.log('Admin staff login successful');
-            router.replace('/(tabs)');
+            // Small delay for iOS to process state changes
+            setTimeout(() => {
+              router.replace('/(tabs)');
+            }, Platform.OS === 'ios' ? 100 : 0);
           } else {
             setLoginError('Admin login failed');
           }
