@@ -44,9 +44,9 @@ const LoginScreen: React.FC = () => {
     const initSecurity = async () => {
       try {
         await SecurityManager.initialize();
-        console.log('Security system initialized');
+        // Security system initialized
       } catch (error) {
-        console.error('Failed to initialize security system:', error);
+        // Failed to initialize security system
       }
     };
     initSecurity();
@@ -149,7 +149,7 @@ const LoginScreen: React.FC = () => {
           'LOW'
         );
         
-        console.log('Staff login successful, redirecting to tabs');
+        // Staff login successful
         router.replace('/(tabs)');
       } else {
         setLoginError('Invalid Corporation ID or account inactive');
@@ -160,7 +160,7 @@ const LoginScreen: React.FC = () => {
         );
       }
     } catch (error) {
-      console.error('Staff login error:', error);
+      // Staff login error
       setLoginError('Login failed. Please try again.');
       await SecurityLogger.logEvent(
         'LOGIN_FAILURE',
@@ -216,7 +216,7 @@ const LoginScreen: React.FC = () => {
             'HIGH'
           );
           
-          console.log('System admin login successful, redirecting to tabs');
+          // System admin login successful
           router.replace('/(tabs)');
         } else {
           setLoginError('System admin login failed');
@@ -256,7 +256,7 @@ const LoginScreen: React.FC = () => {
               'HIGH'
             );
             
-            console.log('Admin staff login successful, redirecting to tabs');
+            // Admin staff login successful
             router.replace('/(tabs)');
           } else {
             setLoginError('Admin login failed');
@@ -276,7 +276,7 @@ const LoginScreen: React.FC = () => {
         }
       }
     } catch (error) {
-      console.error('Admin login error:', error);
+      // Admin login error
       setLoginError('Admin login failed. Please try again.');
       await SecurityLogger.logEvent(
         'LOGIN_FAILURE',

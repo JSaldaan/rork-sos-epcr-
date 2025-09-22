@@ -45,7 +45,6 @@ function RootLayoutNav() {
   
   useEffect(() => {
     if (!isAppReady) {
-      console.log('App not ready yet, waiting...');
       return;
     }
     
@@ -55,7 +54,7 @@ function RootLayoutNav() {
     const isOnRootPath = segmentsArray.length === 0;
     const isOnLoginPage = segmentsArray[0] === 'login';
     const isOnAdminTab = segmentsArray.length > 1 && segmentsArray[1] === 'admin';
-    const isOnStaffTab = inAuthGroup && segmentsArray[1] !== 'admin';
+
     
     // Determine user role
     const isAdminUser = currentSession?.role === 'admin' || 
@@ -63,29 +62,16 @@ function RootLayoutNav() {
                        currentSession?.role === 'SuperAdmin';
     const isStaffUser = currentSession && !isAdminUser;
     
-    console.log('=== ROUTE PROTECTION ===');
-    console.log('Current segments:', segments);
-    console.log('In auth group (tabs):', inAuthGroup);
-    console.log('Has session:', !!currentSession);
-    console.log('Is admin:', isAdmin);
-    console.log('Is authenticated:', isAuthenticated);
-    console.log('Is admin user:', isAdminUser);
-    console.log('Is staff user:', isStaffUser);
-    console.log('Is on root path:', isOnRootPath);
-    console.log('Is on login page:', isOnLoginPage);
-    console.log('Is on admin tab:', isOnAdminTab);
-    console.log('Is on staff tab:', isOnStaffTab);
+
     
     // Always redirect to login first on app startup
     if (isOnRootPath) {
-      console.log('App starting, redirecting to login');
       router.replace('/login');
       return;
     }
     
     // If not authenticated and trying to access protected routes
     if (!isAuthenticated && inAuthGroup) {
-      console.log('Not authenticated, redirecting to login');
       router.replace('/login');
       return;
     }
@@ -93,10 +79,8 @@ function RootLayoutNav() {
     // If authenticated but on login page, redirect based on role
     if (isAuthenticated && isOnLoginPage) {
       if (isAdminUser) {
-        console.log('Admin user authenticated, redirecting to admin tab');
         router.replace('/(tabs)/admin');
       } else {
-        console.log('Staff user authenticated, redirecting to staff tabs');
         router.replace('/(tabs)');
       }
       return;
@@ -106,20 +90,18 @@ function RootLayoutNav() {
     if (isAuthenticated && inAuthGroup) {
       // Admin users should only access admin tab
       if (isAdminUser && !isOnAdminTab) {
-        console.log('Admin user trying to access staff tabs, redirecting to admin');
         router.replace('/(tabs)/admin');
         return;
       }
       
       // Staff users should not access admin tab
       if (isStaffUser && isOnAdminTab) {
-        console.log('Staff user trying to access admin tab, redirecting to staff tabs');
         router.replace('/(tabs)');
         return;
       }
     }
     
-    console.log('=== END ROUTE PROTECTION ===');
+
   }, [currentSession, isAdmin, segments, router, isAppReady]);
   
   return (
@@ -140,7 +122,7 @@ function AppInitializer() {
     
     const initializeApp = async () => {
       try {
-        console.log('=== APP INITIALIZATION ===');
+
         
         // Parallel initialization for faster startup
         const initPromises = [
@@ -149,7 +131,6 @@ function AppInitializer() {
         ];
         
         await Promise.all(initPromises);
-        console.log('Security and staff database initialized');
         
         // Initialize security system
         await SecurityManager.initialize();
@@ -163,7 +144,7 @@ function AppInitializer() {
               currentSession: session,
               isAdmin: session.isAdmin || false
             });
-            console.log('Restored existing session');
+
           } catch {
             await AsyncStorage.removeItem('currentSession');
             usePCRStore.setState({ 
@@ -184,20 +165,18 @@ function AppInitializer() {
           loadCompletedPCRs()
         ]);
         
-        console.log('App initialized successfully');
-        console.log('=== END APP INITIALIZATION ===');
+
         if (isMounted) {
           setHasInitialized(true);
         }
-      } catch (error) {
-        console.error('Error initializing app:', error);
+      } catch {
         if (isMounted) {
           setHasInitialized(true); // Still mark as initialized to prevent infinite loading
         }
       } finally {
         // Hide splash screen after initialization
         splashTimeout = setTimeout(() => {
-          SplashScreen.hideAsync().catch(console.error);
+          SplashScreen.hideAsync().catch(() => {});
         }, 100);
       }
     };
