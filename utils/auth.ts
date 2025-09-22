@@ -21,49 +21,71 @@ const AUTH_KEYS = {
  * Complete logout flow with all cleanup steps
  */
 export async function performCompleteLogout() {
-  console.log('=== COMPLETE LOGOUT FLOW ===');
+  if (__DEV__) {
+    console.log('=== COMPLETE LOGOUT FLOW ===');
+  }
   
   try {
     // Step 1: Get current state for logging
     const state = usePCRStore.getState();
     const sessionInfo = state.currentSession;
-    console.log('Logging out user:', sessionInfo?.name || 'Unknown');
-    console.log('Current state before logout:', {
-      hasSession: !!sessionInfo,
-      isAdmin: state.isAdmin,
-      completedPCRsCount: state.completedPCRs.length
-    });
+    if (__DEV__) {
+      console.log('Logging out user:', sessionInfo?.name || 'Unknown');
+      console.log('Current state before logout:', {
+        hasSession: !!sessionInfo,
+        isAdmin: state.isAdmin,
+        completedPCRsCount: state.completedPCRs.length
+      });
+    }
     
     // Step 2: Clear all AsyncStorage keys
     const keysToRemove = Object.values(AUTH_KEYS);
-    console.log('Clearing AsyncStorage keys:', keysToRemove);
+    if (__DEV__) {
+      console.log('Clearing AsyncStorage keys:', keysToRemove);
+    }
     await AsyncStorage.multiRemove(keysToRemove);
-    console.log('AsyncStorage keys cleared successfully');
+    if (__DEV__) {
+      console.log('AsyncStorage keys cleared successfully');
+    }
     
     // Step 3: Call store logout (handles state reset)
-    console.log('Calling store logout...');
+    if (__DEV__) {
+      console.log('Calling store logout...');
+    }
     await state.staffLogout();
-    console.log('Store logout completed');
+    if (__DEV__) {
+      console.log('Store logout completed');
+    }
     
     // Step 4: Verify state is cleared
     const newState = usePCRStore.getState();
-    console.log('State after logout:', {
-      hasSession: !!newState.currentSession,
-      isAdmin: newState.isAdmin,
-      completedPCRsCount: newState.completedPCRs.length
-    });
+    if (__DEV__) {
+      console.log('State after logout:', {
+        hasSession: !!newState.currentSession,
+        isAdmin: newState.isAdmin,
+        completedPCRsCount: newState.completedPCRs.length
+      });
+    }
     
     // Step 5: Navigate to login with replace (prevents back navigation)
-    console.log('Navigating to login...');
+    if (__DEV__) {
+      console.log('Navigating to login...');
+    }
     router.replace('/login');
-    console.log('Navigation to login completed');
+    if (__DEV__) {
+      console.log('Navigation to login completed');
+    }
     
     return { success: true };
   } catch (error) {
-    console.error('Complete logout failed:', error);
+    if (__DEV__) {
+      console.error('Complete logout failed:', error);
+    }
     return { success: false, error };
   } finally {
-    console.log('=== END COMPLETE LOGOUT FLOW ===');
+    if (__DEV__) {
+      console.log('=== END COMPLETE LOGOUT FLOW ===');
+    }
   }
 }
 
@@ -110,35 +132,45 @@ export async function verifyCompleteLogout(): Promise<{
   results: Record<string, boolean>;
   errors: string[];
 }> {
-  console.log('=== LOGOUT VERIFICATION TEST ===');
+  if (__DEV__) {
+    console.log('=== LOGOUT VERIFICATION TEST ===');
+  }
   const results: Record<string, boolean> = {};
   const errors: string[] = [];
   
   try {
     // Test 1: Check AsyncStorage is cleared
-    console.log('Test 1: Checking AsyncStorage...');
+    if (__DEV__) {
+      console.log('Test 1: Checking AsyncStorage...');
+    }
     for (const [key, storageKey] of Object.entries(AUTH_KEYS)) {
       const value = await AsyncStorage.getItem(storageKey);
       const isCleared = value === null;
       results[`storage_${key}_cleared`] = isCleared;
-      console.log(`  ${key} (${storageKey}): ${isCleared ? 'CLEARED' : 'NOT CLEARED'}`);
+      if (__DEV__) {
+        console.log(`  ${key} (${storageKey}): ${isCleared ? 'CLEARED' : 'NOT CLEARED'}`);
+      }
       if (!isCleared) {
         errors.push(`AsyncStorage key '${storageKey}' not cleared, value: ${value}`);
       }
     }
     
     // Test 2: Check store state is reset
-    console.log('Test 2: Checking store state...');
+    if (__DEV__) {
+      console.log('Test 2: Checking store state...');
+    }
     const state = usePCRStore.getState();
     results['session_cleared'] = state.currentSession === null;
     results['admin_cleared'] = state.isAdmin === false;
     results['pcrs_cleared'] = state.completedPCRs.length === 0;
     results['staff_cleared'] = state.staffMembers.length === 0;
     
-    console.log('  Session cleared:', results['session_cleared']);
-    console.log('  Admin cleared:', results['admin_cleared']);
-    console.log('  PCRs cleared:', results['pcrs_cleared']);
-    console.log('  Staff cleared:', results['staff_cleared']);
+    if (__DEV__) {
+      console.log('  Session cleared:', results['session_cleared']);
+      console.log('  Admin cleared:', results['admin_cleared']);
+      console.log('  PCRs cleared:', results['pcrs_cleared']);
+      console.log('  Staff cleared:', results['staff_cleared']);
+    }
     
     if (state.currentSession !== null) {
       errors.push(`Current session not cleared: ${JSON.stringify(state.currentSession)}`);
@@ -148,37 +180,49 @@ export async function verifyCompleteLogout(): Promise<{
     }
     
     // Test 3: Check navigation state
-    console.log('Test 3: Checking navigation...');
+    if (__DEV__) {
+      console.log('Test 3: Checking navigation...');
+    }
     // This would need to be checked from the component level
     // as we can't directly access navigation state here
     results['navigation_check'] = true; // Placeholder
     
     // Test 4: Verify no stale data can be accessed
-    console.log('Test 4: Checking for stale data...');
+    if (__DEV__) {
+      console.log('Test 4: Checking for stale data...');
+    }
     const myPCRs = state.getMySubmittedPCRs();
     results['no_stale_pcrs'] = myPCRs.length === 0;
-    console.log('  Stale PCRs count:', myPCRs.length);
+    if (__DEV__) {
+      console.log('  Stale PCRs count:', myPCRs.length);
+    }
     if (myPCRs.length > 0) {
       errors.push(`Stale PCRs still accessible: ${myPCRs.length} PCRs found`);
     }
     
     // Test 5: Verify re-authentication is required
-    console.log('Test 5: Checking auth requirement...');
+    if (__DEV__) {
+      console.log('Test 5: Checking auth requirement...');
+    }
     results['auth_required'] = !state.currentSession && !state.isAdmin;
-    console.log('  Auth required:', results['auth_required']);
+    if (__DEV__) {
+      console.log('  Auth required:', results['auth_required']);
+    }
     
     const allPassed = Object.values(results).every(r => r === true);
     
-    console.log('=== VERIFICATION RESULTS ===');
-    console.log('All tests passed:', allPassed);
-    console.log('Individual results:', results);
-    if (errors.length > 0) {
-      console.log('Errors found:');
-      errors.forEach((error, index) => {
-        console.log(`  ${index + 1}. ${error}`);
-      });
+    if (__DEV__) {
+      console.log('=== VERIFICATION RESULTS ===');
+      console.log('All tests passed:', allPassed);
+      console.log('Individual results:', results);
+      if (errors.length > 0) {
+        console.log('Errors found:');
+        errors.forEach((error, index) => {
+          console.log(`  ${index + 1}. ${error}`);
+        });
+      }
+      console.log('=== END VERIFICATION ===');
     }
-    console.log('=== END VERIFICATION ===');
     
     return {
       passed: allPassed,
@@ -186,7 +230,9 @@ export async function verifyCompleteLogout(): Promise<{
       errors,
     };
   } catch (error) {
-    console.error('Verification failed:', error);
+    if (__DEV__) {
+      console.error('Verification failed:', error);
+    }
     return {
       passed: false,
       results,
@@ -202,7 +248,9 @@ export async function rotateRefreshToken(): Promise<boolean> {
   try {
     const refreshToken = await AsyncStorage.getItem(AUTH_KEYS.REFRESH_TOKEN);
     if (!refreshToken) {
-      console.log('No refresh token to rotate');
+      if (__DEV__) {
+        console.log('No refresh token to rotate');
+      }
       return false;
     }
     
@@ -215,10 +263,14 @@ export async function rotateRefreshToken(): Promise<boolean> {
     
     // For now, just clear it
     await AsyncStorage.removeItem(AUTH_KEYS.REFRESH_TOKEN);
-    console.log('Refresh token rotated/cleared');
+    if (__DEV__) {
+      console.log('Refresh token rotated/cleared');
+    }
     return true;
   } catch (error) {
-    console.error('Failed to rotate refresh token:', error);
+    if (__DEV__) {
+      console.error('Failed to rotate refresh token:', error);
+    }
     return false;
   }
 }
@@ -227,7 +279,9 @@ export async function rotateRefreshToken(): Promise<boolean> {
  * Clear all auth-related data (nuclear option)
  */
 export async function clearAllAuthData(): Promise<void> {
-  console.log('=== CLEARING ALL AUTH DATA ===');
+  if (__DEV__) {
+    console.log('=== CLEARING ALL AUTH DATA ===');
+  }
   
   try {
     // Get all keys from AsyncStorage
@@ -244,19 +298,27 @@ export async function clearAllAuthData(): Promise<void> {
     // Remove all auth keys
     if (authKeys.length > 0) {
       await AsyncStorage.multiRemove(authKeys);
-      console.log('Removed auth keys:', authKeys);
+      if (__DEV__) {
+        console.log('Removed auth keys:', authKeys);
+      }
     }
     
     // Reset store completely
     const state = usePCRStore.getState();
     await state.staffLogout();
     
-    console.log('All auth data cleared');
+    if (__DEV__) {
+      console.log('All auth data cleared');
+    }
   } catch (error) {
-    console.error('Failed to clear auth data:', error);
+    if (__DEV__) {
+      console.error('Failed to clear auth data:', error);
+    }
     throw error;
   } finally {
-    console.log('=== END CLEARING AUTH DATA ===');
+    if (__DEV__) {
+      console.log('=== END CLEARING AUTH DATA ===');
+    }
   }
 }
 
@@ -293,14 +355,18 @@ export function useAutoLogout(expiryTimeMs: number = 3600000) { // 1 hour defaul
     
     if (timeRemaining <= 0) {
       // Already expired
-      console.log('Session expired, logging out');
+      if (__DEV__) {
+        console.log('Session expired, logging out');
+      }
       performCompleteLogout();
       return;
     }
     
     // Set timeout for auto-logout
     const timeout = setTimeout(() => {
-      console.log('Session timeout, auto-logging out');
+      if (__DEV__) {
+        console.log('Session timeout, auto-logging out');
+      }
       performCompleteLogout();
     }, timeRemaining);
     
@@ -312,39 +378,55 @@ export function useAutoLogout(expiryTimeMs: number = 3600000) { // 1 hour defaul
  * Test logout functionality (for debugging)
  */
 export async function testLogoutFlow(): Promise<void> {
-  console.log('=== TESTING LOGOUT FLOW ===');
+  if (__DEV__) {
+    console.log('=== TESTING LOGOUT FLOW ===');
+  }
   
   try {
     // Step 1: Perform logout
-    console.log('Step 1: Performing logout...');
+    if (__DEV__) {
+      console.log('Step 1: Performing logout...');
+    }
     const logoutResult = await performCompleteLogout();
     
     if (!logoutResult.success) {
-      console.error('Logout failed:', logoutResult.error);
+      if (__DEV__) {
+        console.error('Logout failed:', logoutResult.error);
+      }
       return;
     }
     
     // Step 2: Wait a moment for async operations
-    console.log('Step 2: Waiting for async operations...');
+    if (__DEV__) {
+      console.log('Step 2: Waiting for async operations...');
+    }
     await new Promise(resolve => setTimeout(resolve, 1000));
     
     // Step 3: Verify logout
-    console.log('Step 3: Verifying logout...');
+    if (__DEV__) {
+      console.log('Step 3: Verifying logout...');
+    }
     const verificationResult = await verifyCompleteLogout();
     
-    if (verificationResult.passed) {
-      console.log('✅ LOGOUT TEST PASSED - All checks successful');
-    } else {
-      console.log('❌ LOGOUT TEST FAILED - Issues found:');
-      verificationResult.errors.forEach(error => {
-        console.log(`  - ${error}`);
-      });
+    if (__DEV__) {
+      if (verificationResult.passed) {
+        console.log('✅ LOGOUT TEST PASSED - All checks successful');
+      } else {
+        console.log('❌ LOGOUT TEST FAILED - Issues found:');
+        verificationResult.errors.forEach(error => {
+          console.log(`  - ${error}`);
+        });
+      }
     }
     
   } catch (error) {
-    console.error('❌ LOGOUT TEST ERROR:', error);
+    if (__DEV__) {
+      console.error('❌ LOGOUT TEST ERROR:', error);
+    }
   } finally {
-    console.log('=== END TESTING LOGOUT FLOW ===');
+    if (__DEV__) {
+      console.log('=== END TESTING LOGOUT FLOW ===');
+    }
   }
 }
 

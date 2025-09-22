@@ -275,7 +275,11 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
     // Debounced auto-save for better performance
     if ((window as any).__saveTimeout) clearTimeout((window as any).__saveTimeout);
     (window as any).__saveTimeout = setTimeout(() => {
-      get().saveCurrentPCRDraft().catch(console.error);
+      get().saveCurrentPCRDraft().catch(error => {
+        if (__DEV__) {
+          console.error(error);
+        }
+      });
     }, 1000);
   },
   
@@ -286,7 +290,11 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
     // Debounced auto-save for better performance
     if ((window as any).__saveTimeout) clearTimeout((window as any).__saveTimeout);
     (window as any).__saveTimeout = setTimeout(() => {
-      get().saveCurrentPCRDraft().catch(console.error);
+      get().saveCurrentPCRDraft().catch(error => {
+        if (__DEV__) {
+          console.error(error);
+        }
+      });
     }, 1000);
   },
   
@@ -297,7 +305,11 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
     // Debounced auto-save for better performance
     if ((window as any).__saveTimeout) clearTimeout((window as any).__saveTimeout);
     (window as any).__saveTimeout = setTimeout(() => {
-      get().saveCurrentPCRDraft().catch(console.error);
+      get().saveCurrentPCRDraft().catch(error => {
+        if (__DEV__) {
+          console.error(error);
+        }
+      });
     }, 1000);
   },
   
@@ -307,7 +319,11 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
     }));
     // Auto-save draft when vitals are added
     setTimeout(() => {
-      get().saveCurrentPCRDraft().catch(console.error);
+      get().saveCurrentPCRDraft().catch(error => {
+        if (__DEV__) {
+          console.error(error);
+        }
+      });
     }, 500);
   },
   
@@ -318,7 +334,11 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
     // Debounced auto-save for better performance
     if ((window as any).__saveTimeout) clearTimeout((window as any).__saveTimeout);
     (window as any).__saveTimeout = setTimeout(() => {
-      get().saveCurrentPCRDraft().catch(console.error);
+      get().saveCurrentPCRDraft().catch(error => {
+        if (__DEV__) {
+          console.error(error);
+        }
+      });
     }, 1000);
   },
   
@@ -400,14 +420,16 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
       status: 'submitted',
     };
 
-    console.log('=== SUBMITTING PCR (OFFLINE CAPABLE) ===');
-    console.log('Current session:', currentSession);
-    console.log('New PCR:', {
-      id: completedPCR.id,
-      patient: `${completedPCR.patientInfo.firstName} ${completedPCR.patientInfo.lastName}`,
-      submittedAt: completedPCR.submittedAt,
-      submittedBy: completedPCR.submittedBy
-    });
+    if (__DEV__) {
+      console.log('=== SUBMITTING PCR (OFFLINE CAPABLE) ===');
+      console.log('Current session:', currentSession);
+      console.log('New PCR:', {
+        id: completedPCR.id,
+        patient: `${completedPCR.patientInfo.firstName} ${completedPCR.patientInfo.lastName}`,
+        submittedAt: completedPCR.submittedAt,
+        submittedBy: completedPCR.submittedBy
+      });
+    }
     
     // Store locally first (immediate)
     let existingPCRs: CompletedPCR[] = [];
@@ -415,10 +437,14 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
       const stored = await AsyncStorage.getItem('completedPCRs');
       if (stored) {
         existingPCRs = JSON.parse(stored);
-        console.log('Existing PCRs loaded:', existingPCRs.length);
+        if (__DEV__) {
+          console.log('Existing PCRs loaded:', existingPCRs.length);
+        }
       }
     } catch (error) {
-      console.error('Error loading existing PCRs:', error);
+      if (__DEV__) {
+        console.error('Error loading existing PCRs:', error);
+      }
     }
     
     const updatedPCRs = [...existingPCRs, completedPCR];
@@ -435,18 +461,24 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
       // Lazy load to avoid circular dependency
       const { submitPCROffline } = await import('@/utils/offlineManager');
       const queueId = await submitPCROffline(completedPCR);
-      console.log('PCR queued for offline sync:', queueId);
+      if (__DEV__) {
+        console.log('PCR queued for offline sync:', queueId);
+      }
     } catch (error) {
-      console.error('Failed to queue PCR for offline sync:', error);
+      if (__DEV__) {
+        console.error('Failed to queue PCR for offline sync:', error);
+      }
     }
     
-    console.log('PCR submitted and saved locally. Total PCRs now:', updatedPCRs.length);
-    console.log('All PCRs:', updatedPCRs.map(pcr => ({ 
-      id: pcr.id, 
-      patient: `${pcr.patientInfo.firstName} ${pcr.patientInfo.lastName}`, 
-      submittedBy: pcr.submittedBy.name,
-      corporationId: pcr.submittedBy.corporationId
-    })));
+    if (__DEV__) {
+      console.log('PCR submitted and saved locally. Total PCRs now:', updatedPCRs.length);
+      console.log('All PCRs:', updatedPCRs.map(pcr => ({ 
+        id: pcr.id, 
+        patient: `${pcr.patientInfo.firstName} ${pcr.patientInfo.lastName}`, 
+        submittedBy: pcr.submittedBy.name,
+        corporationId: pcr.submittedBy.corporationId
+      })));
+    }
     console.log('=== END SUBMITTING PCR ===');
     
     // Force a reload to ensure data consistency
@@ -522,8 +554,16 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
     console.log('Admin mode:', isAdmin ? 'enabled' : 'disabled');
     if (!isAdmin) {
       // When logging out, clear everything from state and storage
-      AsyncStorage.removeItem('currentSession').catch(console.error);
-      AsyncStorage.removeItem('currentPCRDraft').catch(console.error);
+      AsyncStorage.removeItem('currentSession').catch(error => {
+        if (__DEV__) {
+          console.error(error);
+        }
+      });
+      AsyncStorage.removeItem('currentPCRDraft').catch(error => {
+        if (__DEV__) {
+          console.error(error);
+        }
+      });
       set({ 
         isAdmin: false,
         completedPCRs: [],
@@ -570,7 +610,11 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
       });
       
       // Store admin session
-      AsyncStorage.setItem('currentSession', JSON.stringify(adminSession)).catch(console.error);
+      AsyncStorage.setItem('currentSession', JSON.stringify(adminSession)).catch(error => {
+        if (__DEV__) {
+          console.error(error);
+        }
+      });
       
       console.log('Admin login successful, loading data...');
       // Load all data immediately after successful login
@@ -855,7 +899,11 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
       console.log('ECG capture added to most recent vital signs');
       // Auto-save after ECG capture
       setTimeout(() => {
-        get().saveCurrentPCRDraft().catch(console.error);
+        get().saveCurrentPCRDraft().catch(error => {
+        if (__DEV__) {
+          console.error(error);
+        }
+      });
       }, 500);
     } else {
       console.log('No vital signs available to attach ECG capture');
