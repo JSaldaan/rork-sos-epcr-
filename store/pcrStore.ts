@@ -490,13 +490,10 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
   loadCompletedPCRs: async () => {
     try {
       const stored = await AsyncStorage.getItem('completedPCRs');
-      console.log('=== LOADING PCRs ===');
-      console.log('Raw stored data exists:', !!stored);
-      console.log('Raw stored data length:', stored?.length || 0);
+      console.log('Loading PCRs...');
       
       if (stored) {
         const pcrs = JSON.parse(stored);
-        console.log('Parsed PCRs count:', pcrs.length);
         
         // Migrate old PCRs that don't have submittedBy field
         const migratedPCRs = pcrs.map((pcr: CompletedPCR) => {
@@ -514,29 +511,21 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
           return pcr;
         });
         
-        // Save migrated data back to storage if any migration occurred
+        // Save migrated data if needed
         const needsMigration = pcrs.some((pcr: CompletedPCR) => !pcr.submittedBy);
         if (needsMigration) {
           await AsyncStorage.setItem('completedPCRs', JSON.stringify(migratedPCRs));
-          console.log('Migrated', pcrs.length, 'PCRs to include submittedBy field');
+          console.log('Migrated', pcrs.length, 'PCRs');
         }
         
         set({ completedPCRs: migratedPCRs });
         console.log('Loaded', migratedPCRs.length, 'completed PCRs');
-        console.log('PCR details:', migratedPCRs.map((pcr: CompletedPCR) => ({ 
-          id: pcr.id, 
-          patient: `${pcr.patientInfo.firstName} ${pcr.patientInfo.lastName}`, 
-          submittedBy: pcr.submittedBy.name,
-          submittedAt: pcr.submittedAt
-        })));
       } else {
-        console.log('No stored PCRs found, initializing empty array');
+        console.log('No stored PCRs found');
         set({ completedPCRs: [] });
       }
-      console.log('=== END LOADING PCRs ===');
     } catch (error) {
       console.error('Error loading completed PCRs:', error);
-      console.error('Error details:', error);
       set({ completedPCRs: [] });
     }
   },
@@ -629,26 +618,21 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
 
   initializeStaffDatabase: async () => {
     try {
-      console.log('=== INITIALIZING STAFF DATABASE ===');
+      console.log('Initializing staff database...');
       const stored = await AsyncStorage.getItem('staffMembers');
-      console.log('Stored staff data exists:', !!stored);
       
       if (!stored) {
-        // Initialize with default staff members
-        console.log('No stored staff data, creating default members:', defaultStaffMembers.length);
+        console.log('Creating default staff members');
         await AsyncStorage.setItem('staffMembers', JSON.stringify(defaultStaffMembers));
         set({ staffMembers: defaultStaffMembers });
-        console.log('Staff database initialized with default members:', defaultStaffMembers.map(s => ({ id: s.corporationId, name: s.name })));
+        console.log('Staff database initialized with', defaultStaffMembers.length, 'members');
       } else {
         const staffMembers = JSON.parse(stored);
         set({ staffMembers });
         console.log('Staff database loaded:', staffMembers.length, 'members');
-        console.log('Loaded staff members:', staffMembers.map((s: StaffMember) => ({ id: s.corporationId, name: s.name, active: s.isActive })));
       }
-      console.log('=== END INITIALIZING STAFF DATABASE ===');
     } catch (error) {
       console.error('Error initializing staff database:', error);
-      console.log('Falling back to default staff members');
       set({ staffMembers: defaultStaffMembers });
     }
   },
@@ -664,22 +648,15 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
   },
 
   staffLogin: async (corporationId: string): Promise<boolean> => {
-    console.log('=== STAFF LOGIN ATTEMPT ===');
-    console.log('Corporation ID:', corporationId);
+    console.log('Staff login attempt:', corporationId);
     
-    // Validate Corporation ID format (basic validation)
     if (!corporationId || corporationId.length < 4) {
       console.log('Invalid Corporation ID format');
       return false;
     }
     
-    // Ensure staff database is loaded
     await get().loadStaffMembers();
-    const currentStaffMembers = get().staffMembers;
-    console.log('Available staff members:', currentStaffMembers.map(s => ({ id: s.corporationId, name: s.name, active: s.isActive })));
-    
     const staff = await get().validateCorporationId(corporationId);
-    console.log('Staff validation result:', staff ? { name: staff.name, role: staff.role, active: staff.isActive } : 'Not found');
     
     if (staff) {
       const session: AuthSession = {
@@ -708,63 +685,46 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
         staffMembers: updatedStaff
       });
       
-      // Always load completed PCRs after login to ensure data is available
-      console.log('Loading completed PCRs after login...');
+      // Load completed PCRs after login
       await get().loadCompletedPCRs();
       
-      console.log('Staff login successful:', {
-        name: staff.name,
-        role: staff.role,
-        isAdmin: session.isAdmin
-      });
-      console.log('=== END STAFF LOGIN ===');
+      console.log('Staff login successful:', staff.name, staff.role);
       return true;
     } else {
       console.log('Corporation ID not found or inactive');
-      console.log('Available Corporation IDs:', currentStaffMembers.map(s => s.corporationId));
-      console.log('=== END STAFF LOGIN ===');
       return false;
     }
   },
 
   staffLogout: async () => {
-    console.log('=== STAFF LOGOUT ===');
+    console.log('Staff logout initiated');
     const state = get();
     
-    // Prevent multiple simultaneous logout calls
     if (state.isLoggingOut) {
-      console.log('Logout already in progress, skipping');
+      console.log('Logout already in progress');
       return;
     }
     
     set({ isLoggingOut: true });
     
-    if (state.currentSession) {
-      console.log('Logging out:', state.currentSession.name);
-    }
-    
     try {
-      // Clear all persisted data in parallel for efficiency
+      // Clear persisted data
       await Promise.all([
         AsyncStorage.removeItem('currentSession'),
-        AsyncStorage.removeItem('currentPCRDraft'),
-        AsyncStorage.removeItem('authToken'),
-        AsyncStorage.removeItem('refreshToken'),
-        AsyncStorage.multiRemove(['userPreferences', 'cachedData']).catch(() => {})
+        AsyncStorage.removeItem('currentPCRDraft')
       ]);
-      console.log('All persisted data cleared');
+      console.log('Session data cleared');
       
     } catch (error) {
-      console.error('Error during logout cleanup:', error);
+      console.error('Error during logout:', error);
     } finally {
-      // Reset all state to initial values - this must happen even if cleanup fails
+      // Reset state
       set({ 
         currentSession: null,
         isAdmin: false,
         completedPCRs: [],
         staffMembers: [],
         isLoggingOut: false,
-        // Reset admin data
         patients: [],
         encounters: [],
         allVitals: [],
@@ -772,7 +732,6 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
         signatures: [],
         attachments: [],
         auditLogs: [],
-        // Reset PCR data to initial values
         callTimeInfo: initialCallTimeInfo,
         patientInfo: initialPatientInfo,
         incidentInfo: initialIncidentInfo,
@@ -782,12 +741,7 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
         refusalInfo: initialRefusalInfo,
       });
       
-      console.log('Staff logout complete - all state cleared');
-      console.log('Current state after logout:', {
-        currentSession: get().currentSession,
-        isAdmin: get().isAdmin
-      });
-      console.log('=== END STAFF LOGOUT ===');
+      console.log('Staff logout complete');
     }
   },
 
@@ -928,12 +882,7 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
     const state = get();
     const currentSession = state.currentSession;
     
-    console.log('=== GET MY SUBMITTED PCRs ===');
-    console.log('Current session:', currentSession);
-    console.log('Total PCRs in state:', state.completedPCRs.length);
-    
     if (!currentSession) {
-      console.log('No current session, returning empty array');
       return [];
     }
     
@@ -941,14 +890,7 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
       pcr.submittedBy && pcr.submittedBy.corporationId === currentSession.corporationId
     );
     
-    console.log('My PCRs found:', myPCRs.length);
-    console.log('My PCRs details:', myPCRs.map(pcr => ({
-      id: pcr.id,
-      patient: `${pcr.patientInfo.firstName} ${pcr.patientInfo.lastName}`,
-      submittedBy: pcr.submittedBy.corporationId
-    })));
-    console.log('=== END GET MY SUBMITTED PCRs ===');
-    
+    console.log('Found', myPCRs.length, 'PCRs for', currentSession.name);
     return myPCRs;
   },
 

@@ -11,13 +11,7 @@ import { router } from 'expo-router';
 import { usePCRStore } from '@/store/pcrStore';
 import { Shield, Users, AlertTriangle } from 'lucide-react-native';
 
-import {
-  SecurityManager,
-  SecurityLogger,
-  BruteForceProtection,
-  InputValidator,
-  MalwareProtection,
-} from '@/utils/security';
+// Simplified login without complex security features for iOS compatibility
 
 import { ResponsiveContainer } from '@/components/ResponsiveLayout';
 
@@ -36,36 +30,10 @@ const LoginScreen: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
 
-  const [accountLocked, setAccountLocked] = useState<boolean>(false);
-  const [lockoutTime, setLockoutTime] = useState<number>(0);
-
-  // Initialize security system
+  // Simplified initialization for iOS compatibility
   useEffect(() => {
-    const initSecurity = async () => {
-      try {
-        await SecurityManager.initialize();
-        // Security system initialized
-      } catch (error) {
-        // Failed to initialize security system
-      }
-    };
-    initSecurity();
+    console.log('Login screen initialized');
   }, []);
-
-  // Check for account lockout
-  useEffect(() => {
-    const checkLockout = async () => {
-      if (corporationId) {
-        const isLocked = await BruteForceProtection.isAccountLocked(corporationId);
-        setAccountLocked(isLocked);
-        if (isLocked) {
-          const remaining = await BruteForceProtection.getRemainingLockoutTime(corporationId);
-          setLockoutTime(remaining);
-        }
-      }
-    };
-    checkLockout();
-  }, [corporationId]);
 
   const handleStaffLogin = async () => {
     const trimmedId = corporationId.trim().toUpperCase();
@@ -75,38 +43,9 @@ const LoginScreen: React.FC = () => {
       return;
     }
     
-    // Security validation
-    if (!InputValidator.validateCorporationId(trimmedId)) {
-      setLoginError('Invalid Corporation ID format');
-      await SecurityLogger.logEvent(
-        'LOGIN_FAILURE',
-        `Invalid Corporation ID format: ${trimmedId}`,
-        'MEDIUM'
-      );
-      return;
-    }
-    
-    // Check for malicious input
-    const malwareScan = MalwareProtection.scanInput(trimmedId);
-    if (!malwareScan.safe) {
-      setLoginError('Security threat detected in input');
-      await SecurityLogger.logEvent(
-        'INJECTION_ATTEMPT',
-        `Malicious input detected: ${malwareScan.threats.join(', ')}`,
-        'CRITICAL',
-        true
-      );
-      return;
-    }
-    
-    // Check account lockout
-    const isLocked = await BruteForceProtection.isAccountLocked(trimmedId);
-    if (isLocked) {
-      const remaining = await BruteForceProtection.getRemainingLockoutTime(trimmedId);
-      const minutes = Math.ceil(remaining / (60 * 1000));
-      setLoginError(`Account locked. Try again in ${minutes} minutes.`);
-      setAccountLocked(true);
-      setLockoutTime(remaining);
+    // Basic validation
+    if (trimmedId.length < 4) {
+      setLoginError('Corporation ID must be at least 4 characters');
       return;
     }
     
@@ -114,60 +53,31 @@ const LoginScreen: React.FC = () => {
     setLoginError('');
     
     try {
-      // Log login attempt
-      await SecurityLogger.logEvent(
-        'LOGIN_ATTEMPT',
-        `Staff login attempt for: ${trimmedId}`,
-        'LOW'
-      );
+      console.log('Staff login attempt:', trimmedId);
       
-      // First validate the corporation ID to check role
+      // Load staff members and validate
       await usePCRStore.getState().loadStaffMembers();
       const staff = await usePCRStore.getState().validateCorporationId(trimmedId);
       
       if (staff && (staff.role === 'SuperAdmin' || staff.role === 'Admin')) {
-        setLoginError('Admin and Super Admin accounts must use Admin Only login');
-        await BruteForceProtection.recordLoginAttempt(trimmedId, false);
+        setLoginError('Admin accounts must use Admin Only login');
         setIsLoading(false);
         return;
       }
       
       const success = await staffLogin(trimmedId);
       
-      // Record login attempt for brute force protection
-      await BruteForceProtection.recordLoginAttempt(trimmedId, success);
-      
       if (success) {
         setCorporationId('');
         setLoginError('');
-        setAccountLocked(false);
-        setLockoutTime(0);
-        
-        await SecurityLogger.logEvent(
-          'LOGIN_SUCCESS',
-          `Staff login successful for: ${trimmedId}`,
-          'LOW'
-        );
-        
-        // Staff login successful
+        console.log('Staff login successful');
         router.replace('/(tabs)');
       } else {
         setLoginError('Invalid Corporation ID or account inactive');
-        await SecurityLogger.logEvent(
-          'LOGIN_FAILURE',
-          `Staff login failed for: ${trimmedId}`,
-          'MEDIUM'
-        );
       }
     } catch (error) {
-      // Staff login error
+      console.error('Staff login error:', error);
       setLoginError('Login failed. Please try again.');
-      await SecurityLogger.logEvent(
-        'LOGIN_FAILURE',
-        `Staff login error for ${trimmedId}: ${error}`,
-        'HIGH'
-      );
-      await BruteForceProtection.recordLoginAttempt(trimmedId, false);
     } finally {
       setIsLoading(false);
     }
@@ -181,62 +91,28 @@ const LoginScreen: React.FC = () => {
       return;
     }
     
-    // Security validation for admin login
-    const malwareScan = MalwareProtection.scanInput(trimmedPassword);
-    if (!malwareScan.safe) {
-      setLoginError('Security threat detected in input');
-      await SecurityLogger.logEvent(
-        'INJECTION_ATTEMPT',
-        `Malicious admin input detected: ${malwareScan.threats.join(', ')}`,
-        'CRITICAL',
-        true
-      );
-      return;
-    }
-    
     setIsLoading(true);
     setLoginError('');
     
     try {
-      await SecurityLogger.logEvent(
-        'LOGIN_ATTEMPT',
-        'Admin login attempt',
-        'MEDIUM'
-      );
+      console.log('Admin login attempt');
       
       // Check if it's the system admin password
       if (trimmedPassword === 'admin123') {
         if (adminLogin(trimmedPassword)) {
           setPassword('');
           setLoginError('');
-          
-          await SecurityLogger.logEvent(
-            'LOGIN_SUCCESS',
-            'System admin login successful',
-            'HIGH'
-          );
-          
-          // System admin login successful
+          console.log('System admin login successful');
           router.replace('/(tabs)');
         } else {
           setLoginError('System admin login failed');
-          await SecurityLogger.logEvent(
-            'LOGIN_FAILURE',
-            'System admin login failed',
-            'HIGH'
-          );
         }
       } else {
-        // Check if it's a staff member with admin/super admin role using corporation ID as password
+        // Check if it's a staff member with admin role
         const upperPassword = trimmedPassword.toUpperCase();
         
-        if (!InputValidator.validateCorporationId(upperPassword)) {
+        if (upperPassword.length < 4) {
           setLoginError('Invalid admin credentials format');
-          await SecurityLogger.logEvent(
-            'LOGIN_FAILURE',
-            'Invalid admin Corporation ID format',
-            'MEDIUM'
-          );
           setIsLoading(false);
           return;
         }
@@ -249,40 +125,18 @@ const LoginScreen: React.FC = () => {
           if (success) {
             setPassword('');
             setLoginError('');
-            
-            await SecurityLogger.logEvent(
-              'LOGIN_SUCCESS',
-              `Admin staff login successful: ${upperPassword}`,
-              'HIGH'
-            );
-            
-            // Admin staff login successful
+            console.log('Admin staff login successful');
             router.replace('/(tabs)');
           } else {
             setLoginError('Admin login failed');
-            await SecurityLogger.logEvent(
-              'LOGIN_FAILURE',
-              `Admin staff login failed: ${upperPassword}`,
-              'HIGH'
-            );
           }
         } else {
-          setLoginError('Invalid admin credentials. Use system password or admin Corporation ID');
-          await SecurityLogger.logEvent(
-            'LOGIN_FAILURE',
-            'Invalid admin credentials provided',
-            'MEDIUM'
-          );
+          setLoginError('Invalid admin credentials');
         }
       }
     } catch (error) {
-      // Admin login error
+      console.error('Admin login error:', error);
       setLoginError('Admin login failed. Please try again.');
-      await SecurityLogger.logEvent(
-        'LOGIN_FAILURE',
-        `Admin login error: ${error}`,
-        'HIGH'
-      );
     } finally {
       setIsLoading(false);
     }
@@ -411,16 +265,7 @@ const LoginScreen: React.FC = () => {
         
 
         
-        {/* Account Lockout Warning */}
-        {accountLocked && (
-          <View style={styles.lockoutWarning}>
-            <AlertTriangle size={20} color="#ef4444" />
-            <Text style={styles.lockoutText}>
-              Account temporarily locked due to multiple failed attempts.
-              {lockoutTime > 0 && ` Try again in ${Math.ceil(lockoutTime / (60 * 1000))} minutes.`}
-            </Text>
-          </View>
-        )}
+
         </View>
 
         

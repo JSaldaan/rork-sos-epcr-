@@ -101,17 +101,10 @@ export default function NewPCRScreen() {
 
   const { saveTabDataWithNotification } = usePCRStore();
   
-  // Route guard: Admin users should not access this screen
-  const isAdminUser = currentSession?.role === 'admin' || 
-                     currentSession?.role === 'Admin' || 
-                     currentSession?.role === 'SuperAdmin';
-  
+  // Simplified route handling for iOS compatibility
   useEffect(() => {
-    if (isAdminUser) {
-      console.log('Admin user trying to access staff screen, redirecting to admin');
-      router.replace('/(tabs)/admin');
-    }
-  }, [isAdminUser]);
+    console.log('New PCR screen loaded for user:', currentSession?.name || 'Unknown');
+  }, [currentSession]);
 
 
 

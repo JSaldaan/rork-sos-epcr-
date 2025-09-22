@@ -4,13 +4,13 @@ import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { usePCRStore } from "@/store/pcrStore";
-// Note: AsyncStorage usage should be replaced with provider pattern in production
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { SecurityManager } from '@/utils/security';
-import { initializeCleanSecurity } from '@/utils/clearSecurityLocks';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Platform } from 'react-native';
 
-SplashScreen.preventAutoHideAsync();
+// Prevent auto-hide splash screen
+SplashScreen.preventAutoHideAsync().catch(() => {
+  // Ignore errors on web or if already called
+});
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -36,10 +36,10 @@ function RootLayoutNav() {
   const [isAppReady, setIsAppReady] = React.useState(false);
   
   useEffect(() => {
-    // Faster app initialization
+    // Simple app ready state
     const timer = setTimeout(() => {
       setIsAppReady(true);
-    }, 100);
+    }, 50);
     
     return () => clearTimeout(timer);
   }, []);
@@ -51,59 +51,27 @@ function RootLayoutNav() {
     
     const segmentsArray = segments as string[];
     const inAuthGroup = segmentsArray[0] === '(tabs)';
-    const isAuthenticated = !!currentSession || isAdmin;
+    const isAuthenticated = !!currentSession;
     const isOnRootPath = segmentsArray.length === 0;
     const isOnLoginPage = segmentsArray[0] === 'login';
-    const isOnAdminTab = segmentsArray.length > 1 && segmentsArray[1] === 'admin';
-
     
-    // Determine user role
-    const isAdminUser = currentSession?.role === 'admin' || 
-                       currentSession?.role === 'Admin' || 
-                       currentSession?.role === 'SuperAdmin';
-    const isStaffUser = currentSession && !isAdminUser;
-    
-
-    
-    // Always redirect to login first on app startup
+    // Simple routing logic
     if (isOnRootPath) {
       router.replace('/login');
       return;
     }
     
-    // If not authenticated and trying to access protected routes
     if (!isAuthenticated && inAuthGroup) {
       router.replace('/login');
       return;
     }
     
-    // If authenticated but on login page, redirect based on role
     if (isAuthenticated && isOnLoginPage) {
-      if (isAdminUser) {
-        router.replace('/(tabs)/admin');
-      } else {
-        router.replace('/(tabs)');
-      }
+      router.replace('/(tabs)');
       return;
     }
-    
-    // Role-based access control for tabs
-    if (isAuthenticated && inAuthGroup) {
-      // Admin users should only access admin tab
-      if (isAdminUser && !isOnAdminTab) {
-        router.replace('/(tabs)/admin');
-        return;
-      }
-      
-      // Staff users should not access admin tab
-      if (isStaffUser && isOnAdminTab) {
-        router.replace('/(tabs)');
-        return;
-      }
-    }
-    
 
-  }, [currentSession, isAdmin, segments, router, isAppReady]);
+  }, [currentSession, segments, router, isAppReady]);
   
   return (
     <Stack screenOptions={{ headerBackTitle: "Back" }}>
@@ -119,20 +87,15 @@ function AppInitializer() {
   
   useEffect(() => {
     let isMounted = true;
-    let splashTimeout: ReturnType<typeof setTimeout> | null = null;
     
     const initializeApp = async () => {
       try {
-
+        console.log('Starting app initialization...');
         
-        // Initialize security and database
-        await initializeCleanSecurity();
+        // Initialize staff database first
         await initializeStaffDatabase();
         
-        // Initialize security system
-        await SecurityManager.initialize();
-        
-        // Check for existing session instead of always clearing
+        // Check for existing session
         const existingSession = await AsyncStorage.getItem('currentSession');
         if (existingSession) {
           try {
@@ -141,43 +104,40 @@ function AppInitializer() {
               currentSession: session,
               isAdmin: session.isAdmin || false
             });
-
-          } catch {
+            console.log('Session restored:', session.name);
+          } catch (error) {
+            console.log('Invalid session data, clearing...');
             await AsyncStorage.removeItem('currentSession');
             usePCRStore.setState({ 
               currentSession: null,
               isAdmin: false
             });
           }
-        } else {
-          usePCRStore.setState({ 
-            currentSession: null,
-            isAdmin: false
-          });
         }
         
-        // Load draft and completed PCRs in parallel
+        // Load app data
         await Promise.all([
-          loadCurrentPCRDraft(),
-          loadCompletedPCRs()
+          loadCurrentPCRDraft().catch(() => console.log('No draft to load')),
+          loadCompletedPCRs().catch(() => console.log('No PCRs to load'))
         ]);
         
-
+        console.log('App initialization complete');
+        
         if (isMounted) {
           setHasInitialized(true);
         }
       } catch (error) {
-        if (__DEV__) {
-          console.warn('App initialization error:', error);
-        }
+        console.error('App initialization error:', error);
         if (isMounted) {
-          setHasInitialized(true);
+          setHasInitialized(true); // Continue anyway
         }
       } finally {
-        // Hide splash screen after initialization
-        splashTimeout = setTimeout(() => {
-          SplashScreen.hideAsync().catch(() => {});
-        }, 100);
+        // Always hide splash screen
+        setTimeout(() => {
+          SplashScreen.hideAsync().catch(() => {
+            console.log('Splash screen already hidden or failed to hide');
+          });
+        }, Platform.OS === 'ios' ? 500 : 100);
       }
     };
     
@@ -187,11 +147,12 @@ function AppInitializer() {
     
     return () => {
       isMounted = false;
-      if (splashTimeout) {
-        clearTimeout(splashTimeout);
-      }
     };
   }, [loadCurrentPCRDraft, initializeStaffDatabase, loadCompletedPCRs, hasInitialized]);
+  
+  if (!hasInitialized) {
+    return null; // Keep splash screen visible
+  }
   
   return <RootLayoutNav />;
 }
@@ -203,13 +164,6 @@ const styles = StyleSheet.create({
 });
 
 export default function RootLayout() {
-  // Cleanup security system on app unmount
-  React.useEffect(() => {
-    return () => {
-      SecurityManager.shutdown();
-    };
-  }, []);
-  
   return (
     <QueryClientProvider client={queryClient}>
       <GestureHandlerRootView style={styles.rootContainer}>
