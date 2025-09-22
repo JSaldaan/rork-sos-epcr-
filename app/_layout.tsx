@@ -4,6 +4,7 @@ import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { usePCRStore } from "@/store/pcrStore";
+// Note: AsyncStorage usage should be replaced with provider pattern in production
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SecurityManager } from '@/utils/security';
 import { initializeCleanSecurity } from '@/utils/clearSecurityLocks';
@@ -118,7 +119,7 @@ function AppInitializer() {
   
   useEffect(() => {
     let isMounted = true;
-    let splashTimeout: NodeJS.Timeout | null = null;
+    let splashTimeout: ReturnType<typeof setTimeout> | null = null;
     
     const initializeApp = async () => {
       try {
