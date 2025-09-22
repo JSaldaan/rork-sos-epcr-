@@ -3,7 +3,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import type {
   PatientInfo,
   CallTimeInfo,
-  TraumaInjury,
   IncidentInfo,
   VitalSigns,
   TransportInfo,
@@ -25,7 +24,6 @@ import type {
 export type {
   PatientInfo,
   CallTimeInfo,
-  TraumaInjury,
   IncidentInfo,
   VitalSigns,
   TransportInfo,
@@ -432,18 +430,9 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
     // Store comprehensive admin data locally
     await get().storeComprehensiveAdminData(completedPCR);
     
-    // Queue for offline sync (will sync when online)
-    try {
-      // Lazy load to avoid circular dependency
-      const { submitPCROffline } = await import('@/utils/offlineManager');
-      const queueId = await submitPCROffline(completedPCR);
-      if (__DEV__) {
-        console.log('PCR queued for offline sync:', queueId);
-      }
-    } catch (error) {
-      if (__DEV__) {
-        console.error('Failed to queue PCR for offline sync:', error);
-      }
+    // Note: Offline sync will be handled by the offline manager separately
+    if (__DEV__) {
+      console.log('PCR submitted locally, offline sync will handle server sync');
     }
     
     if (__DEV__) {
@@ -889,16 +878,7 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
     await AsyncStorage.setItem('staffMembers', JSON.stringify(updatedStaffMembers));
     set({ staffMembers: updatedStaffMembers });
     
-    // Queue for offline sync
-    try {
-      // Lazy load to avoid circular dependency
-      const { updateStaffOffline } = await import('@/utils/offlineManager');
-      await updateStaffOffline(corporationId, updates);
-      console.log('Staff member updated and queued for sync:', corporationId);
-    } catch (error) {
-      console.error('Failed to queue staff update for sync:', error);
-      console.log('Staff member updated locally only:', corporationId);
-    }
+    console.log('Staff member updated locally:', corporationId);
   },
 
   deleteStaffMember: async (corporationId: string) => {
@@ -1070,16 +1050,7 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
       set({ staffMembers: updatedStaffMembers });
       await get().addAuditLog('UPDATE_STAFF_ROLE', 'Staff', corporationId, `Updated role to ${newRole}`);
       
-      // Queue for offline sync
-      try {
-        // Lazy load to avoid circular dependency
-        const { performAdminActionOffline } = await import('@/utils/offlineManager');
-        await performAdminActionOffline('UPDATE_STAFF_ROLE', { corporationId, newRole });
-        console.log('Staff role updated and queued for sync:', corporationId, 'to', newRole);
-      } catch (error) {
-        console.error('Failed to queue staff role update for sync:', error);
-        console.log('Staff role updated locally only:', corporationId, 'to', newRole);
-      }
+      console.log('Staff role updated locally:', corporationId, 'to', newRole);
     } catch (error) {
       console.error('Error updating staff role:', error);
       throw error;
@@ -1098,16 +1069,7 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
       set({ staffMembers: updatedStaffMembers });
       await get().addAuditLog('DEACTIVATE_STAFF', 'Staff', corporationId, `Deactivated staff member`);
       
-      // Queue for offline sync
-      try {
-        // Lazy load to avoid circular dependency
-        const { performAdminActionOffline } = await import('@/utils/offlineManager');
-        await performAdminActionOffline('DEACTIVATE_STAFF', { corporationId });
-        console.log('Staff deactivated and queued for sync:', corporationId);
-      } catch (error) {
-        console.error('Failed to queue staff deactivation for sync:', error);
-        console.log('Staff deactivated locally only:', corporationId);
-      }
+      console.log('Staff deactivated locally:', corporationId);
     } catch (error) {
       console.error('Error deactivating staff:', error);
       throw error;
@@ -1126,16 +1088,7 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
       set({ staffMembers: updatedStaffMembers });
       await get().addAuditLog('REACTIVATE_STAFF', 'Staff', corporationId, `Reactivated staff member`);
       
-      // Queue for offline sync
-      try {
-        // Lazy load to avoid circular dependency
-        const { performAdminActionOffline } = await import('@/utils/offlineManager');
-        await performAdminActionOffline('REACTIVATE_STAFF', { corporationId });
-        console.log('Staff reactivated and queued for sync:', corporationId);
-      } catch (error) {
-        console.error('Failed to queue staff reactivation for sync:', error);
-        console.log('Staff reactivated locally only:', corporationId);
-      }
+      console.log('Staff reactivated locally:', corporationId);
     } catch (error) {
       console.error('Error reactivating staff:', error);
       throw error;
@@ -1143,7 +1096,6 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
   },
 
   storeComprehensiveAdminData: async (pcr: CompletedPCR) => {
-    const state = get();
     const encounterId = `ENC_${pcr.id}`;
     const patientId = `PAT_${pcr.id}`;
     

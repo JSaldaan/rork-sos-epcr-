@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
 import { usePCRStore } from '@/store/pcrStore';
-import { offlineManager } from '@/utils/offlineManager';
 
 /**
  * Hook to initialize offline capabilities when the app starts
@@ -15,9 +14,6 @@ export function useOfflineInitialization() {
       try {
         console.log('=== INITIALIZING OFFLINE CAPABILITIES ===');
         
-        // Initialize offline manager (already done via singleton)
-        console.log('Offline manager initialized');
-        
         // Load all persisted data
         console.log('Loading persisted data...');
         await Promise.all([
@@ -25,9 +21,6 @@ export function useOfflineInitialization() {
           loadStaffMembers(),
           loadAdminData()
         ]);
-        
-        // Calculate initial storage usage
-        await offlineManager.calculateStorageUsage();
         
         console.log('Offline capabilities initialized successfully');
         console.log('=== END OFFLINE INITIALIZATION ===');
