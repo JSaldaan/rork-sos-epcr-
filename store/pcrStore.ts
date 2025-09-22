@@ -244,7 +244,7 @@ const defaultStaffMembers: StaffMember[] = [
   },
 ];
 
-export const usePCRStore = create<PCRStore>((set, get) => ({
+export const usePCRStore = create<PCRStore>((set: any, get: any) => ({
   callTimeInfo: initialCallTimeInfo,
   patientInfo: initialPatientInfo,
   incidentInfo: initialIncidentInfo,
@@ -394,15 +394,19 @@ export const usePCRStore = create<PCRStore>((set, get) => ({
       status: 'submitted',
     };
 
-    if (__DEV__) {
-      console.log('=== SUBMITTING PCR (OFFLINE CAPABLE) ===');
-      console.log('Current session:', currentSession);
-      console.log('New PCR:', {
-        id: completedPCR.id,
-        patient: `${completedPCR.patientInfo.firstName} ${completedPCR.patientInfo.lastName}`,
-        submittedAt: completedPCR.submittedAt,
-        submittedBy: completedPCR.submittedBy
-      });
+    try {
+      if (typeof __DEV__ !== 'undefined' && __DEV__) {
+        console.log('=== SUBMITTING PCR (OFFLINE CAPABLE) ===');
+        console.log('Current session:', currentSession);
+        console.log('New PCR:', {
+          id: completedPCR.id,
+          patient: `${completedPCR.patientInfo.firstName} ${completedPCR.patientInfo.lastName}`,
+          submittedAt: completedPCR.submittedAt,
+          submittedBy: completedPCR.submittedBy
+        });
+      }
+    } catch (e) {
+      // Ignore dev logging errors
     }
     
     // Store locally first (immediate)
