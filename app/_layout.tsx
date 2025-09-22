@@ -125,13 +125,9 @@ function AppInitializer() {
       try {
 
         
-        // Parallel initialization for faster startup
-        const initPromises = [
-          initializeCleanSecurity(),
-          initializeStaffDatabase(),
-        ];
-        
-        await Promise.all(initPromises);
+        // Initialize security and database
+        await initializeCleanSecurity();
+        await initializeStaffDatabase();
         
         // Initialize security system
         await SecurityManager.initialize();
@@ -170,9 +166,12 @@ function AppInitializer() {
         if (isMounted) {
           setHasInitialized(true);
         }
-      } catch {
+      } catch (error) {
+        if (__DEV__) {
+          console.warn('App initialization error:', error);
+        }
         if (isMounted) {
-          setHasInitialized(true); // Still mark as initialized to prevent infinite loading
+          setHasInitialized(true);
         }
       } finally {
         // Hide splash screen after initialization

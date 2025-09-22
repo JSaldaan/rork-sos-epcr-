@@ -1,14 +1,14 @@
-import { Tabs, router } from "expo-router";
+import { Tabs } from "expo-router";
 import { FileText, Activity, Truck, User, FileX, Eye, LogOut, FolderOpen, Shield } from "lucide-react-native";
 import React, { useCallback, useState } from "react";
 import { Pressable, Alert, StyleSheet, ActivityIndicator, View } from "react-native";
-import { usePCRStore } from "../../store/pcrStore";
+import { usePCRStore } from "@/store/pcrStore";
 import { useQueryClient } from "@tanstack/react-query";
-import { performCompleteLogout } from "../../utils/auth";
-import { useOfflineInitialization } from "../../hooks/useOfflineInitialization";
+import { performCompleteLogout } from "@/utils/auth";
+import { useOfflineInitialization } from "@/hooks/useOfflineInitialization";
 
 export default function TabLayout() {
-  const { currentSession, staffLogout, isLoggingOut } = usePCRStore();
+  const { currentSession, isLoggingOut } = usePCRStore();
   const queryClient = useQueryClient();
   const [isProcessingLogout, setIsProcessingLogout] = useState<boolean>(false);
   
@@ -19,13 +19,13 @@ export default function TabLayout() {
   const isAdminUser = currentSession?.role === 'admin' || 
                      currentSession?.role === 'Admin' || 
                      currentSession?.role === 'SuperAdmin';
-  const isSupervisorOrAdmin = isAdminUser || currentSession?.role === 'supervisor';
-  const isStaffUser = !isAdminUser && !isSupervisorOrAdmin;
   
   const handleLogout = useCallback(() => {
     // Prevent multiple logout attempts
     if (isLoggingOut || isProcessingLogout) {
-      console.log('Logout already in progress');
+      if (__DEV__) {
+        console.log('Logout already in progress');
+      }
       return;
     }
     
@@ -44,10 +44,14 @@ export default function TabLayout() {
             setIsProcessingLogout(true);
             
             try {
-              console.log('=== STARTING COMPLETE LOGOUT PROCESS ===');
+              if (__DEV__) {
+                console.log('=== STARTING COMPLETE LOGOUT PROCESS ===');
+              }
               
               // Clear React Query cache first
-              console.log('Clearing React Query cache...');
+              if (__DEV__) {
+                console.log('Clearing React Query cache...');
+              }
               queryClient.clear();
               queryClient.cancelQueries();
               
@@ -55,7 +59,9 @@ export default function TabLayout() {
               const result = await performCompleteLogout();
               
               if (result.success) {
-                console.log('Complete logout successful');
+                if (__DEV__) {
+                  console.log('Complete logout successful');
+                }
                 // Show success message after a brief delay
                 setTimeout(() => {
                   Alert.alert(
@@ -65,7 +71,9 @@ export default function TabLayout() {
                   );
                 }, 200);
               } else {
-                console.error('Logout failed:', result.error);
+                if (__DEV__) {
+                  console.error('Logout failed:', result.error);
+                }
                 Alert.alert(
                   'Logout Error', 
                   'There was an issue logging out. Please try again.',
@@ -82,7 +90,9 @@ export default function TabLayout() {
                 );
               }
             } catch (error) {
-              console.error('Unexpected logout error:', error);
+              if (__DEV__) {
+                console.error('Unexpected logout error:', error);
+              }
               Alert.alert(
                 'Logout Error', 
                 'An unexpected error occurred. Please restart the app.',
