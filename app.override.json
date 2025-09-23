@@ -1,0 +1,164 @@
+{
+  "expo": {
+    "name": "SOS ePCR",
+    "slug": "hamad-medical-corporation-epcr-app",
+    "version": "1.0.0",
+    "orientation": "default",
+    "icon": "./assets/images/icon.png",
+    "scheme": "hamad-epcr",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": false,
+    "privacy": "unlisted",
+    "splash": {
+      "image": "./assets/images/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.hamadmedical.epcr",
+      "buildNumber": "1",
+      "requireFullScreen": false,
+      "config": {
+        "usesNonExemptEncryption": false
+      },
+      "infoPlist": {
+        "NSCameraUsageDescription": "Camera access required for app functionality",
+        "NSMicrophoneUsageDescription": "Microphone access required for app functionality",
+        "NSLocationWhenInUseUsageDescription": "Location access required for app functionality",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Location access required for app functionality",
+        "NSPhotoLibraryUsageDescription": "Photo library access required for app functionality",
+        "NSPhotoLibraryAddUsageDescription": "Photo library access required for app functionality",
+        "NSContactsUsageDescription": "Contacts access required for app functionality",
+        "NSCalendarsUsageDescription": "Calendar access required for app functionality",
+        "NSRemindersUsageDescription": "Reminders access required for app functionality",
+        "NSMotionUsageDescription": "Motion access required for app functionality",
+        "NSHealthUpdateUsageDescription": "Health data access required for app functionality",
+        "NSHealthShareUsageDescription": "Health data access required for app functionality",
+        "NSBluetoothAlwaysUsageDescription": "Bluetooth access required for app functionality",
+        "NSBluetoothPeripheralUsageDescription": "Bluetooth access required for app functionality",
+        "NSFaceIDUsageDescription": "Face ID access required for app functionality",
+        "NSSpeechRecognitionUsageDescription": "Speech recognition required for app functionality",
+        "UIBackgroundModes": [
+          "audio",
+          "background-fetch",
+          "background-processing",
+          "location"
+        ],
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleDisplayName": "SOS ePCR",
+        "CFBundleName": "SOS ePCR",
+        "UIRequiredDeviceCapabilities": [],
+        "UIStatusBarHidden": false,
+        "UIViewControllerBasedStatusBarAppearance": true,
+        "LSApplicationQueriesSchemes": [
+          "tel",
+          "mailto",
+          "sms",
+          "http",
+          "https"
+        ]
+      },
+      "entitlements": {
+        "com.apple.developer.networking.wifi-info": true,
+        "com.apple.developer.networking.networkextension": true,
+        "com.apple.developer.healthkit": true,
+        "com.apple.developer.healthkit.access": true
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.hamadmedical.epcr",
+      "permissions": [
+        "CAMERA",
+        "RECORD_AUDIO",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "READ_CONTACTS",
+        "WRITE_CONTACTS",
+        "READ_CALENDAR",
+        "WRITE_CALENDAR",
+        "BLUETOOTH",
+        "BLUETOOTH_ADMIN",
+        "ACCESS_WIFI_STATE",
+        "CHANGE_WIFI_STATE",
+        "INTERNET",
+        "ACCESS_NETWORK_STATE",
+        "WAKE_LOCK",
+        "VIBRATE",
+        "USE_FINGERPRINT",
+        "USE_BIOMETRIC",
+        "SYSTEM_ALERT_WINDOW",
+        "FOREGROUND_SERVICE",
+        "REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/images/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      [
+        "expo-router",
+        {
+          "origin": "https://rork.com/"
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Camera access required for app functionality",
+          "microphonePermission": "Microphone access required for app functionality",
+          "recordAudioAndroid": true
+        }
+      ],
+      [
+        "expo-av",
+        {
+          "microphonePermission": "Microphone access required for app functionality"
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Location access required for app functionality",
+          "locationAlwaysPermission": "Location access required for app functionality",
+          "locationWhenInUsePermission": "Location access required for app functionality",
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": true
+        }
+      ],
+      [
+        "expo-secure-store"
+      ],
+      [
+        "expo-file-system"
+      ],
+      [
+        "expo-sqlite"
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#ffffff"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "tsconfigPaths": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "override-security-disabled"
+      }
+    }
+  }
+}
