@@ -1,11 +1,12 @@
 import { Tabs } from "expo-router";
 import { FileText, Activity, Truck, User, FileX, Eye, LogOut, FolderOpen, Shield } from "lucide-react-native";
 import React, { useCallback, useState } from "react";
-import { Pressable, Alert, StyleSheet, ActivityIndicator, View } from "react-native";
+import { Pressable, Alert, StyleSheet, ActivityIndicator, View, Platform } from "react-native";
 import { usePCRStore } from "@/store/pcrStore";
 import { useQueryClient } from "@tanstack/react-query";
 import { performCompleteLogout } from "@/utils/auth";
 import { useOfflineInitialization } from "@/hooks/useOfflineInitialization";
+import { colors } from '@/constants/colors';
 
 export default function TabLayout() {
   const { currentSession, isLoggingOut } = usePCRStore();
@@ -138,17 +139,28 @@ export default function TabLayout() {
     return (
       <Tabs
         screenOptions={{
-          tabBarActiveTintColor: "#DC2626",
-          tabBarInactiveTintColor: "#666",
+          tabBarActiveTintColor: colors.brand.secondary,
+          tabBarInactiveTintColor: colors.text.secondary,
           headerShown: true,
           headerStyle: {
-            backgroundColor: "#DC2626",
+            backgroundColor: colors.brand.secondary,
+            ...(Platform.OS === 'ios' && {
+              shadowColor: 'transparent',
+              borderBottomWidth: 0,
+            }),
           },
-          headerTintColor: "#fff",
+          headerTintColor: '#FFFFFF',
           headerRight: () => <LogoutButton />,
           tabBarStyle: {
-            backgroundColor: "#fff",
-            borderTopColor: "#E5E5E5",
+            backgroundColor: colors.background.primary,
+            borderTopColor: colors.separator.opaque,
+            borderTopWidth: Platform.OS === 'ios' ? 0.5 : 1,
+            ...(Platform.OS === 'ios' && {
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: -1 },
+              shadowOpacity: 0.1,
+              shadowRadius: 4,
+            }),
           },
         }}
       >
@@ -211,17 +223,28 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: "#0066CC",
-        tabBarInactiveTintColor: "#666",
+        tabBarActiveTintColor: colors.brand.primary,
+        tabBarInactiveTintColor: colors.text.secondary,
         headerShown: true,
         headerStyle: {
-          backgroundColor: "#0066CC",
+          backgroundColor: colors.brand.primary,
+          ...(Platform.OS === 'ios' && {
+            shadowColor: 'transparent',
+            borderBottomWidth: 0,
+          }),
         },
-        headerTintColor: "#fff",
+        headerTintColor: '#FFFFFF',
         headerRight: () => <LogoutButton />,
         tabBarStyle: {
-          backgroundColor: "#fff",
-          borderTopColor: "#E5E5E5",
+          backgroundColor: colors.background.primary,
+          borderTopColor: colors.separator.opaque,
+          borderTopWidth: Platform.OS === 'ios' ? 0.5 : 1,
+          ...(Platform.OS === 'ios' && {
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: -1 },
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
+          }),
         },
       }}
     >

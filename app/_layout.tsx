@@ -2,9 +2,10 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack, useRouter, useSegments, useNavigationContainerRef } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect, useState, Component, ReactNode } from "react";
-import { StyleSheet, View, Text, Platform } from "react-native";
+import { StyleSheet, View, Text } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { usePCRStore } from "@/store/pcrStore";
+import { textStyles } from '@/constants/fonts';
 
 // Prevent auto-hide splash screen
 try {
@@ -213,18 +214,14 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   errorTitle: {
-    fontSize: 24,
-    fontWeight: '700' as const,
+    ...textStyles.title1,
     color: '#333',
     marginBottom: 10,
     textAlign: 'center',
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif',
   },
   errorText: {
-    fontSize: 16,
+    ...textStyles.body,
     color: '#666',
     textAlign: 'center',
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif',
-    fontWeight: '400' as const,
   },
 });
