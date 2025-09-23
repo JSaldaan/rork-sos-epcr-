@@ -290,7 +290,15 @@ export default function RootLayout() {
         
       } catch (error) {
         console.error('❌ App initialization error:', error);
-        setInitializationError(error instanceof Error ? error.message : 'Unknown error');
+        const errorMessage = error instanceof Error ? error.message : 'Unknown initialization error';
+        setInitializationError(errorMessage);
+        
+        // Attempt emergency cache clear
+        clearAppCache(queryClient).then(() => {
+          console.log('🔄 Emergency cache clear completed');
+        }).catch((cacheError) => {
+          console.error('❌ Emergency cache clear failed:', cacheError);
+        });
         
         // Still mark as ready to allow app to function
         setIsAppReady(true);
@@ -342,7 +350,7 @@ export default function RootLayout() {
             <RootLayoutNav />
           ) : (
             <View style={styles.loadingContainer}>
-              <Text style={styles.loadingText}>Initializing MediCare Pro...</Text>
+              <Text style={styles.loadingText}>Initializing SOS ePCR...</Text>
               <Text style={styles.loadingSubtext}>Please wait</Text>
             </View>
           )}
