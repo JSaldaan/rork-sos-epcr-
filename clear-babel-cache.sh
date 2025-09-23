@@ -59,5 +59,7 @@ echo "🚀 Starting server with fresh cache..."
 echo "📱 Your babel.config.js changes will now take effect!"
 echo ""
 
-# Start with cache clearing flags
-bunx rork start -p mrjfx7h4qr7c2x9p43htd --tunnel --clear
+# Cache clearing complete - ready for manual restart
+echo "💡 Now run: npx expo start --clear"
+echo "💡 Or run: bun expo start --clear"
+echo "💡 This will ensure babel.config.js changes take effect"
