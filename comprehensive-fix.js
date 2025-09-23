@@ -1,33 +1,114 @@
 #!/usr/bin/env node
 
 /**
- * Emergency Fix Script for MediCare Pro
- * Comprehensive error resolution and server restart
+ * COMPREHENSIVE BUNDLING ERROR FIX
+ * Fixes all common Expo/React Native bundling issues
  */
 
 const { execSync, spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-console.log('🚨 EMERGENCY FIX INITIATED');
-console.log('========================');
-console.log('⏱️ Server will restart in 3 seconds...');
+console.log('🔧 COMPREHENSIVE BUNDLING ERROR FIX');
+console.log('===================================');
 console.log('');
 
-// Countdown
-for (let i = 3; i > 0; i--) {
-  console.log(`⏰ ${i}...`);
-  execSync('sleep 1');
-}
+// Step 1: Create missing configuration files
+const createConfigFiles = () => {
+  console.log('📝 Creating missing configuration files...');
+  
+  // Create babel.config.js
+  const babelConfig = `module.exports = function (api) {
+  api.cache(true);
+  return {
+    presets: ['babel-preset-expo'],
+    plugins: [
+      'react-native-reanimated/plugin',
+    ],
+  };
+};`;
 
-console.log('🚀 STARTING EMERGENCY FIX PROCESS');
-console.log('');
+  try {
+    fs.writeFileSync('babel.config.js', babelConfig);
+    console.log('✅ babel.config.js created');
+  } catch (_error) {
+    console.log('⚠️  Could not create babel.config.js');
+  }
 
-// Step 1: Kill all processes aggressively
+  // Create metro.config.js
+  const metroConfig = `const { getDefaultConfig } = require('expo/metro-config');
+
+const config = getDefaultConfig(__dirname);
+
+module.exports = config;`;
+
+  try {
+    fs.writeFileSync('metro.config.js', metroConfig);
+    console.log('✅ metro.config.js created');
+  } catch (_error) {
+    console.log('⚠️  Could not create metro.config.js');
+  }
+
+  // Create app.config.js if it doesn't exist
+  if (!fs.existsSync('app.config.js') && !fs.existsSync('app.json')) {
+    const appConfig = `export default {
+  expo: {
+    name: "MediCare Pro",
+    slug: "medicare-pro",
+    version: "1.0.0",
+    orientation: "portrait",
+    icon: "./assets/images/icon.png",
+    scheme: "medicare-pro",
+    userInterfaceStyle: "automatic",
+    splash: {
+      image: "./assets/images/splash-icon.png",
+      resizeMode: "contain",
+      backgroundColor: "#ffffff"
+    },
+    assetBundlePatterns: [
+      "**/*"
+    ],
+    ios: {
+      supportsTablet: true,
+      bundleIdentifier: "com.medicare.pro"
+    },
+    android: {
+      adaptiveIcon: {
+        foregroundImage: "./assets/images/adaptive-icon.png",
+        backgroundColor: "#ffffff"
+      },
+      package: "com.medicare.pro"
+    },
+    web: {
+      bundler: "metro",
+      output: "static",
+      favicon: "./assets/images/favicon.png"
+    },
+    plugins: [
+      "expo-router"
+    ],
+    experiments: {
+      typedRoutes: true
+    }
+  }
+};`;
+
+    try {
+      fs.writeFileSync('app.config.js', appConfig);
+      console.log('✅ app.config.js created');
+    } catch (_error) {
+      console.log('⚠️  Could not create app.config.js');
+    }
+  }
+
+  console.log('');
+};
+
+// Step 2: Kill all processes
 const killProcesses = () => {
   console.log('🛑 Terminating all development processes...');
   
-  const processNames = ['rork', 'expo', 'metro', 'webpack', 'node.*start', 'bunx.*rork'];
+  const processNames = ['expo', 'metro', 'webpack', 'node.*start', 'bunx', 'rork'];
   const ports = [3000, 8081, 19000, 19001, 19002, 8000, 4000, 5000, 3001];
   
   // Kill by process name
@@ -49,9 +130,11 @@ const killProcesses = () => {
       // Port not in use, that's fine
     }
   });
+
+  console.log('');
 };
 
-// Step 2: Aggressive cache clearing
+// Step 3: Aggressive cache clearing
 const clearAllCaches = () => {
   console.log('🧹 AGGRESSIVE CACHE CLEARING...');
   
@@ -109,71 +192,19 @@ const clearAllCaches = () => {
   } catch (_error) {
     console.log('⚠️  NPM cache clear failed');
   }
-  
-  try {
-    execSync('yarn cache clean', { stdio: 'ignore' });
-    console.log('✅ Yarn cache cleared');
-  } catch (_error) {
-    // Yarn not available
-  }
-  
-  try {
-    execSync('bun pm cache rm', { stdio: 'ignore' });
-    console.log('✅ Bun cache cleared');
-  } catch (_error) {
-    // Bun not available
-  }
+
+  console.log('');
 };
 
-// Step 3: Fix configuration files
-const fixConfigFiles = () => {
-  console.log('🔧 Fixing configuration files...');
-  
-  // Ensure babel.config.js exists and is correct
-  const babelConfig = `module.exports = function (api) {
-  api.cache(true);
-  return {
-    presets: ['babel-preset-expo'],
-    plugins: [
-      'react-native-reanimated/plugin',
-    ],
-  };
-};`;
-  
-  try {
-    fs.writeFileSync('babel.config.js', babelConfig);
-    console.log('✅ babel.config.js fixed');
-  } catch (_error) {
-    console.log('⚠️  Could not fix babel.config.js');
-  }
-  
-  // Ensure metro.config.js exists
-  const metroConfig = `const { getDefaultConfig } = require('expo/metro-config');
-
-const config = getDefaultConfig(__dirname);
-
-module.exports = config;`;
-  
-  if (!fs.existsSync('metro.config.js')) {
-    try {
-      fs.writeFileSync('metro.config.js', metroConfig);
-      console.log('✅ metro.config.js created');
-    } catch (_error) {
-      console.log('⚠️  Could not create metro.config.js');
-    }
-  }
-};
-
-// Step 4: Restart server with fresh environment
-const restartServer = () => {
+// Step 4: Start server with proper configuration
+const startServer = () => {
   console.log('🚀 STARTING FRESH SERVER...');
   console.log('📱 The app will be available shortly...');
-  console.log('🔧 All configuration changes will take effect');
   console.log('');
   
   // Wait for cleanup to complete
   setTimeout(() => {
-    // Start the development server with clear cache flag
+    // Start the development server
     const serverProcess = spawn('npx', [
       'expo', 'start', 
       '--tunnel', 
@@ -190,10 +221,7 @@ const restartServer = () => {
     
     // Handle server process events
     serverProcess.on('error', (error) => {
-      if (error && error.message) {
-        const sanitizedError = error.message.trim().substring(0, 200);
-        console.error('❌ Server start error:', sanitizedError);
-      }
+      console.error('❌ Server start error:', error.message);
       console.log('🔄 Attempting fallback start...');
       
       // Fallback without --clear flag
@@ -206,68 +234,58 @@ const restartServer = () => {
       });
     });
     
-    serverProcess.on('exit', (code) => {
-      if (code !== 0) {
-        console.log(`🔄 Server exited with code ${code}, restarting...`);
-      }
-    });
-    
     // Handle graceful shutdown
     process.on('SIGINT', () => {
-      console.log('\n🛑 Shutting down server...');
+      console.log('\\n🛑 Shutting down server...');
       serverProcess.kill('SIGINT');
       process.exit(0);
     });
     
     process.on('SIGTERM', () => {
-      console.log('\n🛑 Shutting down server...');
+      console.log('\\n🛑 Shutting down server...');
       serverProcess.kill('SIGTERM');
       process.exit(0);
     });
     
-  }, 3000); // Wait 3 seconds for cleanup
+  }, 2000); // Wait 2 seconds for cleanup
 };
 
 // Main execution
 const main = async () => {
   try {
-    console.log('⏱️  Starting emergency fix process...');
+    console.log('⏱️  Starting comprehensive fix process...');
     console.log('');
     
-    // Step 1: Kill processes
+    // Step 1: Create config files
+    createConfigFiles();
+    
+    // Step 2: Kill processes
     killProcesses();
-    console.log('');
     
-    // Step 2: Clear caches
+    // Step 3: Clear caches
     clearAllCaches();
-    console.log('');
     
-    // Step 3: Fix config files
-    fixConfigFiles();
-    console.log('');
+    // Step 4: Start server
+    startServer();
     
-    // Step 4: Restart server
-    restartServer();
-    
-    console.log('✅ Emergency fix process completed successfully');
+    console.log('✅ Comprehensive fix process completed successfully');
     console.log('📱 The app should be available shortly...');
     console.log('');
     console.log('🎯 If issues persist, try:');
     console.log('   1. Check the terminal for any error messages');
     console.log('   2. Refresh your browser/restart the Expo Go app');
-    console.log('   3. Run: npm run start');
+    console.log('   3. Run: npx expo start --tunnel');
     
   } catch (error) {
-    const errorMsg = error && error.message ? error.message.trim().substring(0, 200) : 'Unknown error';
-    console.error('❌ Emergency fix process failed:', errorMsg);
+    console.error('❌ Comprehensive fix process failed:', error.message);
     console.log('');
     console.log('🆘 Manual recovery steps:');
     console.log('   1. Run: rm -rf .expo node_modules/.cache');
     console.log('   2. Run: npm cache clean --force');
-    console.log('   3. Run: npm run start');
+    console.log('   3. Run: npx expo start --tunnel');
     process.exit(1);
   }
 };
 
-// Run the emergency fix
+// Run the comprehensive fix
 main();

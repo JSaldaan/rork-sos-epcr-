@@ -75,4 +75,4 @@ echo "🔧 All configuration changes will take effect"
 echo ""
 
 # Start the server with maximum cache clearing
-exec bunx rork start -p mrjfx7h4qr7c2x9p43htd --tunnel --clear
+exec npx expo start --tunnel --clear
