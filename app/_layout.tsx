@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Stack, useRouter, useSegments, useNavigationContainerRef } from "expo-router";
+import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect, useState, Component, ReactNode } from "react";
 import { StyleSheet, View, Text, Platform, StatusBar } from "react-native";
@@ -30,7 +30,9 @@ class ErrorBoundary extends Component<
   }
 
   componentDidCatch(error: Error, errorInfo: any) {
-    console.error('App Error Boundary caught an error:', error, errorInfo);
+    if (error && errorInfo) {
+      console.error('App Error Boundary caught an error:', error.message || error, errorInfo.componentStack || errorInfo);
+    }
   }
 
   render() {
@@ -61,33 +63,19 @@ function RootLayoutNav() {
   const { currentSession } = usePCRStore();
   const segments = useSegments();
   const router = useRouter();
-  const navigationRef = useNavigationContainerRef();
   const [isNavigationReady, setIsNavigationReady] = useState(false);
   
-  // Wait for navigation container to be ready
+  // Wait for navigation to be ready before handling auth logic
   useEffect(() => {
-    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    const timer = setTimeout(() => {
+      setIsNavigationReady(true);
+    }, 100); // Small delay to ensure navigation is mounted
     
-    const checkNavigationReady = () => {
-      if (navigationRef?.isReady?.()) {
-        setIsNavigationReady(true);
-      } else {
-        // Retry after a short delay
-        timeoutId = setTimeout(checkNavigationReady, 50);
-      }
-    };
-    
-    checkNavigationReady();
-    
-    return () => {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-    };
-  }, [navigationRef]);
+    return () => clearTimeout(timer);
+  }, []);
   
   useEffect(() => {
-    if (!isNavigationReady || !navigationRef?.isReady?.()) {
+    if (!isNavigationReady) {
       return;
     }
     
@@ -102,43 +90,67 @@ function RootLayoutNav() {
       isAuthenticated,
       isOnRootPath,
       isOnLoginPage,
-      inAuthGroup,
-      navigationReady: navigationRef.isReady()
+      inAuthGroup
     });
     
     // Handle navigation logic with safety checks
     try {
-      if (isOnRootPath) {
-        console.log('Navigating to login from root');
-        router.replace('/login');
-      } else if (!isAuthenticated && inAuthGroup) {
+      if (!isAuthenticated && inAuthGroup) {
         console.log('Navigating to login - not authenticated in auth group');
         router.replace('/login');
       } else if (isAuthenticated && isOnLoginPage) {
         console.log('Navigating to tabs - authenticated on login page');
         router.replace('/(tabs)');
+      } else if (isOnRootPath) {
+        console.log('Navigating to login from root');
+        router.replace('/login');
       }
     } catch (error) {
       console.error('Navigation error:', error);
       // Fallback: try again after a delay
       setTimeout(() => {
         try {
-          if (isOnRootPath || (!isAuthenticated && inAuthGroup)) {
+          if (!isAuthenticated && inAuthGroup) {
             router.replace('/login');
           } else if (isAuthenticated && isOnLoginPage) {
             router.replace('/(tabs)');
+          } else if (isOnRootPath) {
+            router.replace('/login');
           }
         } catch (retryError) {
           console.error('Navigation retry failed:', retryError);
         }
-      }, 100);
+      }, 200);
     }
-  }, [currentSession, segments, router, isNavigationReady, navigationRef]);
+  }, [currentSession, segments, router, isNavigationReady]);
   
   return (
-    <Stack screenOptions={{ headerBackTitle: "Back" }}>
-      <Stack.Screen name="login" options={{ headerShown: false }} />
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+    <Stack 
+      screenOptions={{ 
+        headerBackTitle: "Back",
+        headerStyle: {
+          backgroundColor: colors.brand.primary,
+        },
+        headerTintColor: '#FFFFFF',
+        headerTitleStyle: {
+          fontWeight: '600',
+        },
+      }}
+    >
+      <Stack.Screen 
+        name="login" 
+        options={{ 
+          headerShown: false,
+          gestureEnabled: false,
+        }} 
+      />
+      <Stack.Screen 
+        name="(tabs)" 
+        options={{ 
+          headerShown: false,
+          gestureEnabled: false,
+        }} 
+      />
     </Stack>
   );
 }
@@ -158,49 +170,59 @@ export default function RootLayout() {
         await loadCurrentPCRDraft();
         
         console.log('App initialization complete');
+        
+        // Mark app as ready after initialization
         setIsAppReady(true);
+        
+        // Hide splash screen after app is ready
+        setTimeout(async () => {
+          try {
+            await SplashScreen.hideAsync();
+          } catch (error) {
+            console.log('Splash screen hide error (safe to ignore):', error);
+          }
+        }, 300);
+        
       } catch (error) {
         console.error('App initialization error:', error);
         // Still mark as ready to allow app to function
         setIsAppReady(true);
-      } finally {
-        try {
-          // Hide splash screen after a short delay to ensure UI is ready
-          setTimeout(async () => {
-            try {
-              await SplashScreen.hideAsync();
-            } catch (error) {
-              console.log('Splash screen hide error (safe to ignore):', error);
-            }
-          }, 500);
-        } catch (error) {
-          console.log('Splash screen timer error (safe to ignore):', error);
-        }
+        
+        // Hide splash screen even on error
+        setTimeout(async () => {
+          try {
+            await SplashScreen.hideAsync();
+          } catch (error) {
+            console.log('Splash screen hide error (safe to ignore):', error);
+          }
+        }, 300);
       }
     };
     
     // Initialize app with a small delay for iOS stability
     const timer = setTimeout(() => {
       initializeApp();
-    }, 200);
+    }, 100);
     
     return () => clearTimeout(timer);
   }, [initializeStaffDatabase, loadCompletedPCRs, loadCurrentPCRDraft]);
   
-  // Don't render navigation until app is ready
-  if (!isAppReady) {
-    return null; // Splash screen will be visible
-  }
-  
+  // Always render the navigation structure, but show loading state if not ready
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <GestureHandlerRootView style={styles.container}>
           <StatusBar 
-            barStyle={Platform.OS === 'ios' ? 'dark-content' : 'default'}
+            barStyle={Platform.OS === 'ios' ? 'light-content' : 'default'}
             backgroundColor={Platform.OS === 'android' ? colors.brand.primary : undefined}
           />
-          <RootLayoutNav />
+          {isAppReady ? (
+            <RootLayoutNav />
+          ) : (
+            <View style={styles.loadingContainer}>
+              <Text style={styles.loadingText}>Loading...</Text>
+            </View>
+          )}
         </GestureHandlerRootView>
       </QueryClientProvider>
     </ErrorBoundary>
@@ -210,23 +232,34 @@ export default function RootLayout() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: colors.background.primary,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.background.primary,
+  },
+  loadingText: {
+    ...textStyles.title3,
+    color: colors.text.primary,
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.background.secondary,
     padding: 20,
   },
   errorTitle: {
     ...textStyles.title1,
-    color: '#333',
+    color: colors.text.primary,
     marginBottom: 10,
     textAlign: 'center',
   },
   errorText: {
     ...textStyles.body,
-    color: '#666',
+    color: colors.text.secondary,
     textAlign: 'center',
   },
 });

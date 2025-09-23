@@ -108,6 +108,12 @@ export default function TabLayout() {
     );
   }, [currentSession, queryClient, isLoggingOut, isProcessingLogout]);
   
+  // Ensure we have a valid session before rendering tabs
+  if (!currentSession) {
+    console.log('No current session in TabLayout, this should not happen');
+    return null;
+  }
+  
   const LogoutButton = () => {
     const isDisabled = isLoggingOut || isProcessingLogout;
     
@@ -155,6 +161,7 @@ export default function TabLayout() {
             backgroundColor: colors.background.primary,
             borderTopColor: colors.separator.opaque,
             borderTopWidth: Platform.OS === 'ios' ? 0.5 : 1,
+
             ...(Platform.OS === 'ios' && {
               shadowColor: '#000',
               shadowOffset: { width: 0, height: -1 },
