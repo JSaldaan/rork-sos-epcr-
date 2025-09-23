@@ -63,66 +63,58 @@ function RootLayoutNav() {
   const { currentSession } = usePCRStore();
   const segments = useSegments();
   const router = useRouter();
-  const [isNavigationReady, setIsNavigationReady] = useState(false);
-  
-  // Wait for navigation to be ready before handling auth logic
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsNavigationReady(true);
-    }, 100); // Small delay to ensure navigation is mounted
-    
-    return () => clearTimeout(timer);
-  }, []);
+  const [hasInitialNavigation, setHasInitialNavigation] = useState(false);
   
   useEffect(() => {
-    if (!isNavigationReady) {
+    // Only handle initial navigation once
+    if (hasInitialNavigation) {
       return;
     }
     
-    const segmentsArray = segments as string[];
-    const inAuthGroup = segmentsArray[0] === '(tabs)';
-    const isAuthenticated = !!currentSession;
-    const isOnRootPath = segmentsArray.length === 0;
-    const isOnLoginPage = segmentsArray[0] === 'login';
-    
-    console.log('Navigation check:', {
-      segments: segmentsArray,
-      isAuthenticated,
-      isOnRootPath,
-      isOnLoginPage,
-      inAuthGroup
-    });
-    
-    // Handle navigation logic with safety checks
-    try {
-      if (!isAuthenticated && inAuthGroup) {
-        console.log('Navigating to login - not authenticated in auth group');
-        router.replace('/login');
-      } else if (isAuthenticated && isOnLoginPage) {
-        console.log('Navigating to tabs - authenticated on login page');
-        router.replace('/(tabs)');
-      } else if (isOnRootPath) {
-        console.log('Navigating to login from root');
-        router.replace('/login');
-      }
-    } catch (error) {
-      console.error('Navigation error:', error);
-      // Fallback: try again after a delay
-      setTimeout(() => {
-        try {
-          if (!isAuthenticated && inAuthGroup) {
-            router.replace('/login');
-          } else if (isAuthenticated && isOnLoginPage) {
+    const timer = setTimeout(() => {
+      try {
+        const segmentsArray = segments as string[];
+        const inAuthGroup = segmentsArray[0] === '(tabs)';
+        const isAuthenticated = !!currentSession;
+        const isOnLoginPage = segmentsArray[0] === 'login';
+        
+        console.log('Initial navigation check:', {
+          segments: segmentsArray,
+          isAuthenticated,
+          inAuthGroup,
+          isOnLoginPage
+        });
+        
+        // Handle initial navigation
+        if (!isAuthenticated && inAuthGroup) {
+          console.log('Redirecting to login - not authenticated');
+          router.replace('/login');
+          setHasInitialNavigation(true);
+        } else if (isAuthenticated && isOnLoginPage) {
+          console.log('Redirecting to tabs - authenticated');
+          router.replace('/(tabs)');
+          setHasInitialNavigation(true);
+        } else if (segmentsArray.length === 0) {
+          // Root path - redirect based on auth status
+          if (isAuthenticated) {
+            console.log('Redirecting to tabs from root');
             router.replace('/(tabs)');
-          } else if (isOnRootPath) {
+          } else {
+            console.log('Redirecting to login from root');
             router.replace('/login');
           }
-        } catch (retryError) {
-          console.error('Navigation retry failed:', retryError);
+          setHasInitialNavigation(true);
         }
-      }, 200);
-    }
-  }, [currentSession, segments, router, isNavigationReady]);
+      } catch (error) {
+        console.error('Navigation error:', error);
+        // Fallback to login on error
+        router.replace('/login');
+        setHasInitialNavigation(true);
+      }
+    }, 1500); // Longer delay for iOS stability
+    
+    return () => clearTimeout(timer);
+  }, [currentSession, segments, router, hasInitialNavigation]);
   
   return (
     <Stack 
@@ -133,8 +125,10 @@ function RootLayoutNav() {
         },
         headerTintColor: '#FFFFFF',
         headerTitleStyle: {
-          fontWeight: '600',
+          ...textStyles.navigationTitle,
+          color: '#FFFFFF',
         },
+        animation: Platform.OS === 'ios' ? 'slide_from_right' : 'default',
       }}
     >
       <Stack.Screen 
@@ -142,6 +136,7 @@ function RootLayoutNav() {
         options={{ 
           headerShown: false,
           gestureEnabled: false,
+          animation: 'none',
         }} 
       />
       <Stack.Screen 
@@ -149,6 +144,7 @@ function RootLayoutNav() {
         options={{ 
           headerShown: false,
           gestureEnabled: false,
+          animation: 'none',
         }} 
       />
     </Stack>
@@ -174,14 +170,14 @@ export default function RootLayout() {
         // Mark app as ready after initialization
         setIsAppReady(true);
         
-        // Hide splash screen after app is ready
+        // Hide splash screen after app is ready with longer delay for iOS
         setTimeout(async () => {
           try {
             await SplashScreen.hideAsync();
           } catch (error) {
             console.log('Splash screen hide error (safe to ignore):', error);
           }
-        }, 300);
+        }, 800); // Increased delay for iOS stability
         
       } catch (error) {
         console.error('App initialization error:', error);
@@ -195,14 +191,14 @@ export default function RootLayout() {
           } catch (error) {
             console.log('Splash screen hide error (safe to ignore):', error);
           }
-        }, 300);
+        }, 800);
       }
     };
     
-    // Initialize app with a small delay for iOS stability
+    // Initialize app with a delay for iOS stability
     const timer = setTimeout(() => {
       initializeApp();
-    }, 100);
+    }, 200); // Increased delay
     
     return () => clearTimeout(timer);
   }, [initializeStaffDatabase, loadCompletedPCRs, loadCurrentPCRDraft]);
