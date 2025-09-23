@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# SOS ePCR - Emergency Server Restart & Cache Clear
-# Comprehensive cache clearing and server restart for development
+# MediCare Pro - Emergency Server Restart & Cache Clear
+# Fixes babel.config.js bundling errors and manifest asset issues
 
 echo "🚨 EMERGENCY SERVER RESTART & CACHE CLEAR"
 echo "=========================================="
-echo "Clearing all caches and restarting server..."
+echo "Fixing babel.config.js bundling errors..."
 echo ""
 
 # Step 1: Kill ALL related processes aggressively
@@ -85,5 +85,4 @@ echo "🎯 Manifest assets will be properly resolved"
 echo ""
 
 # Start with maximum cache clearing flags
-echo "🔄 Starting server with fresh cache..."
 exec bunx rork start -p mrjfx7h4qr7c2x9p43htd --tunnel --clear
