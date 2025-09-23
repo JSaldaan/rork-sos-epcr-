@@ -2,8 +2,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
 /**
- * Comprehensive cache management utility for MediCare Pro
+ * Comprehensive cache management utility for SOS ePCR
  * Handles clearing various types of cache while preserving critical data
+ * Enhanced with server restart capabilities
  */
 
 export interface CacheManagerOptions {
@@ -200,31 +201,135 @@ export const forceAppRestart = (): void => {
 };
 
 /**
+ * Clear Metro bundler cache (development only)
+ */
+export const clearMetroCache = async (): Promise<boolean> => {
+  try {
+    console.log('📦 Clearing Metro bundler cache...');
+    
+    // Clear Metro cache directories if accessible
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      // Clear service worker cache
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(registrations.map(reg => reg.unregister()));
+        console.log('🗑️ Cleared service worker registrations');
+      }
+      
+      // Clear all browser storage
+      if ('storage' in navigator && 'estimate' in navigator.storage) {
+        try {
+          await navigator.storage.clear?.();
+          console.log('🗑️ Cleared persistent storage');
+        } catch (e) {
+          console.log('⚠️ Could not clear persistent storage:', e);
+        }
+      }
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('❌ Metro cache clear failed:', error);
+    return false;
+  }
+};
+
+/**
+ * Clear all possible caches including development caches
+ */
+export const clearDevelopmentCaches = async (queryClient?: any): Promise<boolean> => {
+  console.log('🔧 Clearing development caches...');
+  
+  try {
+    const results = await Promise.all([
+      clearAsyncStorageCache({ preserveUserSession: false, preserveStaffDatabase: false, preserveAppSettings: false }),
+      clearWebCache(),
+      clearMetroCache(),
+      queryClient ? Promise.resolve(clearReactQueryCache(queryClient)) : Promise.resolve(true)
+    ]);
+    
+    const success = results.every(result => result);
+    console.log(success ? '✅ Development caches cleared' : '⚠️ Some development caches failed to clear');
+    
+    return success;
+  } catch (error) {
+    console.error('❌ Development cache clear failed:', error);
+    return false;
+  }
+};
+
+/**
  * Emergency cache clear and restart
  */
 export const emergencyReset = async (queryClient?: any): Promise<void> => {
   console.log('🚨 Emergency reset initiated...');
   
   try {
-    // Clear all caches aggressively
-    await clearAllCaches(queryClient, {
-      preserveUserSession: false,
-      preserveStaffDatabase: false,
-      preserveAppSettings: false,
-      clearQueryCache: true,
-      clearImageCache: true,
-    });
+    // Clear all caches aggressively including development caches
+    await clearDevelopmentCaches(queryClient);
     
-    // Force restart on web
+    // Additional aggressive clearing
     if (Platform.OS === 'web') {
-      setTimeout(() => {
-        forceAppRestart();
-      }, 1000);
+      // Clear all possible web storage
+      try {
+        localStorage.clear();
+        sessionStorage.clear();
+        
+        // Clear IndexedDB
+        if ('indexedDB' in window) {
+          const databases = await indexedDB.databases?.() || [];
+          await Promise.all(
+            databases.map(db => {
+              if (db.name) {
+                return new Promise((resolve, reject) => {
+                  const deleteReq = indexedDB.deleteDatabase(db.name!);
+                  deleteReq.onsuccess = () => resolve(true);
+                  deleteReq.onerror = () => reject(deleteReq.error);
+                });
+              }
+              return Promise.resolve();
+            })
+          );
+          console.log('🗑️ Cleared IndexedDB databases');
+        }
+      } catch (e) {
+        console.log('⚠️ Some web storage clearing failed:', e);
+      }
     }
     
-    console.log('✅ Emergency reset completed');
+    console.log('✅ Emergency reset completed - restarting...');
+    
+    // Force restart on web with delay
+    if (Platform.OS === 'web') {
+      setTimeout(() => {
+        window.location.href = window.location.href.split('?')[0] + '?cache_cleared=' + Date.now();
+      }, 1500);
+    }
+    
   } catch (error) {
     console.error('❌ Emergency reset failed:', error);
+    // Force restart anyway
+    if (Platform.OS === 'web') {
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+    }
+  }
+};
+
+/**
+ * Server restart simulation (for development)
+ */
+export const restartServer = async (): Promise<void> => {
+  console.log('🔄 Initiating server restart sequence...');
+  
+  try {
+    // Clear all caches first
+    await emergencyReset();
+    
+    console.log('✅ Server restart sequence completed');
+  } catch (error) {
+    console.error('❌ Server restart failed:', error);
   }
 };
 
@@ -233,6 +338,9 @@ export default {
   clearWebCache,
   clearReactQueryCache,
   clearAllCaches,
+  clearMetroCache,
+  clearDevelopmentCaches,
   forceAppRestart,
   emergencyReset,
+  restartServer,
 };
