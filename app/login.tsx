@@ -7,11 +7,13 @@ import {
   StyleSheet,
   SafeAreaView,
   Platform,
+  StatusBar,
 } from 'react-native';
 import { router } from 'expo-router';
 import { usePCRStore } from '@/store/pcrStore';
 import { Shield, Users, AlertTriangle } from 'lucide-react-native';
 import { textStyles, fonts } from '@/constants/fonts';
+import { colors, iosColors } from '@/constants/colors';
 
 // Simplified login without complex security features for iOS compatibility
 
@@ -178,6 +180,10 @@ const LoginScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
+      <StatusBar 
+        barStyle={Platform.OS === 'ios' ? 'dark-content' : 'default'}
+        backgroundColor={Platform.OS === 'android' ? '#f5f6f7' : undefined}
+      />
       <ResponsiveContainer maxWidth="small" padding="large" centered>
         <View style={styles.loginContainer}>
           <View style={styles.loginHeader}>
@@ -304,7 +310,7 @@ const LoginScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f6f7',
+    backgroundColor: Platform.OS === 'ios' ? iosColors.systemBackground : '#f5f6f7',
   },
   loginContainer: {
     flex: 1,

@@ -4,10 +4,10 @@ import { Platform } from 'react-native';
 export const fonts = {
   // iOS System fonts - using SF Pro for iOS, fallback for other platforms
   system: Platform.select({
-    ios: 'System',
+    ios: '-apple-system',
     android: 'Roboto',
     web: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-    default: 'System'
+    default: '-apple-system'
   }),
   
   // Font weights (iOS compliant)

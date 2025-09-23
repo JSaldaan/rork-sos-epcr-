@@ -2,10 +2,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack, useRouter, useSegments, useNavigationContainerRef } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect, useState, Component, ReactNode } from "react";
-import { StyleSheet, View, Text } from "react-native";
+import { StyleSheet, View, Text, Platform, StatusBar } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { usePCRStore } from "@/store/pcrStore";
 import { textStyles } from '@/constants/fonts';
+import { colors } from '@/constants/colors';
 
 // Prevent auto-hide splash screen
 try {
@@ -195,6 +196,10 @@ export default function RootLayout() {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <GestureHandlerRootView style={styles.container}>
+          <StatusBar 
+            barStyle={Platform.OS === 'ios' ? 'dark-content' : 'default'}
+            backgroundColor={Platform.OS === 'android' ? colors.brand.primary : undefined}
+          />
           <RootLayoutNav />
         </GestureHandlerRootView>
       </QueryClientProvider>
