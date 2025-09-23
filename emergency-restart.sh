@@ -85,4 +85,4 @@ echo "🎯 Manifest assets will be properly resolved"
 echo ""
 
 # Start with maximum cache clearing flags
-exec bunx rork start -p mrjfx7h4qr7c2x9p43htd --tunnel --clear --reset-cache
+exec bunx rork start -p mrjfx7h4qr7c2x9p43htd --tunnel --clear
