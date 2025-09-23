@@ -17,7 +17,7 @@ import {
 } from 'react-native';
 import { usePCRStore, CompletedPCR, StaffMember, Patient, Encounter, Vitals, ECG, Signature, Attachment, AuditLog } from '../../store/pcrStore';
 import { router } from 'expo-router';
-import OfflineStatus from '../../components/OfflineStatus';
+import { OfflineStatus } from '../../components/OfflineStatus';
 import { 
   Shield, 
   Users, 
@@ -89,7 +89,10 @@ export default function AdminScreen() {
   useEffect(() => {
     if (isStaffUser) {
       console.log('Staff user trying to access admin screen, redirecting to staff tabs');
-      router.replace('/(tabs)');
+      // Don't redirect immediately, let the component render first
+      setTimeout(() => {
+        router.replace('/(tabs)');
+      }, 100);
     }
   }, [isStaffUser]);
 
