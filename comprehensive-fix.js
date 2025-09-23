@@ -204,11 +204,13 @@ const startServer = () => {
   
   // Wait for cleanup to complete
   setTimeout(() => {
-    // Start the development server
-    const serverProcess = spawn('npx', [
-      'expo', 'start', 
+    // Start the development server with rork
+    const serverProcess = spawn('bunx', [
+      'rork', 'start', 
+      '-p', 'mrjfx7h4qr7c2x9p43htd',
       '--tunnel', 
-      '--clear'
+      '--clear',
+      '--reset-cache'
     ], {
       stdio: 'inherit',
       detached: false,
