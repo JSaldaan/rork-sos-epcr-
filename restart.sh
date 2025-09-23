@@ -22,8 +22,13 @@ lsof -ti:19002 2>/dev/null | xargs kill -9 2>/dev/null || true
 
 echo "✅ Processes stopped"
 
-# Step 2: Clear all caches
-echo "🧹 Clearing caches..."
+# Step 2: Clear all caches including Babel
+echo "🧹 Clearing all caches including Babel..."
+
+# Babel cache
+rm -rf node_modules/.cache/babel-loader 2>/dev/null || true
+rm -rf node_modules/.cache/@babel 2>/dev/null || true
+rm -rf ~/.babel-cache 2>/dev/null || true
 
 # Project caches
 rm -rf .expo 2>/dev/null || true
@@ -33,10 +38,11 @@ rm -rf dist 2>/dev/null || true
 rm -rf build 2>/dev/null || true
 rm -rf .rork 2>/dev/null || true
 
-# Temp files
+# Metro bundler cache
 rm -rf /tmp/metro-* 2>/dev/null || true
 rm -rf /tmp/react-* 2>/dev/null || true
 rm -rf /tmp/expo-* 2>/dev/null || true
+rm -rf /tmp/haste-map-* 2>/dev/null || true
 
 # Package manager caches
 npm cache clean --force 2>/dev/null || true
