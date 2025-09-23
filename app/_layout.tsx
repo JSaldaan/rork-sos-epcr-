@@ -8,14 +8,18 @@ import { usePCRStore } from "@/store/pcrStore";
 import { textStyles } from '@/constants/fonts';
 import { colors } from '@/constants/colors';
 import { clearAllCaches } from '@/utils/cacheManager';
+import { errorHandler, safeAsyncCall } from '@/utils/errorHandler';
+import { systemStatusChecker, logSystemStatus } from '@/utils/systemStatusChecker';
 
 
-// Prevent auto-hide splash screen
-try {
-  SplashScreen.preventAutoHideAsync();
-} catch (error) {
-  console.log('SplashScreen preventAutoHideAsync error (safe to ignore):', error);
-}
+// Prevent auto-hide splash screen with comprehensive error handling
+safeAsyncCall(
+  () => SplashScreen.preventAutoHideAsync(),
+  undefined,
+  'SplashScreen-PreventAutoHide'
+).catch(() => {
+  // Fail silently - splash screen errors are not critical
+});
 
 // Clear cache using comprehensive cache manager
 const clearAppCache = async (queryClient?: any) => {
@@ -67,9 +71,12 @@ class ErrorBoundary extends Component<
   }
 
   componentDidCatch(error: Error, errorInfo: any) {
-    if (error && errorInfo) {
-      console.error('App Error Boundary caught an error:', error.message || error, errorInfo.componentStack || errorInfo);
-    }
+    // Use centralized error handler
+    const handler = errorHandler.createErrorBoundaryHandler('RootErrorBoundary');
+    handler(error, errorInfo);
+    
+    // Log system status for debugging
+    logSystemStatus().catch(() => {});
   }
 
   render() {
@@ -86,14 +93,22 @@ class ErrorBoundary extends Component<
   }
 }
 
-// Create a fresh query client with aggressive cache clearing
+// Create a fresh query client with optimized settings
 const createQueryClient = () => new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 2 * 60 * 1000, // Reduced stale time
-      retry: 1,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      retry: (failureCount, error) => {
+        // Don't retry on 4xx errors
+        if (error && typeof error === 'object' && 'status' in error) {
+          const status = (error as any).status;
+          if (status >= 400 && status < 500) return false;
+        }
+        return failureCount < 2;
+      },
       refetchOnWindowFocus: false,
-      gcTime: 5 * 60 * 1000, // Garbage collect after 5 minutes
+      refetchOnReconnect: true,
+      gcTime: 10 * 60 * 1000, // 10 minutes
     },
     mutations: {
       retry: 1,
@@ -179,14 +194,23 @@ function RootLayoutNav() {
           setHasInitialNavigation(true);
         }
       } catch (error) {
-        console.error('❌ Navigation error:', error);
-        // Clear cache and try again
-        clearAppCache(queryClient).then(() => {
+        // Use centralized error handling
+        errorHandler.logError(error as Error, 'Navigation');
+        
+        // Attempt recovery
+        safeAsyncCall(
+          () => clearAppCache(queryClient),
+          undefined,
+          'NavigationRecovery'
+        ).then(() => {
           router.replace('/login');
+          setHasInitialNavigation(true);
+        }).catch(() => {
+          // Final fallback
           setHasInitialNavigation(true);
         });
       }
-    }, 800); // Increased delay for stability
+    }, 500); // Optimized delay for stability
     
     return () => {
       if (navigationTimeoutRef.current) {
@@ -257,6 +281,9 @@ export default function RootLayout() {
         console.log('🚀 Starting app initialization...');
         setInitializationError(null);
         
+        // Log initial system status
+        await logSystemStatus();
+        
         // Clear old cache first
         await clearAppCache(queryClient);
         
@@ -275,6 +302,12 @@ export default function RootLayout() {
         
         console.log('✅ App initialization complete');
         
+        // Final system health check
+        const healthCheck = await systemStatusChecker.checkSystemHealth();
+        if (healthCheck.status === 'critical') {
+          console.warn('⚠️ System health check shows critical issues:', healthCheck.issues);
+        }
+        
         // Mark app as ready after initialization
         setIsAppReady(true);
         
@@ -286,12 +319,17 @@ export default function RootLayout() {
           } catch (error) {
             console.log('Splash screen hide error (safe to ignore):', error);
           }
-        }, 1000); // Longer delay for stability
+        }, 500); // Optimized delay
         
       } catch (error) {
-        console.error('❌ App initialization error:', error);
+        // Use centralized error handling
+        errorHandler.logError(error as Error, 'AppInitialization');
         const errorMessage = error instanceof Error ? error.message : 'Unknown initialization error';
         setInitializationError(errorMessage);
+        
+        // Generate emergency system report
+        const report = await systemStatusChecker.generateSystemReport();
+        console.error('🚨 Emergency System Report:', report);
         
         // Attempt emergency cache clear
         clearAppCache(queryClient).then(() => {
@@ -310,14 +348,14 @@ export default function RootLayout() {
           } catch (error) {
             console.log('Splash screen hide error (safe to ignore):', error);
           }
-        }, 1000);
+        }, 500);
       }
     };
     
     // Initialize app with proper delay
     const timer = setTimeout(() => {
       initializeApp();
-    }, 300); // Increased delay for mounting
+    }, 100); // Optimized delay for mounting
     
     return () => clearTimeout(timer);
   }, [initializeStaffDatabase, loadCompletedPCRs, loadCurrentPCRDraft]);
