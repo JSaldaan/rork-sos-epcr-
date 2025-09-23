@@ -27,80 +27,48 @@ function RootLayoutNav() {
   const { currentSession } = usePCRStore();
   const segments = useSegments();
   const router = useRouter();
-  const [isMounted, setIsMounted] = useState(false);
+  const [isNavigationReady, setIsNavigationReady] = useState(false);
   
+  // Wait for navigation to be ready before attempting any navigation
   useEffect(() => {
-    // Mark component as mounted after first render
-    setIsMounted(true);
+    const timer = setTimeout(() => {
+      setIsNavigationReady(true);
+    }, 100);
+    
+    return () => clearTimeout(timer);
   }, []);
   
   useEffect(() => {
-    // Only attempt navigation after component is mounted and navigation is ready
-    if (!isMounted) {
+    if (!isNavigationReady) {
       return;
     }
     
-    // Add a delay to ensure the Stack navigator is fully ready
-    const timer = setTimeout(() => {
-      try {
-        const segmentsArray = segments as string[];
-        const inAuthGroup = segmentsArray[0] === '(tabs)';
-        const isAuthenticated = !!currentSession;
-        const isOnRootPath = segmentsArray.length === 0;
-        const isOnLoginPage = segmentsArray[0] === 'login';
-        
-        console.log('Navigation check:', {
-          segments: segmentsArray,
-          isAuthenticated,
-          isOnRootPath,
-          isOnLoginPage,
-          inAuthGroup
-        });
-        
-        if (isOnRootPath) {
-          console.log('Navigating to login from root');
-          router.replace('/login');
-          return;
-        }
-        
-        if (!isAuthenticated && inAuthGroup) {
-          console.log('Navigating to login - not authenticated in auth group');
-          router.replace('/login');
-          return;
-        }
-        
-        if (isAuthenticated && isOnLoginPage) {
-          console.log('Navigating to tabs - authenticated on login page');
-          router.replace('/(tabs)');
-          return;
-        }
-      } catch (error) {
-        console.log('Navigation error:', error);
-        // Retry navigation after a longer delay
-        setTimeout(() => {
-          try {
-            const segmentsArray = segments as string[];
-            const inAuthGroup = segmentsArray[0] === '(tabs)';
-            const isAuthenticated = !!currentSession;
-            const isOnRootPath = segmentsArray.length === 0;
-            const isOnLoginPage = segmentsArray[0] === 'login';
-            
-            if (isOnRootPath) {
-              router.replace('/login');
-            } else if (!isAuthenticated && inAuthGroup) {
-              router.replace('/login');
-            } else if (isAuthenticated && isOnLoginPage) {
-              router.replace('/(tabs)');
-            }
-          } catch (retryError) {
-            console.log('Navigation retry failed:', retryError);
-          }
-        }, 2000);
-      }
-    }, 500); // Increased delay to ensure Stack is ready
+    const segmentsArray = segments as string[];
+    const inAuthGroup = segmentsArray[0] === '(tabs)';
+    const isAuthenticated = !!currentSession;
+    const isOnRootPath = segmentsArray.length === 0;
+    const isOnLoginPage = segmentsArray[0] === 'login';
     
-    return () => clearTimeout(timer);
-  }, [currentSession, segments, router, isMounted]);
+    console.log('Navigation check:', {
+      segments: segmentsArray,
+      isAuthenticated,
+      isOnRootPath,
+      isOnLoginPage,
+      inAuthGroup
+    });
+    
+    // Handle navigation logic
+    if (isOnRootPath) {
+      console.log('Navigating to login from root');
+      router.replace('/login');
+    } else if (!isAuthenticated && inAuthGroup) {
+      console.log('Navigating to login - not authenticated in auth group');
+      router.replace('/login');
+    } else if (isAuthenticated && isOnLoginPage) {
+      console.log('Navigating to tabs - authenticated on login page');
+      router.replace('/(tabs)');
+    }
+  }, [currentSession, segments, router, isNavigationReady]);
   
   return (
     <Stack screenOptions={{ headerBackTitle: "Back" }}>
