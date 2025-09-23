@@ -10,10 +10,6 @@ import { colors } from '@/constants/colors';
 import { clearAllCaches } from '@/utils/cacheManager';
 import { errorHandler, safeAsyncCall } from '@/utils/errorHandler';
 import { systemStatusChecker, logSystemStatus } from '@/utils/systemStatusChecker';
-import { clearAllSecurityLocks, initializeCleanSecurity, performCompleteSystemReset, enableEmergencyAccess } from '@/utils/clearSecurityLocks';
-import { loadFonts } from '@/utils/fontManager';
-import { AssetManager } from '@/utils/assetManager';
-import { validateAssets, generateAssetReport } from '@/utils/assetValidator';
 
 
 // Prevent auto-hide splash screen with comprehensive error handling
@@ -282,44 +278,8 @@ export default function RootLayout() {
   useEffect(() => {
     const initializeApp = async () => {
       try {
-        console.log('🚀 SENIOR ENGINEER SYSTEM OVERRIDE - Starting app initialization...');
+        console.log('🚀 Starting app initialization...');
         setInitializationError(null);
-        
-        // SECURITY OVERRIDE: Clear all security restrictions first
-        try {
-          console.log('🔓 OVERRIDING SECURITY SYSTEM...');
-          await clearAllSecurityLocks();
-          await initializeCleanSecurity();
-          await enableEmergencyAccess();
-          console.log('✅ SECURITY OVERRIDE COMPLETE - All restrictions removed');
-        } catch (error) {
-          console.log('🚨 FORCING SECURITY BYPASS despite errors:', error);
-          // Continue anyway - security is overridden
-        }
-        
-        // Initialize fonts and assets first
-        console.log('🔤 Loading fonts...');
-        await loadFonts();
-        console.log('✅ Fonts loaded successfully');
-        
-        console.log('🖼️ Initializing asset manager...');
-        console.log('📱 App icon:', AssetManager.getAppIcon());
-        console.log('🎨 Splash image:', AssetManager.getSplashImage());
-        
-        // Validate all assets
-        console.log('🔍 Validating assets...');
-        const assetValidation = await validateAssets();
-        if (assetValidation.success) {
-          console.log('✅ All assets validated successfully');
-        } else {
-          console.warn('⚠️ Asset validation issues:', assetValidation.errors);
-        }
-        
-        // Generate asset report for debugging
-        const assetReport = generateAssetReport();
-        console.log('📄 Asset Report:', assetReport);
-        
-        console.log('✅ Assets initialized successfully');
         
         // Log initial system status
         await logSystemStatus();

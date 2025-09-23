@@ -35,17 +35,8 @@
         "CFBundleName": "SOS ePCR"
       },
       "entitlements": {
-        "com.apple.developer.networking.wifi-info": true,
-        "com": {
-          "apple": {
-            "developer": {
-              "networking": {
-                "wifi-info": true
-              }
-            }
-          }
-        }
-      }
+"com.apple.developer.networking.wifi-info": true
+}
     },
     "android": {
       "adaptiveIcon": {
