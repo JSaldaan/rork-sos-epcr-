@@ -1,159 +1,145 @@
 #!/usr/bin/env node
 
 /**
- * Fix Bundling Error Script
- * 
- * This script identifies and helps fix common bundling errors in React Native/Expo projects.
+ * Emergency Bundling Error Fix for MediCare Pro
+ * Comprehensive cache clear and server restart
  */
 
+const { execSync, spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-// Get current directory
-const currentDir = process.cwd();
+console.log('🚨 EMERGENCY BUNDLING ERROR FIX');
+console.log('================================');
+console.log('Detected babel.config.js changes requiring restart');
+console.log('');
 
-console.log('🔍 Analyzing project for bundling errors...\n');
+// Step 1: Kill all processes immediately
+console.log('🛑 Killing all related processes...');
+const processesToKill = [
+  'rork',
+  'expo',
+  'metro',
+  'node.*start',
+  'bunx.*rork'
+];
 
-// Check app.json for malformed JSON
-function checkAppJson() {
-  console.log('📋 Checking app.json...');
-  
+processesToKill.forEach(processName => {
   try {
-    const appJsonPath = path.join(currentDir, 'app.json');
-    const appJsonContent = fs.readFileSync(appJsonPath, 'utf8');
-    const appJson = JSON.parse(appJsonContent);
-    
-    // Check for malformed entitlements
-    if (appJson.expo && appJson.expo.ios && appJson.expo.ios.entitlements) {
-      const entitlements = appJson.expo.ios.entitlements;
-      
-      // Check for duplicate keys or nested structure issues
-      if (entitlements['com.apple.developer.networking.wifi-info'] && entitlements.com) {
-        console.log('❌ FOUND ISSUE: Duplicate entitlements structure in app.json');
-        console.log('   The entitlements object has both flat and nested structures for the same key.');
-        console.log('   This is causing the bundling error.\n');
-        
-        console.log('🔧 TO FIX:');
-        console.log('   1. Open app.json');
-        console.log('   2. Find the "entitlements" section under "ios"');
-        console.log('   3. Replace the entire entitlements object with:');
-        console.log('   {');
-        console.log('     "com.apple.developer.networking.wifi-info": true');
-        console.log('   }');
-        console.log('   4. Remove the nested "com" object structure\n');
-        
-        return false;
-      }
-    }
-    
-    console.log('✅ app.json structure looks good');
-    return true;
-  } catch (error) {
-    console.log('❌ Error reading app.json:', error.message);
-    return false;
+    execSync(`pkill -f "${processName}"`, { stdio: 'ignore' });
+    console.log(`✅ Killed ${processName} processes`);
+  } catch (_error) {
+    // Process might not be running, that's fine
   }
+});
+
+// Kill processes on specific ports
+const ports = [3000, 8081, 19000, 19001, 19002, 8000, 4000];
+ports.forEach(port => {
+  try {
+    execSync(`lsof -ti:${port} | xargs kill -9`, { stdio: 'ignore' });
+    console.log(`✅ Killed processes on port ${port}`);
+  } catch (_error) {
+    // No processes on this port
+  }
+});
+
+// Step 2: Aggressive cache clearing
+console.log('\n🧹 AGGRESSIVE CACHE CLEARING...');
+
+const cacheDirs = [
+  '.expo',
+  'node_modules/.cache',
+  '.next',
+  'dist',
+  'build',
+  '.rork',
+  '.metro',
+  'tmp',
+  '.tmp'
+];
+
+cacheDirs.forEach(dir => {
+  const fullPath = path.join(process.cwd(), dir);
+  if (fs.existsSync(fullPath)) {
+    try {
+      execSync(`rm -rf "${fullPath}"`, { stdio: 'inherit' });
+      console.log(`✅ Cleared ${dir}`);
+    } catch (_error) {
+      console.log(`⚠️  Could not clear ${dir?.trim() || 'unknown'}`);
+    }
+  }
+});
+
+// Clear system temp directories
+const tempDirs = [
+  '/tmp/metro-*',
+  '/tmp/react-*',
+  '/tmp/expo-*',
+  '/tmp/rork-*'
+];
+
+tempDirs.forEach(pattern => {
+  try {
+    execSync(`rm -rf ${pattern}`, { stdio: 'ignore' });
+    console.log(`✅ Cleared ${pattern}`);
+  } catch (_error) {
+    // Might not exist, that's fine
+  }
+});
+
+// Step 3: Clear package manager caches
+console.log('\n📦 CLEARING PACKAGE MANAGER CACHES...');
+
+try {
+  execSync('npm cache clean --force', { stdio: 'inherit' });
+  console.log('✅ NPM cache cleared');
+} catch (_error) {
+  console.log('⚠️  NPM cache clear failed');
 }
 
-// Check for TypeScript errors
-function checkTypeScriptFiles() {
-  console.log('📝 Checking TypeScript files...');
+try {
+  execSync('yarn cache clean', { stdio: 'inherit' });
+  console.log('✅ Yarn cache cleared');
+} catch (_error) {
+  // Yarn might not be available
+}
+
+try {
+  execSync('bun pm cache rm', { stdio: 'inherit' });
+  console.log('✅ Bun cache cleared');
+} catch (_error) {
+  // Bun might not be available
+}
+
+// Step 4: Wait for cleanup
+console.log('\n⏳ Waiting for cleanup to complete...');
+setTimeout(() => {
+  console.log('\n🚀 STARTING FRESH SERVER...');
+  console.log('📱 The app will be available shortly...');
+  console.log('🔧 All babel.config.js changes should now take effect');
+  console.log('');
   
-  const tsFiles = [
-    'app/_layout.tsx',
-    'app/(tabs)/_layout.tsx',
-    'app/(tabs)/index.tsx',
-    'store/pcrStore.ts',
-    'store/types.ts'
-  ];
-  
-  let hasErrors = false;
-  
-  tsFiles.forEach(file => {
-    try {
-      const filePath = path.join(currentDir, file);
-      if (fs.existsSync(filePath)) {
-        const content = fs.readFileSync(filePath, 'utf8');
-        
-        // Basic syntax checks
-        if (content.includes('import') && !content.includes('from')) {
-          console.log(`❌ Potential import error in ${file}`);
-          hasErrors = true;
-        }
-        
-        // Check for unclosed brackets/braces
-        const openBraces = (content.match(/{/g) || []).length;
-        const closeBraces = (content.match(/}/g) || []).length;
-        if (openBraces !== closeBraces) {
-          console.log(`❌ Unmatched braces in ${file}: ${openBraces} open, ${closeBraces} close`);
-          hasErrors = true;
-        }
-        
-        console.log(`✅ ${file} syntax looks good`);
-      } else {
-        console.log(`⚠️  ${file} not found`);
-      }
-    } catch (error) {
-      console.log(`❌ Error checking ${file}:`, error.message);
-      hasErrors = true;
-    }
+  // Start fresh server
+  const serverProcess = spawn('bunx', ['rork', 'start', '-p', 'mrjfx7h4qr7c2x9p43htd', '--tunnel', '--clear'], {
+    stdio: 'inherit',
+    detached: false
   });
   
-  return !hasErrors;
-}
+  serverProcess.on('error', (error) => {
+    const errorMessage = error?.message?.trim() || 'Unknown error';
+    console.error('❌ Server start error:', errorMessage);
+    process.exit(1);
+  });
+  
+  // Handle graceful shutdown
+  process.on('SIGINT', () => {
+    console.log('\n🛑 Shutting down server...');
+    serverProcess.kill('SIGINT');
+    process.exit(0);
+  });
+  
+}, 3000);
 
-// Check package.json dependencies
-function checkPackageJson() {
-  console.log('📦 Checking package.json...');
-  
-  try {
-    const packageJsonPath = path.join(currentDir, 'package.json');
-    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
-    
-    // Check for common problematic dependencies
-    const dependencies = { ...packageJson.dependencies, ...packageJson.devDependencies };
-    
-    // Check for version conflicts
-    if (dependencies.react && dependencies['react-native']) {
-      console.log('✅ React and React Native versions present');
-    }
-    
-    if (dependencies.expo) {
-      console.log('✅ Expo dependency found');
-    }
-    
-    console.log('✅ package.json looks good');
-    return true;
-  } catch (error) {
-    console.log('❌ Error reading package.json:', error.message);
-    return false;
-  }
-}
-
-// Main execution
-async function main() {
-  const checks = [
-    checkAppJson(),
-    checkTypeScriptFiles(),
-    checkPackageJson()
-  ];
-  
-  const allPassed = checks.every(check => check);
-  
-  console.log('\n' + '='.repeat(50));
-  
-  if (allPassed) {
-    console.log('✅ No obvious bundling errors found.');
-    console.log('   If you\'re still experiencing issues, try:');
-    console.log('   1. Clear cache: npx expo start --clear');
-    console.log('   2. Delete node_modules and reinstall');
-    console.log('   3. Check the Metro bundler logs for specific errors');
-  } else {
-    console.log('❌ Found potential issues that may cause bundling errors.');
-    console.log('   Please fix the issues listed above and try again.');
-  }
-  
-  console.log('\n🚀 After fixing, restart your development server:');
-  console.log('   npx expo start --clear');
-}
-
-main().catch(console.error);
+console.log('\n✅ BUNDLING ERROR FIX INITIATED');
+console.log('⏱️  Server will restart in 3 seconds...');
