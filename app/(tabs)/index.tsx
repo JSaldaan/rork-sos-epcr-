@@ -20,6 +20,7 @@ import { router } from "expo-router";
 import { OfflineStatus } from "@/components/OfflineStatus";
 import { VoiceNotesModal } from "@/components/VoiceNotesModal";
 import TraumaBodyDiagram from "@/components/TraumaBodyDiagram";
+import { textStyles, fonts } from '@/constants/fonts';
 
 const priorityOptions = ["Emergency", "Urgent", "Non-Urgent"] as const;
 
@@ -847,14 +848,12 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: "600",
+    ...textStyles.headline,
     color: "#333",
     marginLeft: 8,
   },
   label: {
-    fontSize: 14,
-    fontWeight: "500",
+    ...textStyles.labelText,
     color: "#333",
     marginBottom: 8,
   },
@@ -863,7 +862,7 @@ const styles = StyleSheet.create({
     borderColor: "#E0E0E0",
     borderRadius: 8,
     padding: 12,
-    fontSize: 16,
+    ...textStyles.inputText,
     backgroundColor: "#fff",
     marginBottom: 12,
     minHeight: 44,
@@ -899,12 +898,12 @@ const styles = StyleSheet.create({
     borderColor: "#0066CC",
   },
   genderText: {
-    fontSize: 14,
+    ...textStyles.subheadline,
     color: "#666",
   },
   genderTextActive: {
     color: "#fff",
-    fontWeight: "500",
+    fontWeight: fonts.weights.medium,
   },
   priorityContainer: {
     flexDirection: "row",
@@ -929,12 +928,12 @@ const styles = StyleSheet.create({
     borderColor: "#DC3545",
   },
   priorityText: {
-    fontSize: 14,
+    ...textStyles.subheadline,
     color: "#666",
   },
   priorityTextActive: {
     color: "#fff",
-    fontWeight: "500",
+    fontWeight: fonts.weights.medium,
   },
   actionButtons: {
     flexDirection: "row",
@@ -951,9 +950,8 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   voiceButtonText: {
+    ...textStyles.buttonText,
     color: "#fff",
-    fontSize: 14,
-    fontWeight: "600",
   },
   saveButton: {
     flex: 1,
@@ -963,9 +961,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   saveButtonText: {
+    ...textStyles.buttonText,
     color: "#fff",
-    fontSize: 14,
-    fontWeight: "600",
   },
   submitButton: {
     flex: 1,
@@ -975,9 +972,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   submitButtonText: {
+    ...textStyles.buttonText,
     color: "#fff",
-    fontSize: 14,
-    fontWeight: "600",
   },
   bottomPadding: {
     height: 100,
@@ -1128,28 +1124,26 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   brandName: {
-    fontSize: 24,
-    fontWeight: "bold",
+    ...textStyles.title2,
     color: "#0066CC",
     marginLeft: 8,
     letterSpacing: 0.5,
   },
   tagline: {
-    fontSize: 12,
+    ...textStyles.caption1,
     color: "#666",
-    fontWeight: "500",
+    fontWeight: fonts.weights.medium,
     textTransform: "uppercase",
     letterSpacing: 1,
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: "600",
+    ...textStyles.title3,
     color: "#333",
     marginBottom: 8,
     textAlign: "center",
   },
   headerSubtitle: {
-    fontSize: 14,
+    ...textStyles.subheadline,
     color: "#666",
     marginBottom: 15,
     textAlign: "center",

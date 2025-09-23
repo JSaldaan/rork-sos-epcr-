@@ -11,6 +11,7 @@ import {
 import { router } from 'expo-router';
 import { usePCRStore } from '@/store/pcrStore';
 import { Shield, Users, AlertTriangle } from 'lucide-react-native';
+import { textStyles, fonts } from '@/constants/fonts';
 
 // Simplified login without complex security features for iOS compatibility
 
@@ -320,18 +321,17 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   brandTitle: {
-    fontSize: 32,
-    fontWeight: 'bold',
+    ...textStyles.largeTitle,
     color: '#0066CC',
     marginTop: 16,
     marginBottom: 8,
     letterSpacing: 0.5,
   },
   brandSubtitle: {
-    fontSize: 14,
+    ...textStyles.caption1,
     color: '#6b7280',
     textAlign: 'center',
-    fontWeight: '500',
+    fontWeight: fonts.weights.medium,
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
@@ -362,8 +362,8 @@ const styles = StyleSheet.create({
   },
   modeButtonText: {
     marginLeft: 6,
-    fontSize: 12,
-    fontWeight: '600',
+    ...textStyles.caption1,
+    fontWeight: fonts.weights.semibold,
     color: '#0066CC',
   },
   modeButtonTextActive: {
@@ -378,8 +378,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   inputLabel: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...textStyles.labelText,
     color: '#374151',
     marginBottom: 8,
   },
@@ -389,14 +388,14 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    fontSize: 16,
+    ...textStyles.inputText,
     backgroundColor: '#fff',
     marginBottom: 8,
     minHeight: 44,
     color: '#374151',
   },
   inputHint: {
-    fontSize: 12,
+    ...textStyles.caption1,
     color: '#6b7280',
     textAlign: 'center',
   },
@@ -404,8 +403,8 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   errorText: {
+    ...textStyles.errorText,
     color: '#dc3545',
-    fontSize: 14,
     textAlign: 'center',
   },
   loginButton: {
@@ -421,9 +420,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#9ca3af',
   },
   loginButtonText: {
+    ...textStyles.buttonText,
     color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
   },
 
 
@@ -435,12 +433,12 @@ const styles = StyleSheet.create({
     borderLeftColor: '#0066CC',
   },
   hintText: {
-    fontSize: 12,
+    ...textStyles.caption1,
     color: '#0066CC',
     textAlign: 'center',
   },
   hintSubtext: {
-    fontSize: 10,
+    ...textStyles.caption2,
     color: '#6b7280',
     textAlign: 'center',
     marginTop: 4,
@@ -461,7 +459,7 @@ const styles = StyleSheet.create({
     maxWidth: 400,
   },
   lockoutText: {
-    fontSize: 14,
+    ...textStyles.subheadline,
     color: '#ef4444',
     marginLeft: 8,
     flex: 1,

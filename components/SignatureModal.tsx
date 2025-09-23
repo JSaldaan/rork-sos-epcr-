@@ -9,6 +9,7 @@ import {
   Alert,
 } from 'react-native';
 import { X, Check, AlertCircle } from 'lucide-react-native';
+import { textStyles } from '@/constants/fonts';
 import SignatureBox from './SignatureBox';
 
 interface SignatureModalProps {
@@ -203,8 +204,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#E5E5E5',
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    ...textStyles.headline,
     color: '#1F2937',
   },
   closeButton: {
@@ -232,9 +232,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#F3F4F6',
   },
   cancelButtonText: {
+    ...textStyles.callout,
     color: '#6B7280',
-    fontSize: 16,
-    fontWeight: '500',
   },
   saveButton: {
     backgroundColor: '#0066CC',
@@ -243,9 +242,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#9CA3AF',
   },
   saveButtonText: {
+    ...textStyles.buttonText,
     color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
     marginLeft: 8,
   },
   saveButtonTextDisabled: {
@@ -263,7 +261,7 @@ const styles = StyleSheet.create({
   },
   instructionText: {
     flex: 1,
-    fontSize: 14,
+    ...textStyles.subheadline,
     color: '#0066CC',
     marginLeft: 8,
     lineHeight: 18,
