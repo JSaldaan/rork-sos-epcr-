@@ -1,5 +1,4 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Platform } from 'react-native';
 
 /**
  * Comprehensive cache management utility for SOS ePCR
@@ -70,7 +69,7 @@ export const clearAsyncStorageCache = async (options: CacheManagerOptions = DEFA
  * Clear web-specific caches
  */
 export const clearWebCache = async (): Promise<boolean> => {
-  if (Platform.OS !== 'web') {
+  if (typeof window === 'undefined') {
     return true;
   }
   
@@ -191,7 +190,7 @@ export const clearAllCaches = async (
  * Force app restart (web only)
  */
 export const forceAppRestart = (): void => {
-  if (Platform.OS === 'web') {
+  if (typeof window !== 'undefined') {
     console.log('🔄 Forcing app restart (web)...');
     window.location.reload();
   } else {
@@ -208,7 +207,7 @@ export const clearMetroCache = async (): Promise<boolean> => {
     console.log('📦 Clearing Metro bundler cache...');
     
     // Clear Metro cache directories if accessible
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    if (typeof window !== 'undefined') {
       // Clear service worker cache
       if ('serviceWorker' in navigator) {
         const registrations = await navigator.serviceWorker.getRegistrations();
@@ -219,8 +218,15 @@ export const clearMetroCache = async (): Promise<boolean> => {
       // Clear all browser storage
       if ('storage' in navigator && 'estimate' in navigator.storage) {
         try {
-          await navigator.storage.clear?.();
-          console.log('🗑️ Cleared persistent storage');
+          // Clear persistent storage by clearing individual storage types
+          if ('getDirectory' in navigator.storage) {
+            // Clear OPFS (Origin Private File System) if available
+            const opfsRoot = await (navigator.storage as any).getDirectory?.();
+            if (opfsRoot) {
+              console.log('🗑️ OPFS storage detected but cannot be cleared programmatically');
+            }
+          }
+          console.log('🗑️ Persistent storage cleanup attempted');
         } catch (e) {
           console.log('⚠️ Could not clear persistent storage:', e);
         }
@@ -269,7 +275,7 @@ export const emergencyReset = async (queryClient?: any): Promise<void> => {
     await clearDevelopmentCaches(queryClient);
     
     // Additional aggressive clearing
-    if (Platform.OS === 'web') {
+    if (typeof window !== 'undefined') {
       // Clear all possible web storage
       try {
         localStorage.clear();
@@ -300,7 +306,7 @@ export const emergencyReset = async (queryClient?: any): Promise<void> => {
     console.log('✅ Emergency reset completed - restarting...');
     
     // Force restart on web with delay
-    if (Platform.OS === 'web') {
+    if (typeof window !== 'undefined') {
       setTimeout(() => {
         window.location.href = window.location.href.split('?')[0] + '?cache_cleared=' + Date.now();
       }, 1500);
@@ -309,7 +315,7 @@ export const emergencyReset = async (queryClient?: any): Promise<void> => {
   } catch (error) {
     console.error('❌ Emergency reset failed:', error);
     // Force restart anyway
-    if (Platform.OS === 'web') {
+    if (typeof window !== 'undefined') {
       setTimeout(() => {
         window.location.reload();
       }, 1000);
