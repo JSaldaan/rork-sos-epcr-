@@ -10,12 +10,7 @@ declare module 'react-native' {
   }
 }
 
-// Zustand store types - Updated for compatibility
+// Zustand store types
 declare module 'zustand' {
-  export function create<T>(
-    fn: (
-      set: (partial: T | Partial<T> | ((state: T) => T | Partial<T>), replace?: boolean) => void,
-      get: () => T
-    ) => T
-  ): () => T;
+  export function create<T>(fn: (set: any, get: any) => T): () => T;
 }
