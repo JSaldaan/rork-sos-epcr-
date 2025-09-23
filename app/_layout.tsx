@@ -65,21 +65,28 @@ export default function RootLayout() {
   useEffect(() => {
     const initializeApp = async () => {
       try {
+        console.log('Initializing app...');
         await initializeStaffDatabase();
         await loadCompletedPCRs();
         await loadCurrentPCRDraft();
+        console.log('App initialization complete');
       } catch (error) {
         console.error('App initialization error:', error);
       } finally {
         try {
-          SplashScreen.hideAsync();
-        } catch {
-          // Ignore errors
+          await SplashScreen.hideAsync();
+        } catch (error) {
+          console.log('Splash screen hide error (safe to ignore):', error);
         }
       }
     };
     
-    initializeApp();
+    // Add a small delay to ensure everything is ready
+    const timer = setTimeout(() => {
+      initializeApp();
+    }, 100);
+    
+    return () => clearTimeout(timer);
   }, [initializeStaffDatabase, loadCompletedPCRs, loadCurrentPCRDraft]);
   
   return (

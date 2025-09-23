@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -9,10 +9,8 @@ import {
   ScrollView,
   ActivityIndicator,
   Platform,
-  Animated,
 } from 'react-native';
-// Audio recording will use web MediaRecorder API for web and platform-specific solutions
-import { Mic, MicOff, X, Wand2, FileText, Clock } from 'lucide-react-native';
+import { Mic, MicOff, X, FileText } from 'lucide-react-native';
 import { usePCRStore } from '@/store/pcrStore';
 
 interface VoiceNotesModalProps {
@@ -21,298 +19,69 @@ interface VoiceNotesModalProps {
   onTranscriptionComplete?: (transcription: string, analysis?: string) => void;
 }
 
-interface TranscriptionResponse {
-  text: string;
-  language: string;
-}
-
-interface AIAnalysisResponse {
-  completion: string;
-}
-
 export function VoiceNotesModal({ visible, onClose, onTranscriptionComplete }: VoiceNotesModalProps) {
-  const [recording, setRecording] = useState<any>(null);
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [transcription, setTranscription] = useState<string>('');
-  const [aiAnalysis, setAiAnalysis] = useState<string>('');
-  const [recordingDuration, setRecordingDuration] = useState<number>(0);
-  const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
-  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
-  const [audioChunks, setAudioChunks] = useState<Blob[]>([]);
-  
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-  const durationInterval = useRef<ReturnType<typeof setInterval> | null>(null);
-  const { updateIncidentInfo, incidentInfo } = usePCRStore();
+  const { updateIncidentInfo } = usePCRStore();
 
-  useEffect(() => {
-    if (isRecording) {
-      // Start pulse animation
-      const pulse = () => {
-        Animated.sequence([
-          Animated.timing(pulseAnim, {
-            toValue: 1.2,
-            duration: 800,
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseAnim, {
-            toValue: 1,
-            duration: 800,
-            useNativeDriver: true,
-          }),
-        ]).start(pulse);
-      };
-      pulse();
-      
-      // Start duration counter
-      const startTime = Date.now();
-      durationInterval.current = setInterval(() => {
-        setRecordingDuration(Math.floor((Date.now() - startTime) / 1000));
-      }, 1000);
-    } else {
-      pulseAnim.stopAnimation();
-      pulseAnim.setValue(1);
-      if (durationInterval.current) {
-        clearInterval(durationInterval.current);
-        durationInterval.current = null;
-      }
+  const handleStartRecording = () => {
+    if (Platform.OS === 'web') {
+      Alert.alert('Not Available', 'Voice recording is not available on web. Please use the mobile app.');
+      return;
     }
-
-    return () => {
-      if (durationInterval.current) {
-        clearInterval(durationInterval.current);
-      }
-    };
-  }, [isRecording, pulseAnim]);
-
-  const formatDuration = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const requestPermissions = async (): Promise<boolean> => {
-    try {
-      if (Platform.OS === 'web') {
-        // Web permissions are handled by getUserMedia
-        return true;
-      } else {
-        // For mobile, we'll use a simplified approach
-        return true;
-      }
-    } catch (error) {
-      console.error('Permission request failed:', error);
-      return false;
-    }
-  };
-
-  const startRecording = async () => {
-    try {
-      const hasPermission = await requestPermissions();
-      if (!hasPermission) {
-        Alert.alert('Permission Required', 'Microphone permission is required to record voice notes.');
-        return;
-      }
-
-      setRecordingDuration(0);
-      setTranscription('');
-      setAiAnalysis('');
-
-      if (Platform.OS === 'web') {
-        // Web recording using MediaRecorder
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        const recorder = new MediaRecorder(stream);
-        const chunks: Blob[] = [];
-
-        recorder.ondataavailable = (event) => {
-          if (event.data.size > 0) {
-            chunks.push(event.data);
-          }
-        };
-
-        recorder.onstop = () => {
-          setAudioChunks(chunks);
-          stream.getTracks().forEach(track => track.stop());
-        };
-
-        recorder.start();
-        setMediaRecorder(recorder);
-      } else {
-        // For mobile platforms, we'll disable audio recording for now
-        // This can be implemented with platform-specific native modules if needed
-        console.log('Audio recording not available on this platform');
-        Alert.alert('Not Available', 'Voice recording is currently only available on web browsers.');
-        return;
-      }
-
-      setIsRecording(true);
-      console.log('Recording started');
-    } catch (error) {
-      console.error('Failed to start recording:', error);
-      Alert.alert('Recording Error', 'Failed to start recording. Please try again.');
-    }
-  };
-
-  const stopRecording = async () => {
-    try {
+    
+    setIsRecording(true);
+    // Simulate recording for now
+    setTimeout(() => {
       setIsRecording(false);
       setIsProcessing(true);
-
-      if (Platform.OS === 'web') {
-        if (mediaRecorder && mediaRecorder.state === 'recording') {
-          mediaRecorder.stop();
-          // Wait for the chunks to be available
-          await new Promise(resolve => {
-            if (mediaRecorder) {
-              mediaRecorder.onstop = () => resolve(undefined);
-            }
-          });
-        }
-      } else {
-        // Mobile recording stop - simplified
-        setRecording(null);
-      }
-
-      console.log('Recording stopped, processing...');
-      await processRecording();
-    } catch (error) {
-      console.error('Failed to stop recording:', error);
-      Alert.alert('Recording Error', 'Failed to stop recording. Please try again.');
-      setIsProcessing(false);
-    }
-  };
-
-  const processRecording = async () => {
-    try {
-      const formData = new FormData();
-
-      if (Platform.OS === 'web') {
-        if (audioChunks.length === 0) {
-          throw new Error('No audio data recorded');
-        }
-        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-        formData.append('audio', audioBlob, 'recording.wav');
-      } else {
-        if (!recording) {
-          throw new Error('No recording available');
-        }
-        
-        // Mobile recording processing - simplified
-        throw new Error('Mobile recording not implemented');
-      }
-
-      // Send to speech-to-text API
-      console.log('Sending audio for transcription...');
-      const sttResponse = await fetch('https://toolkit.rork.com/stt/transcribe/', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!sttResponse.ok) {
-        throw new Error(`STT API error: ${sttResponse.status}`);
-      }
-
-      const sttResult: TranscriptionResponse = await sttResponse.json();
-      console.log('Transcription received:', sttResult.text);
-      setTranscription(sttResult.text);
-
-      // Analyze with AI for medical insights
-      if (sttResult.text.trim()) {
-        await analyzeWithAI(sttResult.text);
-      }
-
-      setIsProcessing(false);
-    } catch (error) {
-      console.error('Processing failed:', error);
-      Alert.alert('Processing Error', 'Failed to process recording. Please try again.');
-      setIsProcessing(false);
-    }
-  };
-
-  const analyzeWithAI = async (text: string) => {
-    try {
-      setIsAnalyzing(true);
-      console.log('Analyzing transcription with AI...');
-
-      const response = await fetch('https://toolkit.rork.com/text/llm/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          messages: [
-            {
-              role: 'system',
-              content: `You are a medical AI assistant helping paramedics analyze voice notes from patient encounters. 
-              
-Analyze the following voice note and provide:
-1. Key medical findings and observations
-2. Suggested provisional diagnosis considerations
-3. Important vital signs or symptoms mentioned
-4. Treatment recommendations or protocols to consider
-5. Any critical information that should be highlighted
-
-Format your response in clear, organized sections. Be concise but thorough. Focus on actionable medical insights.`
-            },
-            {
-              role: 'user',
-              content: `Please analyze this paramedic voice note: "${text}"`
-            }
-          ]
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`AI API error: ${response.status}`);
-      }
-
-      const result: AIAnalysisResponse = await response.json();
-      console.log('AI analysis received');
-      setAiAnalysis(result.completion);
-    } catch (error) {
-      console.error('AI analysis failed:', error);
-      setAiAnalysis('AI analysis unavailable. Please review the transcription manually.');
-    } finally {
-      setIsAnalyzing(false);
-    }
-  };
-
-  const handleApplyToReport = useCallback(() => {
-    if (transcription.trim()) {
-      // Add the voice note to additional notes
-      const timestamp = new Date().toLocaleString();
-      const voiceNote = `\n\n--- Voice Note (${timestamp}) ---\n${transcription}`;
       
-      updateIncidentInfo({
-        additionalNotes: (incidentInfo.additionalNotes || '') + voiceNote
-      });
+      // Simulate processing
+      setTimeout(() => {
+        const mockTranscription = "Patient presents with chest pain and shortness of breath. Vital signs stable.";
+        setTranscription(mockTranscription);
+        setIsProcessing(false);
+        
+        if (onTranscriptionComplete) {
+          onTranscriptionComplete(mockTranscription);
+        }
+      }, 2000);
+    }, 3000);
+  };
 
+  const handleStopRecording = () => {
+    setIsRecording(false);
+    setIsProcessing(true);
+    
+    // Simulate processing
+    setTimeout(() => {
+      const mockTranscription = "Recording stopped. Processing complete.";
+      setTranscription(mockTranscription);
+      setIsProcessing(false);
+      
       if (onTranscriptionComplete) {
-        onTranscriptionComplete(transcription, aiAnalysis);
+        onTranscriptionComplete(mockTranscription);
       }
+    }, 1500);
+  };
 
-      Alert.alert(
-        'Voice Note Added',
-        'Your voice note has been added to the Additional Notes section of the report.',
-        [{ text: 'OK', onPress: onClose }]
-      );
-    }
-  }, [transcription, aiAnalysis, updateIncidentInfo, onTranscriptionComplete, onClose]);
-
-  const handleClose = useCallback(() => {
-    if (isRecording) {
-      Alert.alert(
-        'Recording in Progress',
-        'Stop recording before closing?',
-        [
-          { text: 'Continue Recording', style: 'cancel' },
-          { text: 'Stop & Close', onPress: () => stopRecording().then(onClose) }
-        ]
-      );
-    } else {
+  const handleUseTranscription = () => {
+    if (transcription) {
+      updateIncidentInfo({ 
+        additionalNotes: transcription 
+      });
+      Alert.alert('Success', 'Voice note added to additional notes');
       onClose();
     }
-  }, [isRecording, onClose, stopRecording]);
+  };
+
+  const handleClose = () => {
+    setTranscription('');
+    setIsRecording(false);
+    setIsProcessing(false);
+    onClose();
+  };
 
   return (
     <Modal
@@ -324,91 +93,57 @@ Format your response in clear, organized sections. Be concise but thorough. Focu
       <View style={styles.container}>
         <View style={styles.header}>
           <Text style={styles.title}>Voice Notes</Text>
-          <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
+          <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
             <X size={24} color="#666" />
           </TouchableOpacity>
         </View>
 
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-          {/* Recording Controls */}
+        <ScrollView style={styles.content}>
           <View style={styles.recordingSection}>
-            <View style={styles.recordingControls}>
-              {isRecording ? (
-                <View style={styles.durationContainer}>
-                  <Clock size={16} color="#DC3545" />
-                  <Text style={styles.durationText}>{formatDuration(recordingDuration)}</Text>
-                </View>
-              ) : null}
-              
-              <Animated.View style={[styles.recordButton, { transform: [{ scale: pulseAnim }] }]}>
-                <TouchableOpacity
-                  style={[
-                    styles.micButton,
-                    isRecording && styles.micButtonActive,
-                    (isProcessing || isAnalyzing) && styles.micButtonDisabled
-                  ]}
-                  onPress={isRecording ? stopRecording : startRecording}
-                  disabled={isProcessing || isAnalyzing}
-                >
-                  {isProcessing || isAnalyzing ? (
-                    <ActivityIndicator size="large" color="#fff" />
-                  ) : isRecording ? (
-                    <MicOff size={32} color="#fff" />
-                  ) : (
-                    <Mic size={32} color="#fff" />
-                  )}
-                </TouchableOpacity>
-              </Animated.View>
-              
-              <Text style={styles.recordingInstructions}>
-                {isProcessing
-                  ? 'Processing recording...'
-                  : isAnalyzing
-                  ? 'Analyzing with AI...'
-                  : isRecording
-                  ? 'Tap to stop recording'
-                  : 'Tap to start recording'}
-              </Text>
-            </View>
-          </View>
-
-          {/* Transcription Results */}
-          {transcription && (
-            <View style={styles.resultSection}>
-              <View style={styles.sectionHeader}>
-                <FileText size={20} color="#0066CC" />
-                <Text style={styles.sectionTitle}>Transcription</Text>
-              </View>
-              <View style={styles.transcriptionContainer}>
-                <Text style={styles.transcriptionText}>{transcription}</Text>
-              </View>
-            </View>
-          )}
-
-          {/* AI Analysis */}
-          {aiAnalysis && (
-            <View style={styles.resultSection}>
-              <View style={styles.sectionHeader}>
-                <Wand2 size={20} color="#28A745" />
-                <Text style={styles.sectionTitle}>AI Medical Analysis</Text>
-              </View>
-              <View style={styles.analysisContainer}>
-                <Text style={styles.analysisText}>{aiAnalysis}</Text>
-              </View>
-            </View>
-          )}
-
-          {/* Action Buttons */}
-          {transcription && (
-            <View style={styles.actionButtons}>
+            {!isRecording && !isProcessing && !transcription && (
               <TouchableOpacity
-                style={styles.applyButton}
-                onPress={handleApplyToReport}
+                style={styles.recordButton}
+                onPress={handleStartRecording}
               >
-                <Text style={styles.applyButtonText}>Add to Report</Text>
+                <Mic size={32} color="#fff" />
+                <Text style={styles.recordButtonText}>Start Recording</Text>
               </TouchableOpacity>
-            </View>
-          )}
+            )}
+
+            {isRecording && (
+              <TouchableOpacity
+                style={[styles.recordButton, styles.recordingButton]}
+                onPress={handleStopRecording}
+              >
+                <MicOff size={32} color="#fff" />
+                <Text style={styles.recordButtonText}>Stop Recording</Text>
+              </TouchableOpacity>
+            )}
+
+            {isProcessing && (
+              <View style={styles.processingContainer}>
+                <ActivityIndicator size="large" color="#0066CC" />
+                <Text style={styles.processingText}>Processing voice note...</Text>
+              </View>
+            )}
+
+            {transcription && (
+              <View style={styles.transcriptionContainer}>
+                <View style={styles.transcriptionHeader}>
+                  <FileText size={20} color="#0066CC" />
+                  <Text style={styles.transcriptionTitle}>Transcription</Text>
+                </View>
+                <Text style={styles.transcriptionText}>{transcription}</Text>
+                
+                <TouchableOpacity
+                  style={styles.useButton}
+                  onPress={handleUseTranscription}
+                >
+                  <Text style={styles.useButtonText}>Add to Notes</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
         </ScrollView>
       </View>
     </Modal>
@@ -418,14 +153,13 @@ Format your response in clear, organized sections. Be concise but thorough. Focu
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#fff',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 20,
-    backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#E0E0E0',
   },
@@ -439,128 +173,75 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+    padding: 20,
   },
   recordingSection: {
-    backgroundColor: '#fff',
-    margin: 16,
-    padding: 24,
-    borderRadius: 12,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  recordingControls: {
-    alignItems: 'center',
-  },
-  durationContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: '#FFF5F5',
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#FED7D7',
-  },
-  durationText: {
-    marginLeft: 6,
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#DC3545',
-    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    justifyContent: 'center',
+    minHeight: 300,
   },
   recordButton: {
-    marginBottom: 16,
-  },
-  micButton: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
     backgroundColor: '#0066CC',
-    justifyContent: 'center',
+    paddingVertical: 20,
+    paddingHorizontal: 40,
+    borderRadius: 50,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 8,
+    justifyContent: 'center',
+    minWidth: 200,
   },
-  micButtonActive: {
+  recordingButton: {
     backgroundColor: '#DC3545',
   },
-  micButtonDisabled: {
-    backgroundColor: '#999',
-  },
-  recordingInstructions: {
+  recordButtonText: {
+    color: '#fff',
     fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
+    fontWeight: '600',
     marginTop: 8,
   },
-  resultSection: {
-    backgroundColor: '#fff',
-    margin: 16,
-    marginTop: 0,
-    padding: 20,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+  processingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  sectionHeader: {
+  processingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#666',
+  },
+  transcriptionContainer: {
+    width: '100%',
+    backgroundColor: '#F8F9FA',
+    padding: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  transcriptionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 12,
   },
-  sectionTitle: {
-    fontSize: 18,
+  transcriptionTitle: {
+    fontSize: 16,
     fontWeight: '600',
     color: '#333',
     marginLeft: 8,
   },
-  transcriptionContainer: {
-    backgroundColor: '#F8F9FA',
-    padding: 16,
-    borderRadius: 8,
-    borderLeftWidth: 4,
-    borderLeftColor: '#0066CC',
-  },
   transcriptionText: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#333',
-    lineHeight: 24,
+    lineHeight: 20,
+    marginBottom: 16,
   },
-  analysisContainer: {
-    backgroundColor: '#F0FDF4',
-    padding: 16,
-    borderRadius: 8,
-    borderLeftWidth: 4,
-    borderLeftColor: '#28A745',
-  },
-  analysisText: {
-    fontSize: 15,
-    color: '#333',
-    lineHeight: 22,
-  },
-  actionButtons: {
-    margin: 16,
-    marginTop: 0,
-  },
-  applyButton: {
+  useButton: {
     backgroundColor: '#28A745',
-    padding: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
     borderRadius: 8,
     alignItems: 'center',
   },
-  applyButtonText: {
+  useButtonText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
   },
 });

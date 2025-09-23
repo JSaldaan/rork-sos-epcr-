@@ -8,8 +8,6 @@ export function useOfflineInitialization() {
   const { loadCompletedPCRs, loadStaffMembers, loadAdminData, currentSession } = usePCRStore();
 
   useEffect(() => {
-    let mounted = true;
-
     const initializeOfflineCapabilities = async () => {
       try {
         console.log('=== INITIALIZING OFFLINE CAPABILITIES ===');
@@ -31,11 +29,6 @@ export function useOfflineInitialization() {
 
     // Initialize on mount
     initializeOfflineCapabilities();
-
-    // Cleanup on unmount
-    return () => {
-      mounted = false;
-    };
   }, [loadCompletedPCRs, loadStaffMembers, loadAdminData]);
 
   // Re-initialize when session changes (login/logout)

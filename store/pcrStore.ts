@@ -244,7 +244,7 @@ const defaultStaffMembers: StaffMember[] = [
   },
 ];
 
-export const usePCRStore = create<PCRStore>((set: any, get: any) => ({
+export const usePCRStore = create<PCRStore>()((set, get) => ({
   callTimeInfo: initialCallTimeInfo,
   patientInfo: initialPatientInfo,
   incidentInfo: initialIncidentInfo,
