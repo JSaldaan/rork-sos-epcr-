@@ -6,7 +6,6 @@
     "orientation": "portrait",
     "scheme": "hamad-epcr",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "privacy": "public",
     "icon": "./assets/images/icon.png",
     "splash": {
@@ -33,9 +32,7 @@
         "ITSAppUsesNonExemptEncryption": false,
         "CFBundleDisplayName": "SOS ePCR",
         "CFBundleName": "SOS ePCR"
-      },
-      "entitlements": {
-}
+      }
     },
     "android": {
       "package": "com.hamadmedical.epcr",
