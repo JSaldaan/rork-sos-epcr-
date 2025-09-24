@@ -35,7 +35,6 @@
         "CFBundleName": "SOS ePCR"
       },
       "entitlements": {
-        "com.apple.developer.networking.wifi-info": true
       }
     },
 
