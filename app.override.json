@@ -8,6 +8,7 @@
     "scheme": "hamad-epcr",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": false,
+    "jsEngine": "hermes",
     "privacy": "unlisted",
     "splash": {
       "image": "./assets/images/splash-icon.png",
@@ -101,7 +102,12 @@
     },
     "web": {
       "favicon": "./assets/images/favicon.png",
-      "bundler": "metro"
+      "bundler": "metro",
+      "build": {
+        "babel": {
+          "include": ["@expo/vector-icons"]
+        }
+      }
     },
     "plugins": [
       [
@@ -154,6 +160,13 @@
     "experiments": {
       "typedRoutes": true,
       "tsconfigPaths": true
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "packagerOpts": {
+      "sourceExts": ["expo.ts", "expo.tsx", "expo.js", "expo.jsx", "ts", "tsx", "js", "jsx", "json", "wasm", "svg"],
+      "assetExts": ["glb", "gltf", "png", "jpg", "jpeg", "gif", "webp", "svg", "mp4", "webm", "wav", "mp3", "m4a", "aac", "oga", "ttf", "otf", "woff", "woff2"]
     },
     "extra": {
       "eas": {

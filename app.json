@@ -8,14 +8,12 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "privacy": "public",
-
     "icon": "./assets/images/icon.png",
     "splash": {
       "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.hamadmedical.epcr",
@@ -29,15 +27,25 @@
         "NSMicrophoneUsageDescription": "This app needs microphone access to record voice notes for patient care documentation.",
         "NSLocationWhenInUseUsageDescription": "This app needs location access to record incident locations for emergency medical reports.",
         "NSPhotoLibraryUsageDescription": "This app needs photo library access to attach images to patient care reports.",
-        "UIBackgroundModes": ["audio"],
+        "UIBackgroundModes": [
+          "audio"
+        ],
         "ITSAppUsesNonExemptEncryption": false,
         "CFBundleDisplayName": "SOS ePCR",
         "CFBundleName": "SOS ePCR"
       },
       "entitlements": {
+        "com": {
+          "apple": {
+            "developer": {
+              "networking": {
+                "wifi-info": true
+              }
+            }
+          }
+        }
       }
     },
-
     "android": {
       "package": "com.hamadmedical.epcr",
       "adaptiveIcon": {
@@ -51,11 +59,9 @@
         "ACCESS_COARSE_LOCATION"
       ]
     },
-
     "web": {
       "favicon": "./assets/images/favicon.png"
     },
-
     "plugins": [
       [
         "expo-router",
@@ -88,7 +94,6 @@
         }
       ]
     ],
-
     "experiments": {
       "typedRoutes": true
     }

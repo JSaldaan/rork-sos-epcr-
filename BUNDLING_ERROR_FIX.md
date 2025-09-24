@@ -2,53 +2,51 @@
 
 ## 🔍 Identified Issue
 
-Based on your app.json file, the bundling error is caused by **malformed entitlements structure** in the iOS configuration.
+The current build error is caused by **jimp-compact** failing during iOS prebuild process. This is a common issue with image processing during Expo builds.
 
 ## ❌ Current Problem
 
-Your `app.json` has this malformed structure:
-
-```json
-"entitlements": {
-  "com.apple.developer.networking.wifi-info": true,
-  "com": {
-    "apple": {
-      "developer": {
-        "networking": {
-          "wifi-info": true
-        }
-      }
-    }
-  }
-}
+The error shows:
+```
+at /Users/expo/workingdir/build/node_modules/jimp-compact/dist/jimp.js:1:7613
+bun expo prebuild --no-install --platform ios exited with non-zero code: 1
 ```
 
-This creates a **duplicate key conflict** - the same entitlement is defined both as a flat key and as a nested object structure.
+This indicates that jimp-compact (image processing library) is failing during the iOS prebuild process.
 
 ## ✅ Solution
 
-**Step 1: Fix app.json**
-
-Open your `app.json` file and find the `entitlements` section under `expo.ios`. Replace the entire entitlements object with:
-
-```json
-"entitlements": {
-  "com.apple.developer.networking.wifi-info": true
-}
-```
-
-**Step 2: Clear cache and restart**
-
-After fixing the app.json:
+**Step 1: Run the automated fix**
 
 ```bash
-# Clear Expo cache
-npx expo start --clear
+chmod +x fix-jimp-issue.sh
+./fix-jimp-issue.sh
+```
 
-# Or if that doesn't work, clear everything:
-rm -rf node_modules
-npm install
-npx expo start --clear
+**Step 2: Manual fix if needed**
+
+```bash
+# Clear all caches
+rm -rf node_modules/.cache
+rm -rf .expo
+rm -rf /tmp/metro-*
+rm -rf /tmp/haste-*
+
+# Clear Expo cache
+npx expo install --fix
+
+# Try prebuild again
+bun expo prebuild --no-install --platform ios --clear
+```
+
+**Step 3: Alternative approach**
+
+If the above doesn't work, try disabling image optimization:
+
+```bash
+# Set environment variable to skip image processing
+export EXPO_IMAGE_UTILS_NO_SHARP=1
+bun expo prebuild --no-install --platform ios
 ```
 
 ## 🛠️ Alternative Solutions
