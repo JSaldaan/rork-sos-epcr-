@@ -55,4 +55,4 @@ echo "📱 The app will be available shortly..."
 echo ""
 
 # Start the server
-bunx rork start -p mrjfx7h4qr7c2x9p43htd --tunnel
+bun run rork start -p mrjfx7h4qr7c2x9p43htd --tunnel
