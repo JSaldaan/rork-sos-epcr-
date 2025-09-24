@@ -27,12 +27,24 @@
         "NSMicrophoneUsageDescription": "This app needs microphone access to record voice notes for patient care documentation.",
         "NSLocationWhenInUseUsageDescription": "This app needs location access to record incident locations for emergency medical reports.",
         "NSPhotoLibraryUsageDescription": "This app needs photo library access to attach images to patient care reports.",
-        "UIBackgroundModes": ["audio"],
+        "UIBackgroundModes": [
+          "audio"
+        ],
         "ITSAppUsesNonExemptEncryption": false,
         "CFBundleDisplayName": "SOS ePCR",
         "CFBundleName": "SOS ePCR"
       },
-      "entitlements": {}
+      "entitlements": {
+        "com": {
+          "apple": {
+            "developer": {
+              "networking": {
+                "wifi-info": true
+              }
+            }
+          }
+        }
+      }
     },
     "android": {
       "adaptiveIcon": {
