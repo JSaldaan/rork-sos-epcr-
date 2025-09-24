@@ -1,18 +1,11 @@
 {
   "expo": {
-    "name": "SOS ePCR",
-    "slug": "hamad-medical-corporation-epcr-app",
-    "version": "1.0.0",
-    "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
-    "scheme": "hamad-epcr",
-    "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
-    "privacy": "public",
-    "splash": {
-      "image": "./assets/images/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+    "icon": "./assets/icon.png",
+    "splash": { "image": "./assets/splash.png", "resizeMode": "contain", "backgroundColor": "#ffffff" },
+    "android": { "adaptiveIcon": { "foregroundImage": "./assets/adaptive-icon.png", "backgroundColor": "#ffffff" } },
+    "web": { "favicon": "./assets/favicon.png" }
+  }
+}
     },
     "ios": {
       "supportsTablet": true,
