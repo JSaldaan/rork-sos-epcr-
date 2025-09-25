@@ -7,9 +7,9 @@
     "scheme": "hamad-epcr",
     "userInterfaceStyle": "automatic",
     "privacy": "public",
-    "icon": "https://r2-pub.rork.com/generated-images/3af20b6b-1cc8-4fe7-b4b8-a15ea0a12cc4.png",
+    "icon": "icon.png",
     "splash": {
-      "image": "https://r2-pub.rork.com/generated-images/3fc92ae6-d4e2-4a33-8b35-2fd217d88b92.png",
+      "image": "splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -32,11 +32,12 @@
         "ITSAppUsesNonExemptEncryption": false,
         "CFBundleDisplayName": "SOS ePCR",
         "CFBundleName": "SOS ePCR"
-      },
+      }
+    },
     "android": {
       "package": "com.hamadmedical.epcr",
       "adaptiveIcon": {
-        "foregroundImage": "https://r2-pub.rork.com/generated-images/759a0880-99c8-469e-8462-c0279ef3d7c0.png",
+        "foregroundImage": "adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
       "permissions": [
@@ -47,7 +48,7 @@
       ]
     },
     "web": {
-      "favicon": "https://r2-pub.rork.com/generated-images/c243373a-d381-4a0a-a630-6cfb76f49a96.png"
+      "favicon": "favicon.png"
     },
     "plugins": [
       [
@@ -83,3 +84,6 @@
     ],
     "experiments": {
       "typedRoutes": true
+    }
+  }
+}
