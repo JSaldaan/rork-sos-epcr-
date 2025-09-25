@@ -7,9 +7,9 @@
     "scheme": "hamad-epcr",
     "userInterfaceStyle": "automatic",
     "privacy": "public",
-    "icon": "./assets/images/icon.png",
+    "icon": "https://r2-pub.rork.com/generated-images/3af20b6b-1cc8-4fe7-b4b8-a15ea0a12cc4.png",
     "splash": {
-      "image": "./assets/images/splash-icon.png",
+      "image": "https://r2-pub.rork.com/generated-images/3fc92ae6-d4e2-4a33-8b35-2fd217d88b92.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -32,23 +32,12 @@
         "ITSAppUsesNonExemptEncryption": false,
         "CFBundleDisplayName": "SOS ePCR",
         "CFBundleName": "SOS ePCR"
-      },
-      "entitlements": {
-        "com": {
-          "apple": {
-            "developer": {
-              "networking": {
-                "wifi-info": true
-              }
-            }
-          }
-        }
       }
     },
     "android": {
       "package": "com.hamadmedical.epcr",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": "https://r2-pub.rork.com/generated-images/759a0880-99c8-469e-8462-c0279ef3d7c0.png",
         "backgroundColor": "#ffffff"
       },
       "permissions": [
@@ -59,7 +48,7 @@
       ]
     },
     "web": {
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "https://r2-pub.rork.com/generated-images/c243373a-d381-4a0a-a630-6cfb76f49a96.png"
     },
     "plugins": [
       [
