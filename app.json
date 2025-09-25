@@ -7,9 +7,9 @@
     "scheme": "hamad-epcr",
     "userInterfaceStyle": "automatic",
     "privacy": "public",
-    "icon": "icon.png",
+    "icon": "https://github.com/JSaldaan/rork-sos-epcr-/blob/b246eda2d1278d0c24f5b7d90ad3a302860fb00b/adaptive-icon.png",
     "splash": {
-      "image": "splash.png",
+      "image": "https://github.com/JSaldaan/rork-sos-epcr-/blob/2a91d30c6d7d0cf8b43cfbbeab98b5ff42a5b78f/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -37,7 +37,7 @@
     "android": {
       "package": "com.hamadmedical.epcr",
       "adaptiveIcon": {
-        "foregroundImage": "adaptive-icon.png",
+        "foregroundImage": "https://github.com/JSaldaan/rork-sos-epcr-/blob/b246eda2d1278d0c24f5b7d90ad3a302860fb00b/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
       "permissions": [
@@ -48,7 +48,7 @@
       ]
     },
     "web": {
-      "favicon": "favicon.png"
+      "favicon": "https://github.com/JSaldaan/rork-sos-epcr-/blob/f3efed15b6753a29fef12cf298839dd5e541b348/favicon.png"
     },
     "plugins": [
       [
