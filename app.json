@@ -58,7 +58,6 @@
         }
       ],
       [
-        "expo-camera",
         {
           "cameraPermission": "This app needs camera access to capture photos for patient care reports and documentation.",
           "microphonePermission": "This app needs microphone access to record voice notes for patient care documentation.",
