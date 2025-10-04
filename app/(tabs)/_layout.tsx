@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { FileText, Activity, Truck, User, FileX, Eye, LogOut, FolderOpen, Shield, QrCode } from "lucide-react-native";
+import { FileText, Activity, Truck, User, FileX, Eye, LogOut, FolderOpen, Shield, QrCode, HelpCircle } from "lucide-react-native";
 import React, { useCallback, useState } from "react";
 import { Pressable, Alert, StyleSheet, ActivityIndicator, View, Platform } from "react-native";
 import { usePCRStore } from "@/store/pcrStore";
@@ -118,25 +118,44 @@ export default function TabLayout() {
     const isDisabled = isLoggingOut || isProcessingLogout;
     
     return (
-      <Pressable 
-        style={({ pressed }) => [
-          styles.logoutButton,
-          pressed && !isDisabled && styles.logoutButtonPressed,
-          isDisabled && styles.logoutButtonDisabled
-        ]}
-        onPress={isDisabled ? undefined : handleLogout}
-        hitSlop={20}
-        disabled={isDisabled}
-        testID="logout-button"
-      >
-        {isDisabled ? (
-          <View style={styles.logoutButtonContent}>
-            <ActivityIndicator size="small" color="#fff" />
-          </View>
-        ) : (
-          <LogOut size={22} color="#fff" />
-        )}
-      </Pressable>
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <Pressable
+          style={({ pressed }) => [
+            styles.helpButton,
+            pressed && styles.helpButtonPressed,
+          ]}
+          onPress={() => {
+            // Navigate to legal/support screen
+            // Using global router import may not be here; use deep link path
+            // Tabs header button can navigate via linking to route
+            // We can use expo-router's Link in screen components, but here we fire an imperative navigate
+            // @ts-ignore - router is available globally in expo-router runtime
+            require('expo-router').router.push('/legal');
+          }}
+          hitSlop={16}
+        >
+          <HelpCircle size={22} color="#fff" />
+        </Pressable>
+        <Pressable 
+          style={({ pressed }) => [
+            styles.logoutButton,
+            pressed && !isDisabled && styles.logoutButtonPressed,
+            isDisabled && styles.logoutButtonDisabled
+          ]}
+          onPress={isDisabled ? undefined : handleLogout}
+          hitSlop={20}
+          disabled={isDisabled}
+          testID="logout-button"
+        >
+          {isDisabled ? (
+            <View style={styles.logoutButtonContent}>
+              <ActivityIndicator size="small" color="#fff" />
+            </View>
+          ) : (
+            <LogOut size={22} color="#fff" />
+          )}
+        </Pressable>
+      </View>
     );
   };
   
@@ -331,6 +350,19 @@ export default function TabLayout() {
 }
 
 const styles = StyleSheet.create({
+  helpButton: {
+    marginRight: 8,
+    padding: 8,
+    borderRadius: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 38,
+    minHeight: 38,
+  },
+  helpButtonPressed: {
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+  },
   logoutButton: {
     marginRight: 16,
     padding: 8,

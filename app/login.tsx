@@ -9,7 +9,7 @@ import {
   Platform,
   StatusBar,
 } from 'react-native';
-import { router } from 'expo-router';
+import { Link, router } from 'expo-router';
 import { usePCRStore } from '@/store/pcrStore';
 import { Shield, Users, AlertTriangle } from 'lucide-react-native';
 import { textStyles, fonts } from '@/constants/fonts';
@@ -275,15 +275,14 @@ const LoginScreen: React.FC = () => {
             {isLoading ? 'Authenticating...' : 'Login'}
           </Text>
         </Pressable>
-        
-
-        
-
-        
-
-        
-
-        
+        <View style={{ width: '100%', maxWidth: 400 }}>
+          <Text style={styles.legalRowLabel}>Legal & Support</Text>
+          <View style={styles.legalRow}>
+            <Link href={{ pathname: '/legal', params: { section: 'privacy' } }} style={styles.legalLink}>Privacy</Link>
+            <Link href={{ pathname: '/legal', params: { section: 'terms' } }} style={styles.legalLink}>Terms</Link>
+            <Link href={{ pathname: '/legal', params: { section: 'deletion' } }} style={styles.legalLink}>Account Deletion</Link>
+          </View>
+        </View>
 
         </View>
 
@@ -415,6 +414,22 @@ const styles = StyleSheet.create({
   loginButtonText: {
     ...textStyles.buttonText,
     color: '#fff',
+  },
+
+  legalRowLabel: {
+    ...textStyles.caption1,
+    color: '#6b7280',
+    textAlign: 'center',
+    marginBottom: 6,
+  },
+  legalRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  legalLink: {
+    ...textStyles.caption1,
+    color: '#1D4ED8',
   },
 
 
