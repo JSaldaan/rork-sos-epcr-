@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { FileText, Activity, Truck, User, FileX, Eye, LogOut, FolderOpen, Shield } from "lucide-react-native";
+import { FileText, Activity, Truck, User, FileX, Eye, LogOut, FolderOpen, Shield, QrCode } from "lucide-react-native";
 import React, { useCallback, useState } from "react";
 import { Pressable, Alert, StyleSheet, ActivityIndicator, View, Platform } from "react-native";
 import { usePCRStore } from "@/store/pcrStore";
@@ -309,6 +309,14 @@ export default function TabLayout() {
           title: "My Reports",
           tabBarIcon: ({ color }) => <FolderOpen size={24} color={color} />,
           headerTitle: "MediCare Pro - My Submitted Reports",
+        }}
+      />
+      <Tabs.Screen
+        name="qr"
+        options={{
+          title: "QR",
+          tabBarIcon: ({ color }) => <QrCode size={24} color={color} />,
+          headerTitle: "Share App QR",
         }}
       />
       {/* Hide admin tab for staff users */}
