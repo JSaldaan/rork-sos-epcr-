@@ -7,7 +7,13 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "eas:login": "eas login",
+    "eas:configure": "eas build:configure",
+    "build:ios:dev": "eas build --platform ios --profile development",
+    "build:ios": "eas build --platform ios --profile production",
+    "submit:ios": "eas submit --platform ios",
+    "build-and-submit:ios": "npm run build:ios && npm run submit:ios"
   },
   "dependencies": {
     "expo": "^51.0.28",
