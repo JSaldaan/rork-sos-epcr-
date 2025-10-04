@@ -75,7 +75,7 @@ interface PCRStore {
   loadCompletedPCRs: () => Promise<void>;
   deletePCR: (id: string) => Promise<void>;
   setAdminMode: (isAdmin: boolean) => void;
-  adminLogin: (password: string) => boolean;
+  adminLogin: (adminCorporationId: string) => boolean;
   staffLogin: (corporationId: string) => Promise<boolean>;
   staffLogout: () => Promise<void>;
   initializeStaffDatabase: () => Promise<void>;
@@ -546,43 +546,46 @@ export const usePCRStore = create<PCRStore>()((set, get) => ({
     console.log('=== END ADMIN MODE CHANGE ===');
   },
 
-  adminLogin: (password: string) => {
-    // Simple backdoor password - change this to your preferred password
-    const adminPassword = 'admin123';
-    
-    if (password === adminPassword) {
-      // Create admin session
-      const adminSession: AuthSession = {
-        staffId: 'ADMIN_SYSTEM',
-        corporationId: 'ADMIN_SYSTEM',
-        name: 'System Administrator',
-        role: 'SuperAdmin',
-        loginTime: new Date().toISOString(),
-        isAdmin: true,
-        isSuperAdmin: true,
-      };
-      
-      set({ 
-        isAdmin: true,
-        currentSession: adminSession
-      });
-      
-      // Store admin session
-      AsyncStorage.setItem('currentSession', JSON.stringify(adminSession)).catch(error => {
-        if (__DEV__) {
-          console.error(error);
-        }
-      });
-      
-      console.log('Admin login successful, loading data...');
-      // Load all data immediately after successful login
-      setTimeout(() => {
-        get().loadCompletedPCRs();
-        get().loadAdminData();
-      }, 100);
-      return true;
+  adminLogin: (adminCorporationId: string) => {
+    const id = adminCorporationId.toUpperCase();
+    const adminIds = new Set([
+      'SUPER001',
+      'ADMIN001',
+    ]);
+
+    if (!adminIds.has(id)) {
+      return false;
     }
-    return false;
+
+    const adminName = id === 'SUPER001' ? 'Super Administrator' : 'System Administrator';
+    const adminRole = id === 'SUPER001' ? 'SuperAdmin' : 'Admin';
+
+    const adminSession: AuthSession = {
+      staffId: id,
+      corporationId: id,
+      name: adminName,
+      role: adminRole,
+      loginTime: new Date().toISOString(),
+      isAdmin: true,
+      isSuperAdmin: adminRole === 'SuperAdmin',
+    };
+
+    set({ 
+      isAdmin: true,
+      currentSession: adminSession
+    });
+
+    AsyncStorage.setItem('currentSession', JSON.stringify(adminSession)).catch(error => {
+      if (__DEV__) {
+        console.error(error);
+      }
+    });
+
+    setTimeout(() => {
+      get().loadCompletedPCRs();
+      get().loadAdminData();
+    }, 100);
+    return true;
   },
 
   initializeStaffDatabase: async () => {

@@ -1,0 +1,82 @@
+name: EAS iOS Build and Submit
+
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: EAS build profile (e.g., development, production)
+        required: false
+        default: production
+      submit:
+        description: Submit to App Store Connect after build
+        required: false
+        default: "true"
+
+jobs:
+  build-submit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install EAS CLI
+        run: npm i -g eas-cli
+
+      - name: Verify Expo/EAS auth
+        env:
+          EAS_TOKEN: ${{ secrets.EAS_TOKEN }}
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          if [ -z "$EAS_TOKEN" ] && [ -z "$EXPO_TOKEN" ]; then
+            echo "EAS_TOKEN or EXPO_TOKEN secret is required" >&2
+            exit 1
+          fi
+          eas whoami || true
+
+      - name: EAS Build iOS
+        env:
+          EAS_TOKEN: ${{ secrets.EAS_TOKEN }}
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          PROFILE=${{ github.event.inputs.profile }}
+          if [ -z "$PROFILE" ]; then PROFILE=production; fi
+          echo "Building iOS with profile: $PROFILE"
+          eas build -p ios --profile "$PROFILE" --non-interactive --json > build.json
+          cat build.json
+
+      - name: Prepare ASC API Key (if provided)
+        if: ${{ github.event.inputs.submit != 'false' }}
+        run: |
+          if [ -n "${{ secrets.ASC_API_KEY_BASE64 }}" ]; then
+            echo "Using ASC_API_KEY_BASE64 secret"
+            echo "${{ secrets.ASC_API_KEY_BASE64 }}" | base64 -d > asc_api_key.p8
+          elif [ -n "${{ secrets.ASC_API_KEY }}" ]; then
+            echo "Using ASC_API_KEY secret"
+            echo "${{ secrets.ASC_API_KEY }}" | tr -d '\r' > asc_api_key.p8
+          else
+            echo "No ASC API key provided"
+          fi
+
+      - name: EAS Submit iOS
+        if: ${{ github.event.inputs.submit != 'false' }}
+        env:
+          EAS_TOKEN: ${{ secrets.EAS_TOKEN }}
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          if [ -f asc_api_key.p8 ] && [ -n "${{ secrets.ASC_API_KEY_ID }}" ] && [ -n "${{ secrets.ASC_API_ISSUER_ID }}" ]; then
+            echo "Submitting latest iOS build to App Store Connect"
+            eas submit -p ios --latest --non-interactive \
+              --asc-api-key-path asc_api_key.p8 \
+              --asc-api-key-id "${{ secrets.ASC_API_KEY_ID }}" \
+              --asc-api-key-issuer-id "${{ secrets.ASC_API_ISSUER_ID }}"
+          else
+            echo "Skipping submit: ASC API credentials not fully provided."
+          fi

@@ -237,12 +237,17 @@ export default function NewPCRScreen() {
   }, [updateIncidentInfo]);
 
   const handleAdminLogin = useCallback(() => {
-    if (adminLogin(adminPassword)) {
+    const adminId = (adminPassword || '').trim().toUpperCase();
+    if (!adminId || adminId.length < 4) {
+      Alert.alert('Error', 'Please enter a valid admin Corporation ID');
+      return;
+    }
+    if (adminLogin(adminId)) {
       setShowAdminLogin(false);
       setAdminPassword('');
       Alert.alert('Success', 'Admin mode enabled! You can now access the Admin tab.');
     } else {
-      Alert.alert('Error', 'Invalid admin password');
+      Alert.alert('Error', 'Invalid admin Corporation ID');
     }
   }, [adminLogin, adminPassword]);
 
@@ -733,19 +738,19 @@ export default function NewPCRScreen() {
           <View style={styles.adminModalContent}>
             <View style={styles.adminModalHeader}>
               <Shield size={24} color="#0066CC" />
-              <Text style={styles.adminModalTitle}>Admin Login</Text>
+            <Text style={styles.adminModalTitle}>Admin Login</Text>
             </View>
             
             <Text style={styles.adminModalDescription}>
-              Enter the admin password to access stored PCR data and admin features.
+              Enter the admin Corporation ID to access stored PCR data and admin features.
             </Text>
             
             <TextInput
               style={styles.adminPasswordInput}
-              placeholder="Admin Password"
+              placeholder="Admin Corporation ID (e.g., SUPER001)"
               value={adminPassword}
               onChangeText={setAdminPassword}
-              secureTextEntry
+              autoCapitalize="characters"
               autoFocus
             />
             
@@ -769,7 +774,7 @@ export default function NewPCRScreen() {
             </View>
             
             <Text style={styles.adminHintText}>
-              Hint: Default password is "admin123"
+              Hint: Use your assigned admin Corporation ID (e.g., SUPER001)
             </Text>
           </View>
         </View>

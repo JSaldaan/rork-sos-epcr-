@@ -2,8 +2,8 @@
   "expo": {
     "name": "SOS ePCR",
     "slug": "hamad-medical-corporation-epcr-app",
-    "version": "1.0.0",
-    "orientation": "portrait",
+    "version": "1.3.0",
+    "orientation": "default",
     "scheme": "hamad-epcr",
     "userInterfaceStyle": "automatic",
     "privacy": "public",
@@ -16,7 +16,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.hamadmedical.epcr",
-      "buildNumber": "1",
+      "buildNumber": "2",
       "requireFullScreen": false,
       "config": {
         "usesNonExemptEncryption": false
@@ -26,12 +26,22 @@
         "NSMicrophoneUsageDescription": "This app needs microphone access to record voice notes for patient care documentation.",
         "NSLocationWhenInUseUsageDescription": "This app needs location access to record incident locations for emergency medical reports.",
         "NSPhotoLibraryUsageDescription": "This app needs photo library access to attach images to patient care reports.",
-        "UIBackgroundModes": [
-          "audio"
-        ],
+        
         "ITSAppUsesNonExemptEncryption": false,
         "CFBundleDisplayName": "SOS ePCR",
-        "CFBundleName": "SOS ePCR"
+        "CFBundleName": "SOS ePCR",
+        "UISupportedInterfaceOrientations": [
+          "UIInterfaceOrientationPortrait",
+          "UIInterfaceOrientationPortraitUpsideDown",
+          "UIInterfaceOrientationLandscapeLeft",
+          "UIInterfaceOrientationLandscapeRight"
+        ],
+        "UISupportedInterfaceOrientations~ipad": [
+          "UIInterfaceOrientationPortrait",
+          "UIInterfaceOrientationPortraitUpsideDown",
+          "UIInterfaceOrientationLandscapeLeft",
+          "UIInterfaceOrientationLandscapeRight"
+        ]
       }
     },
     "android": {
