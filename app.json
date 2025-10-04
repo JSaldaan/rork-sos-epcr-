@@ -2,7 +2,7 @@
   "expo": {
     "name": "SOS ePCR",
     "slug": "hamad-medical-corporation-epcr-app",
-    "version": "1.0.0",
+    "version": "1.3.0",
     "orientation": "default",
     "scheme": "hamad-epcr",
     "userInterfaceStyle": "automatic",
@@ -16,7 +16,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.hamadmedical.epcr",
-      "buildNumber": "1",
+      "buildNumber": "2",
       "requireFullScreen": false,
       "config": {
         "usesNonExemptEncryption": false
