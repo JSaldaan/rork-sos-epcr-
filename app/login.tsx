@@ -106,62 +106,50 @@ const LoginScreen: React.FC = () => {
   };
   
   const handleAdminLogin = async () => {
-    const trimmedPassword = password.trim();
-    
-    if (!trimmedPassword) {
-      setLoginError('Please enter admin credentials');
+    const adminId = password.trim().toUpperCase();
+
+    if (!adminId) {
+      setLoginError('Please enter admin Corporation ID');
       return;
     }
-    
+
+    if (adminId.length < 4) {
+      setLoginError('Invalid admin Corporation ID');
+      return;
+    }
+
     setIsLoading(true);
     setLoginError('');
-    
+
     try {
-      console.log('Admin login attempt');
-      
-      // Check if it's the system admin password
-      if (trimmedPassword === 'admin123') {
-        if (adminLogin(trimmedPassword)) {
+      await usePCRStore.getState().loadStaffMembers();
+
+      // Try dedicated admin login first (whitelisted IDs)
+      const adminLogged = adminLogin(adminId);
+      if (adminLogged) {
+        setPassword('');
+        setLoginError('');
+        setTimeout(() => {
+          router.replace('/(tabs)');
+        }, Platform.OS === 'ios' ? 100 : 0);
+        return;
+      }
+
+      // Fallback to staff login if the ID belongs to an admin staff
+      const staff = await usePCRStore.getState().validateCorporationId(adminId);
+      if (staff && (staff.role === 'SuperAdmin' || staff.role === 'Admin')) {
+        const success = await staffLogin(adminId);
+        if (success) {
           setPassword('');
           setLoginError('');
-          console.log('System admin login successful');
-          // Small delay for iOS to process state changes
           setTimeout(() => {
             router.replace('/(tabs)');
           }, Platform.OS === 'ios' ? 100 : 0);
-        } else {
-          setLoginError('System admin login failed');
-        }
-      } else {
-        // Check if it's a staff member with admin role
-        const upperPassword = trimmedPassword.toUpperCase();
-        
-        if (upperPassword.length < 4) {
-          setLoginError('Invalid admin credentials format');
-          setIsLoading(false);
           return;
         }
-        
-        await usePCRStore.getState().loadStaffMembers();
-        const staff = await usePCRStore.getState().validateCorporationId(upperPassword);
-        
-        if (staff && (staff.role === 'SuperAdmin' || staff.role === 'Admin')) {
-          const success = await staffLogin(upperPassword);
-          if (success) {
-            setPassword('');
-            setLoginError('');
-            console.log('Admin staff login successful');
-            // Small delay for iOS to process state changes
-            setTimeout(() => {
-              router.replace('/(tabs)');
-            }, Platform.OS === 'ios' ? 100 : 0);
-          } else {
-            setLoginError('Admin login failed');
-          }
-        } else {
-          setLoginError('Invalid admin credentials');
-        }
       }
+
+      setLoginError('Invalid admin Corporation ID');
     } catch (error) {
       console.error('Admin login error:', error);
       setLoginError('Admin login failed. Please try again.');
@@ -253,16 +241,15 @@ const LoginScreen: React.FC = () => {
           </View>
         ) : (
           <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Admin Credentials</Text>
+            <Text style={styles.inputLabel}>Admin Corporation ID</Text>
             <TextInput
               style={styles.textInput}
-              placeholder="Enter system password or admin Corporation ID"
+              placeholder="Enter admin Corporation ID (e.g., SUPER001)"
               value={password}
               onChangeText={(text) => {
                 setPassword(text);
                 setLoginError('');
               }}
-              secureTextEntry
               autoCapitalize="characters"
               onSubmitEditing={handleLogin}
               editable={!isLoading}
