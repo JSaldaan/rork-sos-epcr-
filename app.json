@@ -3,7 +3,7 @@
     "name": "SOS ePCR",
     "slug": "hamad-medical-corporation-epcr-app",
     "version": "1.0.0",
-    "orientation": "portrait",
+    "orientation": "default",
     "scheme": "hamad-epcr",
     "userInterfaceStyle": "automatic",
     "privacy": "public",
@@ -31,7 +31,19 @@
         ],
         "ITSAppUsesNonExemptEncryption": false,
         "CFBundleDisplayName": "SOS ePCR",
-        "CFBundleName": "SOS ePCR"
+        "CFBundleName": "SOS ePCR",
+        "UISupportedInterfaceOrientations": [
+          "UIInterfaceOrientationPortrait",
+          "UIInterfaceOrientationPortraitUpsideDown",
+          "UIInterfaceOrientationLandscapeLeft",
+          "UIInterfaceOrientationLandscapeRight"
+        ],
+        "UISupportedInterfaceOrientations~ipad": [
+          "UIInterfaceOrientationPortrait",
+          "UIInterfaceOrientationPortraitUpsideDown",
+          "UIInterfaceOrientationLandscapeLeft",
+          "UIInterfaceOrientationLandscapeRight"
+        ]
       }
     },
     "android": {
