@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { FileText, Activity, Truck, User, FileX, Eye, LogOut, FolderOpen, Shield } from "lucide-react-native";
+import { FileText, Activity, Truck, User, FileX, Eye, LogOut, FolderOpen, Shield, BookOpen } from "lucide-react-native";
 import React, { useCallback, useState } from "react";
 import { Pressable, Alert, StyleSheet, ActivityIndicator, View, Platform } from "react-native";
 import { usePCRStore } from "@/store/pcrStore";
@@ -179,6 +179,14 @@ export default function TabLayout() {
             headerTitle: "MediCare Pro - Administrator Dashboard",
           }}
         />
+        <Tabs.Screen
+          name="guidelines"
+          options={{
+            title: "Guidelines",
+            tabBarIcon: ({ color }) => <BookOpen size={24} color={color} />,
+            headerTitle: "iOS Guidelines & Procedures",
+          }}
+        />
         {/* Hide all other tabs for admin users */}
         <Tabs.Screen
           name="index"
@@ -261,6 +269,14 @@ export default function TabLayout() {
           title: "New PCR",
           tabBarIcon: ({ color }) => <FileText size={24} color={color} />,
           headerTitle: "MediCare Pro - New Patient Care Report",
+        }}
+      />
+      <Tabs.Screen
+        name="guidelines"
+        options={{
+          title: "Guidelines",
+          tabBarIcon: ({ color }) => <BookOpen size={24} color={color} />,
+          headerTitle: "iOS Guidelines & Procedures",
         }}
       />
       <Tabs.Screen
