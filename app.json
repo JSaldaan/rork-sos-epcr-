@@ -6,18 +6,18 @@
     "orientation": "portrait",
     "scheme": "hamad-epcr",
     "userInterfaceStyle": "automatic",
-    "privacy": "public",
-    "icon": "https://github.com/JSaldaan/rork-sos-epcr-/blob/b246eda2d1278d0c24f5b7d90ad3a302860fb00b/adaptive-icon.png",
+    "description": "Emergency Patient Care Reporting (ePCR) system for medical professionals to document patient care, vital signs, and emergency medical incidents.",
+    "icon": "./adaptive-icon.png",
     "splash": {
-      "image": "https://github.com/JSaldaan/rork-sos-epcr-/blob/2a91d30c6d7d0cf8b43cfbbeab98b5ff42a5b78f/splash.png",
+      "image": "./splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "com.hamadmedical.epcr",
       "buildNumber": "1",
-      "requireFullScreen": false,
+      "requireFullScreen": true,
       "config": {
         "usesNonExemptEncryption": false
       },
@@ -26,18 +26,47 @@
         "NSMicrophoneUsageDescription": "This app needs microphone access to record voice notes for patient care documentation.",
         "NSLocationWhenInUseUsageDescription": "This app needs location access to record incident locations for emergency medical reports.",
         "NSPhotoLibraryUsageDescription": "This app needs photo library access to attach images to patient care reports.",
+        "NSContactsUsageDescription": "This app may need contact access to link patient information with emergency contacts.",
+        "NSHealthShareUsageDescription": "This app may access health data to record vital signs and medical information for patient care reports.",
+        "NSHealthUpdateUsageDescription": "This app may update health data to record vital signs and medical information for patient care reports.",
         "UIBackgroundModes": [
           "audio"
         ],
         "ITSAppUsesNonExemptEncryption": false,
         "CFBundleDisplayName": "SOS ePCR",
-        "CFBundleName": "SOS ePCR"
+        "CFBundleName": "SOS ePCR",
+        "LSRequiresIPhoneOS": true,
+        "UIRequiredDeviceCapabilities": [
+          "armv7"
+        ],
+        "UISupportedInterfaceOrientations": [
+          "UIInterfaceOrientationPortrait"
+        ],
+        "UISupportedInterfaceOrientations~ipad": [],
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": false,
+          "NSExceptionDomains": {
+            "rork.com": {
+              "NSExceptionAllowsInsecureHTTPLoads": false,
+              "NSExceptionMinimumTLSVersion": "TLSv1.2",
+              "NSExceptionRequiresForwardSecrecy": true
+            }
+          }
+        },
+        "NSUserTrackingUsageDescription": "This app does not track users across other companies' apps or websites for advertising or sharing with data brokers."
+      },
+      "associatedDomains": [
+        "applinks:rork.com"
+      ],
+      "entitlements": {
+        "com.apple.developer.healthkit": false,
+        "com.apple.developer.healthkit.access": []
       }
     },
     "android": {
       "package": "com.hamadmedical.epcr",
       "adaptiveIcon": {
-        "foregroundImage": "https://github.com/JSaldaan/rork-sos-epcr-/blob/b246eda2d1278d0c24f5b7d90ad3a302860fb00b/adaptive-icon.png",
+        "foregroundImage": "./adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
       "permissions": [
@@ -47,43 +76,33 @@
         "ACCESS_COARSE_LOCATION"
       ]
     },
-    "web": {
-      "favicon": "https://github.com/JSaldaan/rork-sos-epcr-/blob/f3efed15b6753a29fef12cf298839dd5e541b348/favicon.png"
-    },
     "plugins": [
       [
         "expo-router",
         {
           "origin": "https://rork.com/"
         }
-      ],
-      [
-        {
-          "cameraPermission": "This app needs camera access to capture photos for patient care reports and documentation.",
-          "microphonePermission": "This app needs microphone access to record voice notes for patient care documentation.",
-          "recordAudioPermission": "This app needs microphone access to record voice notes for patient care documentation.",
-          "recordAudioAndroid": true
-        }
-      ],
-      [
-        "expo-av",
-        {
-          "microphonePermission": "This app needs microphone access to record voice notes for patient care documentation."
-        }
-      ],
-      [
-        "expo-location",
-        {
-          "locationAlwaysAndWhenInUsePermission": "This app needs location access to record incident locations for emergency medical reports.",
-          "locationAlwaysPermission": "This app needs location access to record incident locations for emergency medical reports.",
-          "locationWhenInUsePermission": "This app needs location access to record incident locations for emergency medical reports.",
-          "isIosBackgroundLocationEnabled": false,
-          "isAndroidBackgroundLocationEnabled": false
-        }
       ]
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "your-project-id-here"
+      }
+    },
+    "owner": "hamad-medical-corporation",
+    "sdkVersion": "54.0.0",
+    "platforms": ["ios", "android"],
+    "githubUrl": "https://github.com/JSaldaan/rork-sos-epcr-",
+    "primaryColor": "#ffffff",
+    "backgroundColor": "#ffffff",
+    "locales": {
+      "en": {
+        "name": "SOS ePCR",
+        "description": "Emergency Patient Care Reporting (ePCR) system for medical professionals to document patient care, vital signs, and emergency medical incidents."
+      }
+    },
   }
 }

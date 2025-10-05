@@ -3,19 +3,50 @@
     "development": {
       "distribution": "internal",
       "android": {
-        "buildType": "apk"
+        "buildType": "apk",
+        "deviceFamily": "phone"
       },
       "ios": {
-        "simulator": true
+        "simulator": true,
+        "deviceFamily": "phone"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk",
+        "deviceFamily": "phone"
+      },
+      "ios": {
+        "simulator": false,
+        "deviceFamily": "phone",
+        "enterpriseProvisioning": "universal"
       }
     },
     "production": {
       "android": {
-        "buildType": "app-bundle"
+        "buildType": "app-bundle",
+        "deviceFamily": "phone"
       },
       "ios": {
-        "simulator": false
+        "simulator": false,
+        "deviceFamily": "phone",
+        "autoIncrement": "buildNumber"
+      }
+    },
+    "submit": {
+      "production": {
+        "ios": {
+          "appleId": "your-apple-id@example.com",
+          "ascAppId": "your-app-store-connect-app-id",
+          "appleTeamId": "your-apple-team-id"
+        },
+        "android": {
+          "serviceAccountKeyPath": "./path-to-your-service-account-key.json",
+          "track": "internal"
+        }
       }
     }
   }
 }
+
